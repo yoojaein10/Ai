@@ -1,1 +1,4 @@
-
+interface:
+  display_name: "Token Saver"
+  short_description: "Reduce context and response token usage"
+  default_prompt: "Use $token-saver to complete this task with minimal token usage."
