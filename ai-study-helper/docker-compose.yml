@@ -1,0 +1,37 @@
+# 전체 스택: Redis + Celery worker + FastAPI + Streamlit UI
+# 실행: docker compose up --build   (GEMINI_API_KEY는 .env에서 주입)
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  worker:
+    build: .
+    command: celery -A worker.tasks worker --loglevel=info
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./data:/app/data
+      - ./vectorstore:/app/vectorstore
+    depends_on: [redis]
+
+  api:
+    build: .
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    ports: ["8000:8000"]
+    volumes:
+      - ./data:/app/data
+      - ./vectorstore:/app/vectorstore
+    depends_on: [redis]
+
+  ui:
+    build: .
+    env_file: .env
+    ports: ["8501:8501"]
+    volumes:
+      - ./data:/app/data
+      - ./vectorstore:/app/vectorstore

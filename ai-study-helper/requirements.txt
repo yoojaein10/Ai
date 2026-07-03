@@ -1,0 +1,31 @@
+# === 1단계: 입력·추출 ===
+python-dotenv        # .env 환경변수 로드
+yt-dlp               # 유튜브 오디오 다운로드
+PyMuPDF              # PDF 파싱
+python-docx          # Word 파싱
+python-pptx          # PPT 파싱
+openpyxl             # Excel 파싱
+pytest               # 테스트
+
+# === 2단계: GPU STT ===
+faster-whisper       # Whisper STT (CTranslate2 기반, GPU 가속)
+nvidia-cublas-cu12   # CUDA 행렬연산 라이브러리 (ctranslate2 GPU 실행에 필요)
+nvidia-cudnn-cu12    # CUDA 딥러닝 라이브러리 (ctranslate2 GPU 실행에 필요)
+
+# === 3단계: 슬라이드 분석 (멀티모달) ===
+google-genai         # Gemini API (텍스트 + 비전)
+scenedetect          # 슬라이드 전환(장면 전환) 감지
+opencv-python        # 프레임 캡처·이미지 처리
+
+# === 6단계: RAG Q&A ===
+chromadb             # 로컬 벡터DB
+
+# === 7단계: 대용량·비동기 ===
+fastapi              # 백엔드 API
+uvicorn              # ASGI 서버
+celery               # 비동기 작업 큐
+redis<6              # Celery 브로커 클라이언트 (6+는 RESP3 강제 → Windows용 Redis 5.x와 비호환)
+httpx                # API 테스트 클라이언트
+
+# === 11단계: 웹 UI ===
+streamlit            # 웹 UI

@@ -1,0 +1,13 @@
+[theme]
+base = "light"
+primaryColor = "#06B2FC"
+backgroundColor = "#FAFBFD"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#111827"
+
+[server]
+runOnSave = true
+maxUploadSize = 4096
+
+[browser]
+gatherUsageStats = false
