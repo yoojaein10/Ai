@@ -397,11 +397,7 @@ job_id = st.session_state.job_id
 chapters_data = load_json(job_id, "chapters.json") or {}
 notes_path = job_dir(job_id) / "notes.md"
 
-if not notes_path.exists():
-    render_progress(job_id)  # 진행률 + 예상 시간, 자동 갱신
-    st.stop()
-
-# 결과 헤더: 자료명 + 요약 통계 칩
+# 결과 헤더: 자료명 + 요약 통계 칩 + 삭제 (진행 중이어도 삭제 가능해야 한다)
 _meta = load_json(job_id, "meta.json") or {}
 _aligned = load_json(job_id, "aligned.json") or []
 _src_name = (_meta.get("source", "")).split("\\")[-1].split("/")[-1]
@@ -414,12 +410,27 @@ if _meta.get("video_path"):
     _chips.append(f"🖼 슬라이드 {len(_aligned)}장")
 if chapters_data.get("chapters"):
     _chips.append(f"📚 챕터 {len(chapters_data['chapters'])}개")
-st.markdown(
+
+col_head, col_del = st.columns([6, 1])
+col_head.markdown(
     f"### {_src_name or '학습 자료'}  \n"
     + "".join(f'<span class="lm-chip">{c}</span>' for c in _chips),
     unsafe_allow_html=True,
 )
+with col_del.popover("🗑 삭제"):
+    st.caption("내 목록에서 삭제합니다. 이 자료로 만든 노트·퀴즈에 더 이상 접근할 수 없습니다.")
+    if st.button("삭제 확인", type="primary", key="del-confirm", use_container_width=True):
+        from pin_auth import delete_job
+
+        delete_job(st.session_state.user_id, job_id)
+        st.session_state.pop("job_id", None)
+        st.session_state.pop("chat", None)  # 이 자료의 대화 기록도 정리
+        st.rerun()
 st.write("")
+
+if not notes_path.exists():
+    render_progress(job_id)  # 진행률 + 예상 시간, 자동 갱신
+    st.stop()
 
 tab_notes, tab_summary, tab_quiz, tab_cards, tab_map, tab_ask = st.tabs(
     ["📝 노트", "📋 요약·목차", "❓ 퀴즈", "🃏 플래시카드", "🧠 마인드맵", "💬 질문하기"]

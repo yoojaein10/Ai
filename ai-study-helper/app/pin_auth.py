@@ -111,3 +111,36 @@ def add_user_job(user_id: str, job_id: str) -> None:
     if entry is not None and job_id not in entry["jobs"]:
         entry["jobs"].append(job_id)
         _save(data)
+
+
+def remove_user_job(user_id: str, job_id: str) -> None:
+    """job을 사용자 목록에서 제거 (소유 해제)."""
+    data = _load()
+    entry = _find_user(data, user_id)
+    if entry is not None and job_id in entry["jobs"]:
+        entry["jobs"].remove(job_id)
+        _save(data)
+
+
+def job_owner_count(job_id: str) -> int:
+    """이 job을 소유한 사용자 수 — 0이면 실제 파일을 지워도 안전하다."""
+    return sum(1 for e in _load()["users"].values() if job_id in e["jobs"])
+
+
+def delete_job(user_id: str, job_id: str) -> bool:
+    """내 목록에서 삭제하고, 아무도 소유하지 않으면 데이터도 정리한다.
+
+    같은 자료를 여러 사용자가 분석하면 캐시(job 폴더)를 공유하므로,
+    남은 소유자가 있는 동안은 파일을 지우면 안 된다.
+    반환: 실제 파일까지 삭제됐으면 True.
+    """
+    import shutil
+
+    remove_user_job(user_id, job_id)
+    if job_owner_count(job_id) > 0:
+        return False
+    for target in (config.JOBS_DIR / job_id, config.BASE_DIR / "vectorstore" / job_id):
+        # Windows에서 벡터DB 파일이 열려 있으면 삭제가 실패할 수 있다 —
+        # 소유 해제는 이미 됐으므로(보이지 않음) 실패해도 치명적이지 않다.
+        shutil.rmtree(target, ignore_errors=True)
+    return True

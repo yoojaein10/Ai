@@ -76,6 +76,31 @@ def test_add_job_idempotent():
     assert pin_auth.get_user_jobs(u1) == ["job-a"]
 
 
+def test_remove_user_job():
+    u1, _ = pin_auth.register_pin("1111")
+    pin_auth.add_user_job(u1, "job-a")
+    pin_auth.remove_user_job(u1, "job-a")
+    assert pin_auth.get_user_jobs(u1) == []
+
+
+def test_delete_job_keeps_files_while_shared(isolated_storage):
+    """두 사용자가 공유하는 job은 한 명이 지워도 파일이 남아야 한다."""
+    _make_job(isolated_storage, "shared-job")
+    u1, _ = pin_auth.register_pin("1111")  # 첫 사용자가 승계
+    u2, _ = pin_auth.register_pin("2222")
+    pin_auth.add_user_job(u2, "shared-job")
+
+    purged = pin_auth.delete_job(u1, "shared-job")
+    assert not purged  # u2가 아직 소유 — 파일 유지
+    assert (isolated_storage / "jobs" / "shared-job").exists()
+    assert pin_auth.get_user_jobs(u1) == []
+    assert pin_auth.get_user_jobs(u2) == ["shared-job"]
+
+    purged = pin_auth.delete_job(u2, "shared-job")
+    assert purged  # 마지막 소유자 삭제 → 파일도 정리
+    assert not (isolated_storage / "jobs" / "shared-job").exists()
+
+
 def test_first_user_inherits_existing_jobs(isolated_storage):
     """PIN 도입 전 분석 자료는 첫 등록자(서비스 주인)가 승계한다."""
     _make_job(isolated_storage, "old-job-1")
