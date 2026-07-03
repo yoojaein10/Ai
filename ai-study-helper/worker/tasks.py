@@ -89,7 +89,14 @@ def t_slides(job_id: str) -> str:
     from src.slides import analyze_job
 
     meta = json.loads((config.JOBS_DIR / job_id / "meta.json").read_text(encoding="utf-8"))
-    _stage(job_id, "slides", lambda: analyze_job(job_id), skipped_if=not meta.get("video_path"))
+    _stage(
+        job_id,
+        "slides",
+        lambda: analyze_job(
+            job_id, on_progress=lambda f: status.update_stage(job_id, "slides", f)
+        ),
+        skipped_if=not meta.get("video_path"),
+    )
     return job_id
 
 

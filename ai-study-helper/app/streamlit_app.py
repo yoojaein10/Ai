@@ -14,6 +14,7 @@
 
 import json
 import sys
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -115,14 +116,60 @@ MEDIA_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".wmv", ".mp3", ".m4a", "
 DOC_EXTS = {".pdf", ".docx", ".pptx", ".xlsx", ".txt", ".md"}
 
 
+# ---------- 비밀번호(PIN) 게이트 (필수) ----------
+# 4자리 비밀번호가 곧 계정이다: 등록(중복 불가) → 입장 → 자기 자료만 보임.
+# 구글 OAuth는 실서비스 단계에서 교체 예정 (.streamlit/secrets.toml.example 참고).
+
+from pin_auth import add_user_job, get_user_jobs, register_pin, verify_pin
+
+if "user_id" not in st.session_state:
+    st.markdown(
+        f"""<div class="lm-hero" style="max-width:560px;margin:60px auto 24px;">
+        <div class="lm-badge">✦ 비밀번호를 입력하세요</div>
+        <h1 style="font-size:1.9rem;">🎓 {BRAND}</h1>
+        <p>{TAGLINE}</p>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    _, mid, _ = st.columns([1, 1.2, 1])
+    with mid:
+        tab_enter, tab_new = st.tabs(["입장", "새 비밀번호 만들기"])
+        with tab_enter:
+            pin = st.text_input("비밀번호 (숫자 4자리)", type="password", max_chars=4, key="pin-enter")
+            if st.button("입장", type="primary", use_container_width=True, key="btn-enter"):
+                user_id = verify_pin(pin)
+                if user_id:
+                    st.session_state.user_id = user_id
+                    st.rerun()
+                else:
+                    st.error("등록되지 않은 비밀번호입니다.")
+        with tab_new:
+            new_pin = st.text_input("사용할 비밀번호 (숫자 4자리)", type="password", max_chars=4, key="pin-new")
+            new_pin2 = st.text_input("한 번 더 입력", type="password", max_chars=4, key="pin-new2")
+            if st.button("등록하고 시작하기", type="primary", use_container_width=True, key="btn-new"):
+                if new_pin != new_pin2:
+                    st.error("두 입력이 일치하지 않습니다.")
+                else:
+                    user_id, err = register_pin(new_pin)
+                    if err:
+                        st.error(err)  # 형식 오류 또는 중복
+                    else:
+                        st.session_state.user_id = user_id
+                        st.rerun()
+    st.stop()
+
+
 # ---------- 데이터 접근 ----------
 
 def list_jobs() -> list[dict]:
-    """분석 히스토리: job 폴더들을 최신순으로."""
+    """분석 히스토리: 현재 사용자 소유 job만, 최신순으로 (비밀번호별 격리)."""
     jobs = []
     if not config.JOBS_DIR.exists():
         return jobs
+    owned = set(get_user_jobs(st.session_state.user_id))
     for meta_path in config.JOBS_DIR.glob("*/meta.json"):
+        if meta_path.parent.name not in owned:
+            continue
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -150,41 +197,68 @@ def load_json(job_id: str, filename: str):
 # ---------- 파이프라인 인라인 실행 ----------
 
 def run_pipeline_ui(source: str, detail: str, youtube_video: bool = True) -> str:
-    from src.align import align_job
-    from src.ingest import ingest
-    from src.notes import generate_notes
-    from src.rag import build_index
+    """분석을 백그라운드 워커 큐에 등록하고 즉시 job_id를 반환한다.
 
-    with st.status("분석 파이프라인 실행 중...", expanded=True) as box:
-        st.write("① 입력 접수·오디오 추출...")
-        result = ingest(source, youtube_video=youtube_video)
-        job_id = result.job_id
+    브라우저를 닫아도 분석은 워커에서 계속되고, 재접속하면 진행률/결과가 보인다.
+    (이전의 세션 내 인라인 실행은 브라우저를 닫으면 중단되는 문제가 있었다.)
+    """
+    from kombu.exceptions import OperationalError
 
-        if result.audio_path:
-            st.write("② GPU 음성 인식 (STT)...")
-            bar = st.progress(0.0)
-            from src.transcribe import transcribe_job
+    from worker.tasks import enqueue_pipeline
 
-            transcribe_job(job_id, on_progress=lambda f: bar.progress(min(f, 1.0)))
-            bar.progress(1.0)
-
-        if result.video_path:
-            st.write("③ 슬라이드 감지·Gemini 비전 분석 (무료 티어 보호로 시간이 걸립니다)...")
-            from src.slides import analyze_job
-
-            analyze_job(job_id)
-
-        st.write("④ 음성·슬라이드 정렬...")
-        align_job(job_id)
-
-        st.write("⑤ 구조화 노트·요약·목차 생성...")
-        generate_notes(job_id, detail=detail)
-
-        st.write("⑥ RAG 인덱스 구축...")
-        build_index(job_id)
-
-        box.update(label="분석 완료!", state="complete", expanded=False)
+    try:
+        job_id = enqueue_pipeline(source, detail=detail, youtube_video=youtube_video)
+    except OperationalError:
+        st.error(
+            "백그라운드 워커(Redis)가 꺼져 있습니다.\n\n"
+            "프로젝트 폴더에서 `run_all.ps1`을 실행해 서비스 전체를 켜주세요."
+        )
+        st.stop()
+    add_user_job(st.session_state.user_id, job_id)  # 시작 시점 소유 등록
     return job_id
+
+
+def render_progress(job_id: str) -> None:
+    """진행 중 화면: 단계별 상태 + 전체 진행률 + 예상 남은 시간. 4초마다 갱신."""
+    from src import status as status_mod
+
+    data = status_mod.read_status(job_id)
+    if data is None:
+        st.warning("분석 상태 정보가 없습니다. 같은 입력으로 다시 분석을 시작하면 이어서 진행됩니다.")
+        return
+
+    if data["state"] == "error":
+        st.error(f"분석 중 오류가 발생했습니다: {data['error']}\n\n같은 입력으로 다시 시작하면 중단 지점부터 재개합니다.")
+        return
+
+    st.markdown("### 🔬 분석 진행 중")
+    st.caption("브라우저를 닫아도 분석은 계속됩니다. 나중에 다시 접속해도 됩니다.")
+
+    overall = status_mod.overall_progress(data)
+    st.progress(overall, text=f"전체 {overall:.0%}")
+
+    eta = status_mod.estimate_remaining(job_id, data)
+    if eta:
+        remaining, total = eta
+        if remaining >= 90:
+            st.info(f"⏱ 예상 남은 시간: 약 **{remaining / 60:.0f}분** (총 예상 {total / 60:.0f}분)")
+        else:
+            st.info("⏱ 예상 남은 시간: **1분 이내**")
+
+    stage_names = {
+        "ingest": "① 입력 접수·오디오 추출", "transcribe": "② GPU 음성 인식",
+        "slides": "③ 슬라이드 비전 분석", "align": "④ 음성·화면 정렬",
+        "notes": "⑤ 노트·요약·목차", "index": "⑥ 질문 인덱스",
+    }
+    icons = {"done": "✅", "skipped": "⏭️", "running": "🔄", "error": "❌", "pending": "⬜"}
+    for key, label in stage_names.items():
+        entry = data["stages"].get(key, {})
+        icon = icons.get(entry.get("status", "pending"), "⬜")
+        pct = f" — {entry.get('progress', 0):.0%}" if entry.get("status") == "running" else ""
+        st.markdown(f"{icon} {label}{pct}")
+
+    time.sleep(4)
+    st.rerun()
 
 
 # ---------- 사이드바 ----------
@@ -195,6 +269,10 @@ with st.sidebar:
         f'<div class="lm-side-sub">{BRAND_EN} — AI Study Companion</div>',
         unsafe_allow_html=True,
     )
+    st.caption(f"👤 사용자 {st.session_state.user_id[:5]}")
+    if st.button("로그아웃", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
     st.write("")
     if st.button("➕ 새 분석", type="primary", use_container_width=True):
         st.session_state.pop("job_id", None)
@@ -320,7 +398,7 @@ chapters_data = load_json(job_id, "chapters.json") or {}
 notes_path = job_dir(job_id) / "notes.md"
 
 if not notes_path.exists():
-    st.warning("이 자료는 분석이 완료되지 않았습니다. 사이드바에서 '새 분석'으로 다시 실행하세요.")
+    render_progress(job_id)  # 진행률 + 예상 시간, 자동 갱신
     st.stop()
 
 # 결과 헤더: 자료명 + 요약 통계 칩

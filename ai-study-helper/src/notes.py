@@ -191,15 +191,26 @@ def generate_notes(job_id: str, detail: str = "중", bilingual: bool = False) ->
     if len(chunk_notes) != len(chunks):  # 청크 구성이 바뀌었으면 처음부터
         chunk_notes = [None] * len(chunks)
 
-    print(f"map: 청크 {len(chunks)}개 (완료 {sum(1 for c in chunk_notes if c)}개)")
-    for i, chunk in enumerate(chunks):
-        if chunk_notes[i]:
-            continue
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    from .llm import MIN_CALL_INTERVAL_SEC
+
+    workers = 8 if MIN_CALL_INTERVAL_SEC <= 0 else 1  # 유료 티어면 map 병렬
+    print(f"map: 청크 {len(chunks)}개 (완료 {sum(1 for c in chunk_notes if c)}개, 동시 {workers})")
+    save_lock = threading.Lock()
+
+    def map_one(i: int) -> None:
         chunk_notes[i] = client.generate(
-            MAP_PROMPT.format(detail=DETAIL_GUIDE[detail], extra=extra, content=_render_chunk(chunk))
+            MAP_PROMPT.format(detail=DETAIL_GUIDE[detail], extra=extra, content=_render_chunk(chunks[i]))
         )
-        chunk_notes_path.write_text(json.dumps(chunk_notes, ensure_ascii=False), encoding="utf-8")
+        with save_lock:  # 청크별 체크포인트 — 병렬이어도 저장은 직렬화
+            chunk_notes_path.write_text(json.dumps(chunk_notes, ensure_ascii=False), encoding="utf-8")
         print(f"  청크 {i + 1}/{len(chunks)} 완료")
+
+    todo = [i for i in range(len(chunks)) if not chunk_notes[i]]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(map_one, todo))
 
     # --- reduce: 통합 노트 ---
     print("reduce: 노트 통합 중...")

@@ -10,6 +10,7 @@
 """
 
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -38,12 +39,23 @@ class GeminiClient:
         self.model = model
         self.call_count = 0
         self._last_call_at = 0.0
+        self._lock = threading.Lock()  # 병렬 호출(유료 티어) 시 간격·카운트 보호
 
     def _throttle(self) -> None:
-        """호출 간 최소 간격을 지켜 분당 한도 초과를 예방한다."""
-        wait = MIN_CALL_INTERVAL_SEC - (time.monotonic() - self._last_call_at)
+        """호출 간 최소 간격을 지켜 분당 한도 초과를 예방한다 (스레드 안전).
+
+        유료 티어(GEMINI_MIN_INTERVAL=0)에서는 no-op — 병렬 호출이 자유롭다."""
+        if MIN_CALL_INTERVAL_SEC <= 0:
+            return
+        with self._lock:
+            wait = MIN_CALL_INTERVAL_SEC - (time.monotonic() - self._last_call_at)
+            self._last_call_at = time.monotonic() + max(wait, 0.0)
         if wait > 0:
             time.sleep(wait)
+
+    def _count(self) -> None:
+        with self._lock:
+            self.call_count += 1
 
     def generate(self, prompt: str, images: list[str | Path] | None = None, fast: bool = False) -> str:
         """텍스트(+선택적 이미지) 프롬프트 → 응답 텍스트.
@@ -74,11 +86,10 @@ class GeminiClient:
                 time.sleep(retry_wait)
             self._throttle()
             try:
-                self._last_call_at = time.monotonic()
                 response = self._client.models.generate_content(
                     model=self.model, contents=contents, config=gen_config
                 )
-                self.call_count += 1
+                self._count()
                 if not response.text:
                     raise RuntimeError("Gemini가 빈 응답을 반환했습니다 (thinking 소진 추정)")
                 return response.text
@@ -109,7 +120,6 @@ class GeminiClient:
         current_prompt = prompt
         for attempt in range(max_retries + 1):
             self._throttle()
-            self._last_call_at = time.monotonic()
             try:
                 response = self._client.models.generate_content(
                     model=self.model,
@@ -119,7 +129,7 @@ class GeminiClient:
                         response_schema=schema,
                     ),
                 )
-                self.call_count += 1
+                self._count()
                 parsed = response.parsed
                 if parsed is None:
                     raise ValueError(f"스키마 파싱 실패: {response.text[:300]}")
@@ -147,13 +157,12 @@ class GeminiClient:
         for i in range(0, len(texts), EMBED_BATCH_SIZE):
             batch = texts[i : i + EMBED_BATCH_SIZE]
             self._throttle()
-            self._last_call_at = time.monotonic()
             response = self._client.models.embed_content(
                 model=EMBEDDING_MODEL,
                 contents=batch,
                 config=types.EmbedContentConfig(task_type=task_type),
             )
-            self.call_count += 1
+            self._count()
             vectors.extend([e.values for e in response.embeddings])
         return vectors
 

@@ -29,3 +29,4 @@ httpx                # API 테스트 클라이언트
 
 # === 11단계: 웹 UI ===
 streamlit            # 웹 UI
+Authlib              # 구글 OIDC 로그인 (st.login)

@@ -129,7 +129,12 @@ def _load(path: Path) -> list[Slide]:
     return [Slide(**s) for s in json.loads(path.read_text(encoding="utf-8"))]
 
 
-def analyze_job(job_id: str, threshold: float = DETECT_THRESHOLD, detect_only: bool = False) -> list[Slide]:
+def analyze_job(
+    job_id: str,
+    threshold: float = DETECT_THRESHOLD,
+    detect_only: bool = False,
+    on_progress=None,
+) -> list[Slide]:
     """job의 영상에서 슬라이드를 감지·캡처하고 Gemini 비전으로 내용을 추출한다.
 
     단계별 체크포인트:
@@ -146,41 +151,59 @@ def analyze_job(job_id: str, threshold: float = DETECT_THRESHOLD, detect_only: b
     if not video_path:
         raise ValueError(f"이 job에는 영상이 없습니다 (유형: {meta.get('source_type')})")
 
+    notify = on_progress or (lambda f: None)
+
     slides_path = job_dir / "slides.json"
     if slides_path.exists():
         slides = _load(slides_path)
         print(f"체크포인트 발견: 슬라이드 {len(slides)}장 (분석 완료 {sum(1 for s in slides if s.content)}장)")
     else:
         print("1/2 슬라이드 전환 감지 중...")
+        notify(0.05)  # 감지는 내부 진행률을 알 수 없어 시작·종료 시점만 보고
         scenes = detect_transitions(video_path, threshold=threshold)
         print(f"장면 {len(scenes)}개 감지 → 프레임 캡처·중복 제거 중...")
         slides = capture_slides(video_path, scenes, job_dir / "slides")
         _save(slides, slides_path)
         print(f"슬라이드 {len(slides)}장 확정")
 
+    notify(0.3)  # 감지·캡처 완료 = 30% (이후 70%는 비전 — 실측상 비전이 더 오래 걸린다)
+
     if detect_only:
         return slides
 
     pending = [s for s in slides if s.content is None]
     if pending:
-        from .llm import get_client
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        from .llm import MIN_CALL_INTERVAL_SEC, get_client
 
         client = get_client()
-        print(f"2/2 Gemini 비전 분석: {len(pending)}장 (호출 간격 제한으로 시간이 걸립니다)")
-        failed = 0
-        for i, slide in enumerate(pending, start=1):
+        # 유료 티어(간격 0)면 병렬 8, 무료 티어면 순차 — 간격 제한과 병렬은 무의미한 조합
+        workers = 8 if MIN_CALL_INTERVAL_SEC <= 0 else 1
+        print(f"2/2 Gemini 비전 분석: {len(pending)}장 (동시 {workers}장)")
+
+        lock = threading.Lock()
+        state = {"done": 0, "failed": 0}
+
+        def analyze_one(slide: Slide) -> None:
             try:
                 # fast=True: 텍스트 추출에 thinking 불필요 — 빈 응답 방지 + 속도
-                slide.content = client.generate(VISION_PROMPT, images=[slide.image_path], fast=True)
+                content = client.generate(VISION_PROMPT, images=[slide.image_path], fast=True)
             except Exception as e:
                 # 한 장의 실패가 전체 분석을 막으면 안 된다 — 표시하고 계속
-                slide.content = "[분석 실패]"
-                failed += 1
-                print(f"  [{i}/{len(pending)}] slide_{slide.index:03d} 실패: {str(e)[:80]}")
-            _save(slides, slides_path)  # 한 장마다 저장 — 중단돼도 이어서 재시작
-            if slide.content != "[분석 실패]":
-                print(f"  [{i}/{len(pending)}] slide_{slide.index:03d} 완료")
-        print(f"비전 분석 완료 (Gemini 호출 {client.call_count}회, 실패 {failed}장)")
+                content = "[분석 실패]"
+                print(f"  slide_{slide.index:03d} 실패: {str(e)[:80]}")
+            with lock:  # 체크포인트 저장·진행률은 직렬화 (파일 쓰기 경합 방지)
+                slide.content = content
+                state["done"] += 1
+                state["failed"] += content == "[분석 실패]"
+                _save(slides, slides_path)  # 한 장마다 저장 — 중단돼도 이어서 재시작
+                notify(0.3 + 0.7 * state["done"] / len(pending))
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            list(pool.map(analyze_one, pending))
+        print(f"비전 분석 완료 (Gemini 호출 {client.call_count}회, 실패 {state['failed']}장)")
     return slides
 
 

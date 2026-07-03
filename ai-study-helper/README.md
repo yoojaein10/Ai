@@ -44,12 +44,19 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 copy .env.example .env    # GEMINI_API_KEY 입력
 
-# 웹 UI만 (파이프라인 인라인 실행 — 개인 사용은 이것으로 충분)
-.venv\Scripts\streamlit run app\streamlit_app.py
-
-# 전체 스택 (Redis + Celery worker + FastAPI + UI)
+# 전체 스택 실행 (Redis + Celery worker + FastAPI + UI) — 표준 실행 방법
 .\run_all.ps1
+
+# 외부 공유 (Cloudflare Quick Tunnel — 공개 URL 발급, 창 닫으면 즉시 무효)
+.\share_url.ps1
 ```
+
+### 접근 통제 (비밀번호 게이트)
+
+- 첫 화면에서 **4자리 비밀번호**로 입장: 신규 등록(중복 불가) 또는 기존 번호 입력
+- 사용자별 자료 격리 — 자기가 분석한 자료만 히스토리에 보인다 (PIN은 해시로만 저장)
+- 분석은 백그라운드 워커에서 실행 — **브라우저를 닫아도 계속**되고, 재접속하면 진행률·예상 남은 시간이 보인다
+- 실서비스 전환 시 구글 OAuth로 교체 예정 (`.streamlit/secrets.toml.example` 참고)
 
 CLI로 단계별 실행도 가능:
 
@@ -91,6 +98,8 @@ CLI로 단계별 실행도 가능:
 | RAG 인덱스 / 질의 | 0.3분 / 질문당 수 초 — 근거에 "슬라이드 63, 1:03:08" 수준 정밀도 |
 
 **22분 강의 (335MB):** 오디오 4초 → STT 2분 46초(배치 미적용 시 7.9배) → 슬라이드 45장 → 동일 입력 재처리 시 전 단계 캐시 적중 2초.
+
+**유료 티어 병렬 모드** (`GEMINI_MIN_INTERVAL=0`): 비전 8병렬 + 노트 map 병렬 — 실측 기준 슬라이드 149장 + 노트 + 인덱스가 **2.8분** (장당 7초 → 0.5초). 무료 키에서는 자동으로 순차 모드(호출 간격 6초)로 동작한다.
 
 ## 시행착오 기록 (그대로 남긴다 — 설계 근거)
 
