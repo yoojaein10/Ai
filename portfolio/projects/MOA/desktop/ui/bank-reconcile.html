@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 일계표 대사</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .toolbar{display:block}
+    .br-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .br-toolbar .grp{display:flex;gap:6px;align-items:center}
+    .br-toolbar .grp>strong{white-space:nowrap;flex:none}
+    .br-toolbar input[type=date]{width:auto}
+    .br-toolbar select{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:#fff}
+    .br-toolbar label.chk{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:650;color:var(--muted);white-space:nowrap}
+    .br-toolbar label.chk input{width:15px;height:15px;margin:0}
+    .br-hint{font-size:12px;color:var(--muted);margin:6px 0}
+    .br-summary{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin:12px 0;align-items:center}
+    .br-summary b{font-variant-numeric:tabular-nums}
+    .br-summary .ok{color:#1b7a43;font-weight:800}
+    .br-summary .bad{color:#c62828;font-weight:800}
+    .br-summary .muted{color:var(--muted)}
+    .br-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+    /* 공통 .table-wrap 은 화면 높이만큼 늘어나 아래 접힌 표를 화면 밖으로 밀어낸다 — 내용만큼만 */
+    .br-card .table-wrap{height:auto;min-height:0;max-height:62vh}
+    .br-card h2{margin:0;font-size:14px;padding:11px 16px;background:#fafbfb;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .br-card h2 .cnt{font-weight:800}
+    .br-card h2 button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 10px;font-weight:700;cursor:pointer;font-size:12px}
+    .br-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+    .br-table th,.br-table td{padding:6px 8px;border-bottom:1px solid #f0f3f1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .br-table th{background:#fafbfb;font-weight:700;color:var(--muted);position:relative;overflow:visible}
+    .br-table th.num,.br-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .br-table td.diff0{color:#1b7a43}
+    .br-table td.diffx{color:#c62828;font-weight:700}
+    .br-table tr.acct{cursor:pointer}
+    .br-table tr.acct:hover td{background:#f7fafc}
+    /* 공통 td:first-child 가 고정폭·굵은 초록(관리번호용)이라 상세 칸(colspan 첫 칸)까지 그렇게 보였다 */
+    .br-table tr.detail td{background:#fbfcfc;white-space:normal;padding:8px 12px 12px;font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;font-weight:400;color:#1f2933}
+    .br-mini td:first-child{font-family:inherit;font-weight:400;color:var(--muted)}
+    .br-table tr.hq td{font-weight:700}
+    .br-badge{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:800;line-height:18px}
+    .br-badge.MATCHED{background:#e3f4ea;color:#1b7a43}
+    .br-badge.TOTAL_ONLY{background:#fff4d6;color:#8a6100}
+    .br-badge.DIFF{background:#fde7e7;color:#c62828}
+    .br-badge.UNMAPPED{background:#e8eaf6;color:#3949ab}
+    .br-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    @media (max-width:1100px){.br-detail{grid-template-columns:1fr}}
+    .br-cancel{grid-column:1/-1;font-size:12px;color:#8a6100;background:#fff7e0;border-radius:8px;padding:6px 10px}
+    .br-side{border:1px solid var(--line);border-left:4px solid #1b7a43;border-radius:10px;padding:10px 12px;background:#fff;min-width:0}
+    .br-side.TOTAL_ONLY{border-left-color:#e0a800}
+    .br-side.DIFF{border-left-color:#c62828}
+    .br-side-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+    .br-side-head strong{font-size:13px;color:#1f2933}
+    .br-side-head b{font-variant-numeric:tabular-nums;color:#1f2933}
+    .br-side-head .ok b{color:#1b7a43}
+    .br-side-head .bad b{color:#c62828}
+    .br-side h4{margin:10px 0 4px;font-size:12px;color:#1f2933}
+    .br-side h4 span{font-weight:500;color:var(--muted);margin-left:6px}
+    .br-mini-wrap{max-height:260px;overflow:auto;border:1px solid #eef1ef;border-radius:8px}
+    .br-mini{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+    .br-mini th{position:sticky;top:0;background:#fafbfb;font-weight:600;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+    .br-mini td{padding:4px 8px;border-bottom:1px solid #f0f3f1;white-space:normal;vertical-align:top;color:#1f2933}
+    .br-mini td.t,.br-mini th.t{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+    .br-mini td.muted{color:var(--muted)}
+    .br-mini td.num,.br-mini th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:650}
+    .br-mini tbody tr:nth-child(even) td{background:#fafbfb}
+    .br-none{font-size:12px;color:#1b7a43;padding:8px 0 2px}
+    .br-note{font-size:12px;color:#8a6100;background:#fff7e0;border-radius:8px;padding:6px 10px;margin:8px 0 2px}
+    .br-pairs{font-size:11px;color:var(--muted);margin-top:8px}
+    .br-collapsed .br-body{display:none}
+    .br-export{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 12px;font-weight:700;cursor:pointer}
+    .br-export:disabled{opacity:.5;cursor:default}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>일계표 대사</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="일계표 대사 조회">
+      <div class="br-toolbar">
+        <div class="grp"><strong>거래일</strong><input id="dateFrom" type="date"> ~ <input id="dateTo" type="date"></div>
+        <div class="grp"><strong>회계단위</strong><select id="division"><option value="">전체</option><option value="1000">1000 본사</option></select></div>
+        <label class="chk"><input id="diffOnly" type="checkbox"> 차이만 보기</label>
+        <button id="runButton" class="primary-button" type="button">대사</button>
+        <button id="exportButton" class="br-export" type="button" disabled>엑셀 내보내기</button>
+      </div>
+      <p class="br-hint">사이버브랜치 계좌 거래(입금·출금)를 아마란스 보통예금(1030000) 전표와 계좌·일자로 맞춥니다. 머리글 경계를 끌면 열 폭이 바뀝니다. 전표 캐시는 10분 간격으로 갱신됩니다.</p>
+    </section>
+    <div id="summary" class="br-summary"></div>
+    <div>
+        <section class="br-card">
+          <h2>계좌별 대사 <span class="cnt" id="rowsCount"></span></h2>
+          <div class="table-wrap">
+            <table class="br-table" id="rowsTable">
+              <colgroup>
+                <col style="width:92px"><col style="width:150px"><col style="width:150px"><col style="width:70px">
+                <col style="width:120px"><col style="width:120px"><col style="width:100px">
+                <col style="width:120px"><col style="width:120px"><col style="width:100px"><col style="width:120px">
+              </colgroup>
+              <thead><tr>
+                <th>일자</th><th>계좌</th><th>거래처</th><th>회계단위</th>
+                <th class="num">입금 은행</th><th class="num">입금 전표</th><th class="num">입금 차이</th>
+                <th class="num">출금 은행</th><th class="num">출금 전표</th><th class="num">출금 차이</th><th>상태</th>
+              </tr></thead>
+              <tbody id="rows"><tr><td colspan="11" class="br-hint">거래일을 고르고 "대사"를 누르세요.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="br-card br-collapsed" id="voucherOnlyCard" style="margin-top:14px">
+          <h2><span>사이버브랜치에 없는 거래처(전표만) <span class="cnt" id="voucherOnlyCount"></span> — 대사 대상 아님</span><button id="voucherOnlyToggle" type="button">펼치기</button></h2>
+          <div class="br-body table-wrap">
+            <table class="br-table">
+              <thead><tr><th style="width:92px">일자</th><th>거래처</th><th style="width:80px">회계단위</th><th class="num" style="width:70px">차변 건</th><th class="num" style="width:130px">차변 합계</th><th class="num" style="width:70px">대변 건</th><th class="num" style="width:130px">대변 합계</th></tr></thead>
+              <tbody id="voucherOnly"></tbody>
+            </table>
+          </div>
+        </section>
+    </div>
+    <div id="empty" class="br-hint hidden"></div>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/bank-reconcile.js?v=20260826-3"></script>
+</body>
+</html>

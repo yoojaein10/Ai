@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 기간별 매출실적</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .period-toolbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .period-group{display:flex;gap:6px;align-items:center}
+    /* 공통 CSS의 input{width:100%}가 라벨을 짓눌러 '전기'가 세로로 꺾이므로 고정 폭으로 되돌린다 */
+    .period-group>strong{margin-right:2px;flex:none;white-space:nowrap}
+    .period-group input[type=date],.period-group select{width:auto;height:26px;padding:0 6px;font-size:12px;border-radius:8px}
+    /* 전기(위)·당기(아래)를 두 줄로 쌓는다 (2026-07-23 사용자 요청) */
+    .period-stack{display:flex;flex-direction:column;gap:6px}
+    /* 좌(근거자료)·우(증감표) 폭은 가운데 경계를 드래그해 조절한다 (panel-resize.js).
+       증감표(약 770px)가 기본으로 다 보이도록 오른쪽을 넓게 잡고, 왼쪽 최소 폭은 낮춘다. */
+    .sales-workspace{--detail-width:740px}
+    .sales-workspace.has-panel-resizer{grid-template-columns:minmax(360px,1fr) 10px var(--detail-width,740px)}
+    .stats-table td.number,.detail-table td.number{text-align:right}
+    .stats-table tr.total-row td{font-weight:700;background:#eef2f4;border-top:2px solid #9ca3af}
+    .rate-down{color:#c62828}
+    /* 증감내역 표 다듬기: 머리말 가운데 정렬, 기간은 작은 글씨 둘째 줄로 */
+    .stats-table th{vertical-align:middle;text-align:center}
+    .stats-table th.number,.detail-table th.number{text-align:center}
+    .stats-table thead small{display:block;margin-top:2px;font-size:9px;font-weight:600;
+      color:#8a949f;letter-spacing:0;font-variant-numeric:tabular-nums}
+    /* 당기·전기·증감 블록 경계선 (머리말 2줄 구조라 줄별로 지정) */
+    .stats-table thead tr:first-child th:nth-child(2),
+    .stats-table thead tr:first-child th:nth-child(3),
+    .stats-table thead tr:first-child th:nth-child(4),
+    .stats-table thead tr:nth-child(2) th:nth-child(3),
+    .stats-table tbody td:nth-child(2),.stats-table tbody td:nth-child(4),
+    .stats-table tbody td:nth-child(6){border-left:1px solid var(--line)}
+    .stats-table tbody tr:nth-child(even) td{background:#fafbfb}
+    .stats-table tbody tr.total-row td{background:#eef2f4}
+    .stats-table td.purpose-cell{font-weight:650;text-align:left}
+    /* 분류 행 클릭 → 왼쪽 상세 필터 (선택 행 강조는 얼룩무늬·합계 배경보다 뒤에 둬서 우선 적용) */
+    .stats-table tbody tr{cursor:pointer}
+    .stats-table tbody tr.filter-on td{background:#dcebe1}
+    .detail-table{white-space:nowrap}
+    .detail-table td.kb-yak-label{font-size:10px;letter-spacing:-.35px}
+    /* 인쇄 (다른 화면과 같은 방식 — receivables.html 참고). 여백을 0으로 두면
+       브라우저가 찍는 머리말·바닥글(주소·제목·쪽번호)이 사라지고, 종이 가장자리
+       여백은 .print-area 안쪽 패딩으로 대신 준다. */
+    @media print{
+      @page{ size: A4 landscape; margin: 0; }
+      .print-area{ padding: 12mm 15mm; }
+    }
+    /* fitPrintZoom()이 화면 상태에서 자연폭을 재므로 인쇄와 같은 치수를 써야 배율이 정확하다 */
+    .print-area table{ border-collapse: collapse; table-layout: auto; margin: 0 auto 16px;
+      border: 0.5pt solid #9a9a9a; }
+    .print-area th, .print-area td{ padding: 3px 5px; font-size: 9.5px; white-space: nowrap;
+      border: 0.5pt solid #9a9a9a; }
+    .print-area h2{ font-size: 12px; margin: 14px 0 4px; }
+    /* 인쇄 정렬 (2026-08-27 사용자 요청): 거래처만 왼쪽, 나머지는 머리말·숫자까지 전부 가운데 */
+    .print-area th, .print-area td{ text-align: center; }
+    .print-area td.number, .print-area th.number{ text-align: center; }
+    .print-area th.left, .print-area td.left{ text-align: left; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>기간별 매출실적</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar period-toolbar" aria-label="검색 조건">
+      <div class="period-group">
+        <strong>본·지사</strong>
+        <select id="officeCode"></select>
+      </div>
+      <div class="period-stack">
+        <div class="period-group">
+          <strong>전기</strong>
+          <input id="prevFrom" type="date"> ~ <input id="prevTo" type="date">
+        </div>
+        <div class="period-group">
+          <strong>당기</strong>
+          <input id="dateFrom" type="date"> ~ <input id="dateTo" type="date">
+        </div>
+      </div>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+    <section class="workspace sales-workspace" data-min-left="360">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>매출 상세 (당기)</h2><p id="detailSummary">조회 중...</p></div>
+          <div class="heading-actions">
+            <button id="printButton" class="export-button print-button" type="button" title="지금 조회된 매출 상세를 인쇄합니다">인쇄</button>
+            <button id="detailExportButton" class="export-button" type="button">엑셀 내보내기</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="detailTable" class="detail-table">
+            <colgroup>
+              <col style="width:120px"><col style="width:92px"><col style="width:95px">
+              <col style="width:85px"><col style="width:100px"><col style="width:88px">
+              <col style="width:150px"><col style="width:70px"><col style="width:70px">
+              <col style="width:90px"><col style="width:90px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>감정서번호</th><th>발송일자</th><th>감정목적</th><th>업무구분</th>
+                <th class="number">전표매출액</th><th>전표일자</th><th>거래처</th>
+                <th>담당자</th><th>조사자</th>
+                <th class="number">순수수료</th><th class="number">청구액</th>
+              </tr>
+            </thead>
+            <tbody id="detailRows"></tbody>
+          </table>
+          <div id="detailEmpty" class="empty hidden">당기 매출 전표가 없습니다.</div>
+        </div>
+      </article>
+      <aside class="detail-panel stats-panel">
+        <div class="panel-heading">
+          <div><h2>목적별 증감내역</h2><p id="resultSummary"></p></div>
+          <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+        </div>
+        <div class="table-wrap">
+          <table id="statsTable" class="stats-table">
+            <colgroup>
+              <col style="width:90px"><col style="width:56px"><col style="width:120px">
+              <col style="width:56px"><col style="width:120px"><col style="width:120px">
+              <col style="width:78px"><col style="width:78px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowspan="2">구분</th>
+                <th colspan="2" id="curHead">당기</th>
+                <th colspan="2" id="prevHead">전기</th>
+                <th rowspan="2" class="number">증감액</th>
+                <th rowspan="2" class="number">증감률(%)</th>
+                <th rowspan="2" class="number">달성률(%)</th>
+              </tr>
+              <tr>
+                <th class="number">건수</th><th class="number">금액</th>
+                <th class="number">건수</th><th class="number">금액</th>
+              </tr>
+            </thead>
+            <tbody id="statsRows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조회 결과가 없습니다.</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/panel-resize.js"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/sales-stats.js?v=20260827-1"></script>
+</body>
+</html>

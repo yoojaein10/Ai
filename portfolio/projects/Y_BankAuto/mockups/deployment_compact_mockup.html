@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank24 담보 데이터 추출기 - 배포용 목업</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f5f8;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #d7dde6;
+      --line-strong: #b9c3d0;
+      --text: #202733;
+      --muted: #687486;
+      --blue: #1264d8;
+      --blue-soft: #e9f2ff;
+      --green: #16864b;
+      --green-soft: #e8f7ef;
+      --amber: #a86712;
+      --amber-soft: #fff4dc;
+      --red: #c43b3b;
+      --red-soft: #fff0f0;
+      font-family: "Segoe UI", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 860px;
+      min-height: 620px;
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button { cursor: pointer; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 56px minmax(0, 1fr) 190px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      border-radius: 2px;
+      background: var(--blue);
+      transform: rotate(45deg);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 28px;
+      padding: 0 11px;
+      border-radius: 999px;
+      color: #31506f;
+      background: #edf1f5;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-badge.running {
+      color: #0e6b39;
+      background: var(--green-soft);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 14px;
+      min-height: 0;
+      padding: 14px;
+    }
+
+    .control-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .panel-body { padding: 14px; }
+
+    .field { margin-bottom: 11px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      height: 35px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(18, 100, 216, 0.12);
+    }
+
+    .save-login {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+      color: #465468;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .save-login input { accent-color: var(--blue); }
+
+    .schedule-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      border: 0;
+      border-radius: 999px;
+      background: #aeb8c5;
+      transition: background 160ms ease;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(20, 31, 46, 0.28);
+      transition: transform 160ms ease;
+    }
+
+    .switch.on { background: var(--blue); }
+    .switch.on::after { transform: translateX(16px); }
+
+    .interval {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .interval select {
+      width: 78px;
+      height: 32px;
+    }
+
+    .next-run {
+      min-height: 60px;
+      padding: 11px 12px;
+      border: 1px solid #cddcf0;
+      border-radius: 6px;
+      background: var(--blue-soft);
+    }
+
+    .next-run-label {
+      margin-bottom: 5px;
+      color: #55708f;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .next-run-value {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .next-run-value strong {
+      font-size: 18px;
+      color: #173f6d;
+    }
+
+    .next-run-value span {
+      color: #55708f;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 112px;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .action-button {
+      height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fff;
+      color: #344256;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .action-button.primary {
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+    }
+
+    .action-button:hover { filter: brightness(0.97); }
+    .action-button:disabled {
+      cursor: default;
+      border-color: var(--line);
+      background: #eef1f4;
+      color: #9aa4b2;
+      filter: none;
+    }
+
+    .result-panel {
+      display: grid;
+      grid-template-rows: 42px minmax(0, 1fr) 54px;
+      min-height: 0;
+    }
+
+    .result-note {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .table-wrap {
+      min-height: 0;
+      overflow: auto;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      height: 36px;
+      padding: 0 10px;
+      border-bottom: 1px solid var(--line-strong);
+      border-right: 1px solid var(--line);
+      background: #f0f3f7;
+      color: #465468;
+      text-align: left;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    th:last-child,
+    td:last-child { border-right: 0; }
+
+    td {
+      height: 39px;
+      padding: 0 10px;
+      overflow: hidden;
+      border-bottom: 1px solid #e7ebf0;
+      border-right: 1px solid #eef1f4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: #f8fbff; }
+    tbody tr.selected { background: var(--blue-soft); }
+
+    .col-request { width: 150px; }
+    .col-bank { width: 142px; }
+    .col-branch { width: 160px; }
+    .col-result { width: 100px; }
+
+    .result-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      height: 23px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .result-tag.success { color: #0e6b39; background: var(--green-soft); }
+    .result-tag.skip { color: #8a570d; background: var(--amber-soft); }
+    .result-tag.fail { color: #9b2929; background: var(--red-soft); }
+
+    .selection-detail {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      padding: 0 14px;
+      border-top: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .selection-detail strong {
+      margin-right: 8px;
+      color: #344256;
+      white-space: nowrap;
+    }
+
+    .selection-detail span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .log-panel {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 38px minmax(0, 1fr);
+      background: var(--surface);
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .log-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .log-actions { display: flex; gap: 6px; }
+
+    .icon-button {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: #465468;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .log-output {
+      margin: 0;
+      min-height: 0;
+      overflow: auto;
+      padding: 9px 15px 13px;
+      background: #fbfcfd;
+      color: #48576a;
+      font: 12px/1.65 Consolas, "Malgun Gothic", monospace;
+      white-space: pre-wrap;
+    }
+
+    .log-info { color: var(--blue); }
+    .log-ok { color: var(--green); }
+    .log-skip { color: var(--amber); }
+
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 290px minmax(0, 1fr); }
+      .col-branch { width: 125px; }
+      .result-note { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Bank24 담보 데이터 추출기</span>
+      </div>
+      <div class="header-status">
+        <span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusText">대기</span></span>
+        <span>v0.4</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="control-column" aria-label="실행 제어">
+        <div class="panel">
+          <div class="panel-header">Bank24 로그인</div>
+          <div class="panel-body">
+            <div class="field">
+              <label for="bankId">Bank24 ID</label>
+              <input id="bankId" type="text" value="dbwodls00" autocomplete="username">
+            </div>
+            <div class="field">
+              <label for="bankPw">Bank24 PW</label>
+              <input id="bankPw" type="password" value="bank24password" autocomplete="current-password">
+            </div>
+            <label class="save-login">
+              <input type="checkbox" checked>
+              <span>ID/PW 저장</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">자동 실행</div>
+          <div class="panel-body">
+            <div class="schedule-head">
+              <div class="switch-row">
+                <button class="switch" id="scheduleSwitch" type="button" role="switch" aria-checked="false" title="자동 실행 켜기"></button>
+                <span id="scheduleLabel">자동 실행 OFF</span>
+              </div>
+              <div class="interval">
+                <label for="intervalSelect" style="margin:0">간격</label>
+                <select id="intervalSelect">
+                  <option selected>5분</option>
+                  <option>10분</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="next-run">
+              <div class="next-run-label">다음 실행</div>
+              <div class="next-run-value">
+                <strong id="nextRun">-</strong>
+                <span id="lastRun">마지막 실행 없음</span>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="action-button primary" id="runButton" type="button" title="지금 한 번 실행">▶&nbsp; 즉시 1회 실행</button>
+              <button class="action-button" id="pauseButton" type="button" title="자동 실행 일시정지" disabled>■&nbsp; 일시정지</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel result-panel" aria-label="처리 결과">
+        <div class="panel-header">
+          <span>처리 결과</span>
+          <span class="result-note">담보 · 당일 · 미접수 · 전체 은행</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-request">의뢰번호</th>
+                <th class="col-bank">은행</th>
+                <th class="col-branch">영업점</th>
+                <th>담당자</th>
+                <th class="col-result">처리 결과</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody">
+              <tr data-detail="정상 저장 완료">
+                <td>2026177412</td><td>신한은행</td><td>문정역금융센터</td><td>손지훈</td><td><span class="result-tag success">DB 성공</span></td>
+              </tr>
+              <tr data-detail="이미 APW_Master에 저장된 의뢰번호입니다.">
+                <td>5001892595</td><td>농협은행</td><td>의정부역금융센터</td><td>진주희</td><td><span class="result-tag skip">중복 SKIP</span></td>
+              </tr>
+              <tr data-detail="PDF 오류 문서로 DB 저장에서 제외했습니다.">
+                <td>2026177188</td><td>신한은행</td><td>가락동금융센터</td><td>이재욱</td><td><span class="result-tag fail">저장 제외</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="selection-detail">
+          <strong>선택 항목</strong>
+          <span id="detailText">행을 선택하면 처리 내용을 표시합니다.</span>
+        </div>
+      </section>
+    </main>
+
+    <section class="log-panel" aria-label="실행 로그">
+      <div class="log-toolbar">
+        <span>실행 로그</span>
+        <div class="log-actions">
+          <button class="icon-button" id="copyLog" type="button" title="로그 복사">로그 복사</button>
+          <button class="icon-button" id="clearLog" type="button" title="로그 지우기">로그 지우기</button>
+        </div>
+      </div>
+      <pre class="log-output" id="logOutput"><span class="log-info">[14:46:14] 대기 중</span>
+[14:46:14] 담보 · 당일 · 미접수 · 전체 은행
+[14:46:14] 자동 실행 OFF</pre>
+    </section>
+  </div>
+
+  <script>
+    const scheduleSwitch = document.getElementById("scheduleSwitch");
+    const scheduleLabel = document.getElementById("scheduleLabel");
+    const intervalSelect = document.getElementById("intervalSelect");
+    const nextRun = document.getElementById("nextRun");
+    const lastRun = document.getElementById("lastRun");
+    const runButton = document.getElementById("runButton");
+    const pauseButton = document.getElementById("pauseButton");
+    const statusBadge = document.getElementById("statusBadge");
+    const statusText = document.getElementById("statusText");
+    const logOutput = document.getElementById("logOutput");
+    const detailText = document.getElementById("detailText");
+
+    let scheduleOn = false;
+
+    function timeText(date = new Date()) {
+      return date.toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    function appendLog(message, className = "") {
+      const line = document.createElement("span");
+      if (className) line.className = className;
+      line.textContent = `[${timeText()}] ${message}`;
+      if (logOutput.textContent.trim()) logOutput.appendChild(document.createTextNode("\n"));
+      logOutput.appendChild(line);
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    function updateNextRun() {
+      if (!scheduleOn) {
+        nextRun.textContent = "-";
+        return;
+      }
+      const minutes = Number.parseInt(intervalSelect.value, 10) || 5;
+      const date = new Date(Date.now() + minutes * 60 * 1000);
+      nextRun.textContent = date.toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit" });
+    }
+
+    function setSchedule(enabled) {
+      scheduleOn = enabled;
+      scheduleSwitch.classList.toggle("on", enabled);
+      scheduleSwitch.setAttribute("aria-checked", String(enabled));
+      scheduleSwitch.title = enabled ? "자동 실행 끄기" : "자동 실행 켜기";
+      scheduleLabel.textContent = enabled ? "자동 실행 ON" : "자동 실행 OFF";
+      pauseButton.disabled = !enabled;
+      updateNextRun();
+      appendLog(`자동 실행 ${enabled ? "ON" : "OFF"}`, enabled ? "log-ok" : "log-info");
+    }
+
+    scheduleSwitch.addEventListener("click", () => setSchedule(!scheduleOn));
+    intervalSelect.addEventListener("change", () => {
+      updateNextRun();
+      appendLog(`실행 간격 ${intervalSelect.value}로 변경`, "log-info");
+    });
+
+    pauseButton.addEventListener("click", () => setSchedule(false));
+
+    runButton.addEventListener("click", () => {
+      runButton.disabled = true;
+      statusBadge.classList.add("running");
+      statusText.textContent = "실행 중";
+      appendLog("즉시 실행 시작", "log-info");
+      window.setTimeout(() => {
+        const now = timeText();
+        statusBadge.classList.remove("running");
+        statusText.textContent = "대기";
+        lastRun.textContent = `마지막 실행 ${now.slice(0, 5)}`;
+        runButton.disabled = false;
+        updateNextRun();
+        appendLog("완료: DB 성공 1건, 중복 SKIP 1건, 저장 제외 1건", "log-ok");
+      }, 900);
+    });
+
+    document.getElementById("resultBody").addEventListener("click", (event) => {
+      const row = event.target.closest("tr");
+      if (!row) return;
+      document.querySelectorAll("#resultBody tr").forEach((item) => item.classList.remove("selected"));
+      row.classList.add("selected");
+      detailText.textContent = row.dataset.detail || "처리 내용이 없습니다.";
+    });
+
+    document.getElementById("clearLog").addEventListener("click", () => {
+      logOutput.textContent = "";
+    });
+
+    document.getElementById("copyLog").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(logOutput.textContent);
+        appendLog("로그를 복사했습니다.", "log-info");
+      } catch {
+        appendLog("로그 복사에 실패했습니다.", "log-skip");
+      }
+    });
+  </script>
+</body>
+</html>

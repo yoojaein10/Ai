@@ -1,0 +1,12 @@
+:root{font-family:Inter,"Noto Sans KR",system-ui,sans-serif;color:#e7edf7;background:#080e18}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#14243d 0,#080e18 38%)}
+main{max-width:1180px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #243247;padding-bottom:18px}
+h1{margin:5px 0 0;font-size:28px}small{color:#6f9fff;letter-spacing:.12em}.status{display:flex;gap:20px;align-items:center}.status span{padding:8px 12px;border-radius:18px;background:#44202a;color:#ff8d9e}
+.status span.ok{background:#123b31;color:#4fe0ae}.notice{margin:22px 0;padding:14px 18px;background:#102e27;border:1px solid #1c5b4b;border-radius:10px;color:#96e7cb}
+.ticker{display:flex;align-items:baseline;gap:18px;padding:14px 0}.ticker strong{font-size:34px}.ticker>span{color:#9cacc3}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}.cards article,.panel{background:#101a29;border:1px solid #25344b;border-radius:12px;padding:18px}.cards span{color:#8fa2bd;font-size:13px}.cards b{display:block;margin-top:12px;font-size:22px}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:12px}.panel h2{font-size:17px;margin:0 0 16px;display:flex;justify-content:space-between}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metrics div,.check{background:#0b1421;padding:12px;border-radius:8px;color:#9aabc3}.metrics b{float:right;color:#eef4ff}.checks{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:12px}.check.on{background:#123b31;color:#51e2b0}
+.buttons{display:flex;gap:8px;margin-top:18px}button{border:0;border-radius:8px;padding:11px 15px;color:white;cursor:pointer}.buy{background:#1769e0}.sell{background:#d13e5b}.muted{background:#3a4658}
+.position{line-height:1.8}.empty{color:#8293ab}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px;border-bottom:1px solid #233149}th{color:#8295b0}
+.positive{color:#ff657e!important}.negative{color:#4f91ff!important}footer{text-align:center;color:#65758b;padding:24px;font-size:12px}
+@media(max-width:760px){main{padding:15px}header,.status{align-items:flex-start;flex-direction:column}.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.checks{grid-template-columns:1fr 1fr}.ticker{flex-wrap:wrap}}

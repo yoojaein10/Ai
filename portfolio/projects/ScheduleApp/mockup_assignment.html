@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>업무배정 뷰 목업</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', sans-serif; font-size: 12px; background: #f5f5f5; padding: 16px; }
+
+  h2 { margin-bottom: 12px; font-size: 15px; color: #333; }
+
+  .legend { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 2px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; }
+
+  table { border-collapse: collapse; min-width: 100%; background: #fff; }
+
+  th, td { border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap; text-align: center; vertical-align: middle; }
+
+  /* 고정 열 */
+  .col-fix { position: sticky; background: #fff; z-index: 2; }
+  .col-gbn  { left: 0;    min-width: 40px; }
+  .col-name { left: 40px; min-width: 52px; }
+  .col-cnt  { left: 92px; min-width: 44px; }
+
+  /* 헤더 */
+  thead th { background: #4C6EF5; color: #fff; font-weight: 600; position: sticky; top: 0; z-index: 3; }
+  thead th.col-fix { z-index: 4; }
+
+  /* 날짜 헤더 */
+  .th-date { background: #364fc7 !important; font-size: 11px; min-width: 90px; }
+  .th-sun  { background: #c92a2a !important; }
+  .th-sat  { background: #1971c2 !important; }
+
+  /* 팀 구분 행 */
+  .row-team td { background: #e9ecef; font-weight: 700; color: #495057; text-align: left; padding-left: 8px; }
+
+  /* 셀 색상 */
+  .c-assign  { background: #e7f5ff; color: #1864ab; }   /* 배정 */
+  .c-trip    { background: #fff4e6; color: #e67700; }   /* 출장 */
+  .c-hold    { background: #fff0f6; color: #a61e4d; }   /* 보류/취소 */
+  .c-shlh    { background: #f3f0ff; color: #5f3dc4; }   /* SH/LH */
+  .c-leave   { background: #f1f3f5; color: #868e96; }   /* 연차/X */
+  .c-chief   { background: #ebfbee; color: #2f9e44; }   /* 총괄부장 */
+  td.empty   { background: #fafafa; }
+
+  .cell-text { font-size: 11px; line-height: 1.4; max-width: 130px; white-space: normal; text-align: left; }
+
+  /* 건수 */
+  .cnt-num { font-weight: 700; color: #495057; }
+</style>
+</head>
+<body>
+
+<h2>업무 배정 현황 — 2026년 2월</h2>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#e7f5ff;border:1px solid #1864ab"></div> 배정</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fff4e6;border:1px solid #e67700"></div> 출장</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fff0f6;border:1px solid #a61e4d"></div> 보류/취소</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f3f0ff;border:1px solid #5f3dc4"></div> SH/LH</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f1f3f5;border:1px solid #868e96"></div> 연차/X</div>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th class="col-fix col-gbn">직급</th>
+      <th class="col-fix col-name">이름</th>
+      <th class="col-fix col-cnt">전월<br>배정</th>
+      <!-- 날짜 헤더 -->
+      <th class="th-date th-sun">2/2 (일)</th>
+      <th class="th-date">2/3 (월)</th>
+      <th class="th-date">2/4 (화)</th>
+      <th class="th-date">2/5 (수)</th>
+      <th class="th-date">2/6 (목)</th>
+      <th class="th-date th-sat">2/7 (토)</th>
+      <th class="th-date th-sun">2/8 (일)</th>
+      <th class="th-date">2/10 (월)</th>
+      <th class="th-date">2/11 (화)</th>
+      <th class="th-date">2/12 (수)</th>
+      <th class="th-date">2/13 (목)</th>
+      <th class="th-date th-sat">2/14 (토)</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <!-- 1팀 -->
+    <tr class="row-team">
+      <td colspan="15">▸ 업무 1팀</td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">부장</td>
+      <td class="col-fix col-name">임희우</td>
+      <td class="col-fix col-cnt cnt-num">—</td>
+      <td class="empty"></td>
+      <td class="c-chief"><div class="cell-text">총괄부장</div></td>
+      <td class="c-chief"><div class="cell-text">총괄부장</div></td>
+      <td class="empty"></td>
+      <td class="c-chief"><div class="cell-text">총괄부장</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-chief"><div class="cell-text">총괄부장</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">실장</td>
+      <td class="col-fix col-name">심채욱</td>
+      <td class="col-fix col-cnt cnt-num">12</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0410<br>강남구 논현동 80-14 (토건)</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0433<br>평택시 포승읍 내기리 (공장)</div></td>
+      <td class="c-trip"><div class="cell-text">출장<br>평택</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0441<br>중랑구 면목동 618-18 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0455<br>마포구 상수동 339-2 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="c-leave"><div class="cell-text">연차</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">차장</td>
+      <td class="col-fix col-name">김종문</td>
+      <td class="col-fix col-cnt cnt-num">8</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2601-2-0002<br>포천 군내면 용정리 (63개호)</div></td>
+      <td class="c-trip"><div class="cell-text">출장<br>포천</div></td>
+      <td class="c-trip"><div class="cell-text">출장<br>포천</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0412<br>도봉구 방학동 586-3 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0418<br>종로구 재동 84-6 (토건)</div></td>
+      <td class="c-hold"><div class="cell-text">보류<br>2602-3-0399</div></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0430<br>은평구 증산동 131-127 (토건)</div></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">차장</td>
+      <td class="col-fix col-name">이기용</td>
+      <td class="col-fix col-cnt cnt-num">6</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0014<br>인천 서구 청라동 163-1 701호 (구상)</div></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0017<br>인천 미추홀구 학익동 587-96 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="c-shlh"><div class="cell-text">SH<br>2602-SH-0011</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0421<br>파주시 봉압리 1372-6 (건물)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0438<br>고양시 일산서구 (구주)</div></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">차장</td>
+      <td class="col-fix col-name">성유중</td>
+      <td class="col-fix col-cnt cnt-num">9</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0007<br>김포 통진읍 마송리 175-96 (토건)</div></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0021<br>종로구 견지동 110 306호 (구상)</div></td>
+      <td class="c-trip"><div class="cell-text">출장<br>김포</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-leave"><div class="cell-text">X</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0460<br>고양시 덕양구 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">과장</td>
+      <td class="col-fix col-name">최윤석</td>
+      <td class="col-fix col-cnt cnt-num">5</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2601-4-0003<br>은평구 증산동 131-127 (토건)</div></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0011<br>파주시 봉압리 1372-6 (건물)</div></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-4-0009<br>마포구 서교동 395-4 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-4-0014<br>용산구 한남동 740 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <!-- 2팀 -->
+    <tr class="row-team">
+      <td colspan="15">▸ 업무 2팀</td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">실장</td>
+      <td class="col-fix col-name">김영선</td>
+      <td class="col-fix col-cnt cnt-num">11</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0408<br>강동구 성내동 159-4 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="c-trip"><div class="cell-text">출장<br>강동</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0415<br>노원구 중계동 506 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0422<br>서초구 반포동 25-1 (토건)</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0435<br>강남구 압구정동 390 (구상)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">차장</td>
+      <td class="col-fix col-name">최병천</td>
+      <td class="col-fix col-cnt cnt-num">7</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2601-3-0009<br>성북구 돈암동 (토건)</div></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0411<br>송파구 잠실동 470 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="c-leave"><div class="cell-text">연차</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-shlh"><div class="cell-text">LH<br>2602-LH-0004</div></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-3-0447<br>광진구 자양동 667 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+    </tr>
+
+    <tr>
+      <td class="col-fix col-gbn">과장</td>
+      <td class="col-fix col-name">우현웅</td>
+      <td class="col-fix col-cnt cnt-num">4</td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-4-0001<br>중구 신당동 412-3 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-4-0006<br>강서구 가양동 1407 (구주)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-assign"><div class="cell-text">2602-4-0010<br>동작구 사당동 303-1 (토건)</div></td>
+      <td class="empty"></td>
+      <td class="empty"></td>
+      <td class="c-hold"><div class="cell-text">취소<br>2602-4-0008</div></td>
+      <td class="empty"></td>
+    </tr>
+
+  </tbody>
+</table>
+</div>
+
+<p style="margin-top:10px;color:#868e96;font-size:11px;">* 샘플 데이터 목업입니다. 실제 DB 연동 시 대체됩니다.</p>
+
+</body>
+</html>

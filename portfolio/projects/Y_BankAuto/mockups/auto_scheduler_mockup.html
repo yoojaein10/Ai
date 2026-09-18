@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank24 자동 수집기 목업</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --line: #d7dde5;
+      --line-strong: #b8c1cc;
+      --text: #202732;
+      --muted: #687384;
+      --blue: #1264d8;
+      --blue-soft: #e8f1ff;
+      --green: #1f9d55;
+      --green-soft: #e8f8ee;
+      --amber: #b7791f;
+      --amber-soft: #fff5dd;
+      --red: #c93535;
+      --red-soft: #fff0f0;
+      --panel-radius: 8px;
+      --control-radius: 6px;
+      font-family: "Segoe UI", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1180px;
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr 260px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .mark {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--blue);
+      transform: rotate(45deg);
+    }
+
+    .top-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.green { color: #0f6b38; background: var(--green-soft); }
+    .badge.blue { color: #0b56b0; background: var(--blue-soft); }
+    .badge.amber { color: #8a590e; background: var(--amber-soft); }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 300px minmax(520px, 1fr) 360px;
+      min-height: 0;
+    }
+
+    aside,
+    .center,
+    .right {
+      min-height: 0;
+      padding: 16px;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #f7f9fb;
+    }
+
+    .center {
+      border-right: 1px solid var(--line);
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--panel-radius);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input,
+    select {
+      width: 100%;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: var(--control-radius);
+      padding: 0 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    input[readonly] {
+      background: #f3f5f8;
+      color: var(--muted);
+    }
+
+    .form-row {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .radio-row,
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .radio-pill,
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      min-width: 72px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .radio-pill.active,
+    .chip.active {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 10px;
+    }
+
+    button {
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--control-radius);
+      background: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    button.primary {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+
+    button.ghost {
+      color: var(--blue);
+      border-color: #b7cdf2;
+      background: #f8fbff;
+    }
+
+    .state-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .stage {
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: var(--panel-radius);
+      background: #fff;
+      padding: 10px;
+    }
+
+    .stage.done {
+      border-color: #9ed7b3;
+      background: #fbfffc;
+    }
+
+    .stage.running {
+      border-color: #8bb9f4;
+      background: #f8fbff;
+    }
+
+    .stage-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stage-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: var(--panel-radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--panel-radius);
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 9px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f0f3f7;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .status-ok { color: var(--green); font-weight: 700; }
+    .status-warn { color: var(--amber); font-weight: 700; }
+
+    .preview {
+      min-height: 86px;
+      border: 1px solid var(--line);
+      border-radius: var(--panel-radius);
+      background: #f8fafc;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .log-panel {
+      min-height: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: 42px 1fr;
+    }
+
+    .log-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .log-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .small-btn {
+      height: 28px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .logs {
+      margin: 0;
+      padding: 12px 16px;
+      overflow: auto;
+      background: #202633;
+      color: #d7e0ee;
+      font-family: Consolas, "D2Coding", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-success { color: #8ee6a8; }
+    .log-info { color: #8dc2ff; }
+    .log-warn { color: #ffd680; }
+
+    .path-row {
+      display: grid;
+      grid-template-columns: 1fr 86px;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title"><span class="mark"></span>Bank24 자동 수집기</div>
+      <div class="top-status">
+        <span class="badge green"><span class="dot"></span>자동 실행 중</span>
+        <span>다음 실행 04:32 후</span>
+        <span>v0.3 Mockup</span>
+      </div>
+    </header>
+
+    <main>
+      <aside>
+        <section class="section">
+          <div class="section-title">Bank24 로그인</div>
+          <div class="form-row">
+            <label>Bank24 ID</label>
+            <input value="dbwodls00">
+          </div>
+          <div class="form-row">
+            <label>Bank24 PW</label>
+            <input type="password" value="************">
+          </div>
+          <div class="hint">계정은 이 PC의 설정 파일에서 불러옵니다. 로그에는 비밀번호를 남기지 않습니다.</div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">수집 조건</div>
+          <div class="form-row">
+            <label>대상 탭</label>
+            <div class="radio-row">
+              <span class="radio-pill">작성</span>
+              <span class="radio-pill active">미접수</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>업무구분</label>
+            <select>
+              <option>담보</option>
+              <option>탁상</option>
+              <option>공동주택자문</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>조회일자</label>
+            <input readonly value="당일 자동 적용 · 2026-06-04">
+          </div>
+          <div class="form-row">
+            <label>은행</label>
+            <select>
+              <option>신한은행</option>
+              <option>전체</option>
+              <option>기업은행</option>
+              <option>우리은행</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">자동 실행</div>
+          <div class="form-row">
+            <label>실행 간격</label>
+            <div class="chip-row">
+              <span class="chip active">5분</span>
+              <span class="chip">10분</span>
+              <span class="chip">30분</span>
+            </div>
+          </div>
+          <div class="button-row">
+            <button class="primary">자동 실행 ON</button>
+            <button>일시정지</button>
+          </div>
+          <div class="hint">이전 작업이 진행 중이면 다음 예약 실행은 건너뜁니다.</div>
+        </section>
+      </aside>
+
+      <section class="center">
+        <section class="section">
+          <div class="section-title">
+            <span>현재 실행</span>
+            <span class="badge blue"><span class="dot"></span>PDF 추출 + DB 저장</span>
+          </div>
+          <div class="button-row">
+            <button class="ghost">즉시 1회 실행</button>
+            <button>Bank24 확인</button>
+          </div>
+          <div class="hint">Bank24가 이미 실행 중이면 재시작하지 않고 대상 탭을 다시 선택한 뒤 조회합니다.</div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">진행 단계</div>
+          <div class="state-strip">
+            <div class="stage done">
+              <div class="stage-name">로그인</div>
+              <div class="stage-meta">Bank24 연결 확인</div>
+            </div>
+            <div class="stage done">
+              <div class="stage-name">조회</div>
+              <div class="stage-meta">미접수 · 당일 · 담보</div>
+            </div>
+            <div class="stage running">
+              <div class="stage-name">PDF 저장</div>
+              <div class="stage-meta">4 / 7건 처리 중</div>
+            </div>
+            <div class="stage">
+              <div class="stage-name">파싱</div>
+              <div class="stage-meta">대기 중</div>
+            </div>
+            <div class="stage">
+              <div class="stage-name">DB 저장</div>
+              <div class="stage-meta">대기 중</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">결과 미리보기</div>
+          <table>
+            <thead>
+              <tr>
+                <th>은행</th>
+                <th>의뢰번호</th>
+                <th>영업점</th>
+                <th>소유자/채무자</th>
+                <th>PDF</th>
+                <th>DB</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>신한은행</td>
+                <td>2026153563</td>
+                <td>종로중앙금융센터</td>
+                <td>(유) 거봉</td>
+                <td class="status-ok">저장</td>
+                <td class="status-ok">성공</td>
+              </tr>
+              <tr>
+                <td>신한은행</td>
+                <td>2026153511</td>
+                <td>반포남금융센터</td>
+                <td>강미영</td>
+                <td class="status-ok">저장</td>
+                <td class="status-ok">성공</td>
+              </tr>
+              <tr>
+                <td>신한은행</td>
+                <td>2026169326</td>
+                <td>담십리</td>
+                <td>(주)별미곱창</td>
+                <td class="status-ok">저장</td>
+                <td class="status-warn">대기</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+
+      <section class="right">
+        <section class="section">
+          <div class="section-title">실행 요약</div>
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="kpi-value">42</div>
+              <div class="kpi-label">전체 행</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-value">7</div>
+              <div class="kpi-label">대상 건</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-value">4</div>
+              <div class="kpi-label">처리 완료</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-value">0</div>
+              <div class="kpi-label">실패</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-value">4</div>
+              <div class="kpi-label">PDF 이력</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-value">4</div>
+              <div class="kpi-label">DB 성공</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">PDF 저장 폴더</div>
+          <div class="path-row">
+            <input value="C:\Bank24Extractor\pdf">
+            <button class="small-btn">열기</button>
+          </div>
+          <div class="hint">PDF는 삭제하지 않고 이력으로 보존합니다.</div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">선택 행 미리보기</div>
+          <div class="preview">
+            <strong>소재지</strong><br>
+            서울 송파구 문정동 651번지 A 115호<br><br>
+            <strong>비고</strong><br>
+            매매/contact@example.com/채무자:(유) 거봉/현장안내...
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">운영 상태</div>
+          <div class="hint">
+            Bank24 실행 중 · 재시작 안 함<br>
+            DB 저장 대상: SP_I_APW_Master_Expand<br>
+            최근 완료: 2026-06-04 11:28:15
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <section class="log-panel">
+      <div class="log-head">
+        <strong>실행 로그</strong>
+        <div class="log-actions">
+          <button class="small-btn">로그 복사</button>
+          <button class="small-btn">로그 폴더</button>
+          <button class="small-btn">지우기</button>
+        </div>
+      </div>
+      <pre class="logs">[11:24:00] 자동 실행 대기 중 · 다음 실행 04:32 후
+[11:24:12] <span class="log-info">[조회]</span> 대상 탭=미접수, 업무구분=담보, 조회일자=2026-06-04
+[11:24:18] <span class="log-info">[PDF]</span> C:\Bank24Extractor\pdf\01-2606-3-0821_20260604134815.pdf 저장
+[11:24:19] <span class="log-success">[파싱]</span> 의뢰번호=20260604134815, 소재지=서울 송파구 문정동 651번지 A 115호
+[11:24:20] <span class="log-success">[DB]</span> SP 성공: NewDocID=01-2606-3-0821, MstID=1030277
+[11:24:20] <span class="log-info">[PDF]</span> 이력 보존 설정: PDF 삭제 안 함</pre>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,301 @@
+@charset "UTF-8";
+/* 가변비 웹(PC) 전용 — 팔레트: 진청 #004B82, 연청 #7DA1D4, 강조 #D6E6FC */
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #fff;
+    color: #212121;
+    /* 유치상여(Bootstrap 4.3.1)와 동일한 폰트 스택 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 14px;
+}
+
+.vw-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 14px 24px 30px;
+}
+
+.vw-logo img {
+    width: 240px;
+    height: auto;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* 상단 메뉴바 (진청색) */
+.vw-topnav {
+    background-color: #004B82;
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+.vw-topnav a,
+.vw-topnav-current {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 13px 20px;
+    text-decoration: none;
+    font-size: 14px;
+}
+.vw-topnav a:hover {
+    background-color: #ddd;
+    color: black;
+}
+.vw-topnav-current {
+    font-weight: bold;
+    background-color: #01365d;
+}
+
+/* 조회 폼 */
+.vw-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.vw-search input[type="month"] {
+    width: 190px;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid #ccc;
+    font: inherit;
+    background: #fff;
+}
+.vw-search select {
+    width: 150px;
+    height: 40px;
+    padding: 0 8px;
+    border: 1px solid #ccc;
+    font: inherit;
+    background: #fff;
+}
+.vw-search input[type="text"] {
+    width: 140px;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid #ccc;
+    font: inherit;
+    text-align: center;
+    background: #f4f7fa;
+    color: #212121;
+}
+.vw-search input[type="submit"] {
+    width: 130px;
+    height: 40px;
+    border: none;
+    background-color: #004B82;
+    color: #fff;
+    font: inherit;
+    font-weight: bold;
+    cursor: pointer;
+}
+.vw-search input[type="submit"]:hover { background-color: #01365d; }
+
+.vw-month-badge { margin: 4px 0 14px; }
+.vw-month-badge span {
+    font-size: 17px;
+    border-radius: 15px 15px 15px 0;
+    border: 3px solid #004B82;
+    padding: 0.3em 1.4em;
+    color: #004B82;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.vw-msg { padding: 26px 4px; color: #555; }
+.vw-error { color: #a03030; }
+
+/* 합계 카드 */
+.vw-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.vw-card {
+    border: 1px solid #ccc;
+    padding: 12px 16px;
+    background: #fff;
+}
+.vw-card .t { font-size: 12.5px; color: #555; }
+.vw-card .v {
+    margin-top: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.vw-card-total {
+    background: #D6E6FC;
+    border-color: #7DA1D4;
+}
+
+/* 그룹 섹션: 2열 배치 */
+.vw-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+.vw-group {
+    border: 1px solid #ccc;
+}
+.vw-group-head {
+    padding: 0 14px;
+    background: #004B82;
+    color: #fff;
+    height: 38px;
+    line-height: 38px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.vw-group-sum {
+    font-weight: normal;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+table.vw-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    text-align: center;
+    line-height: 1.5;
+}
+table.vw-table .vw-table-head th:nth-child(1),
+table.vw-table .vw-table-head th:nth-child(4) { width: 22%; }
+table.vw-table .vw-table-head th:nth-child(2),
+table.vw-table .vw-table-head th:nth-child(5) { width: 12%; }
+table.vw-table .vw-table-head th:nth-child(3),
+table.vw-table .vw-table-head th:nth-child(6) { width: 16%; }
+table.vw-table .vw-table-head th { white-space: nowrap; }
+table.vw-table th,
+table.vw-table td {
+    padding: 8px 8px;
+    border-top: 1px solid #ccc;
+    font-size: 13.5px;
+}
+table.vw-table .vw-table-head th {
+    color: #fff;
+    background: #7DA1D4;
+    font-weight: bold;
+    border-top: none;
+}
+table.vw-table th.vw-item {
+    background: #D6E6FC;
+    font-weight: bold;
+    text-align: left;
+    padding-left: 12px;
+}
+table.vw-table .vw-sep {
+    border-left: 2px solid #7DA1D4;
+}
+table.vw-table td { font-variant-numeric: tabular-nums; }
+table.vw-table td.vw-price {
+    text-align: right;
+    padding-right: 12px;
+}
+
+.vw-note {
+    margin-top: 16px;
+    color: #777;
+    font-size: 12px;
+}
+
+/* 상세내역 (항목 클릭 -> 표 아래 패널에 하나만 표시) — 모바일 버전과 동일한 구성 */
+th.vw-clk, td.vw-clk { cursor: pointer; }
+th.vw-clk:hover { background: #c4dcf8; }
+th.vw-item.sel { background: #004B82; color: #fff; }
+
+.vw-detail {
+    margin-top: 16px;
+    border: 1px solid #ccc;
+}
+.vw-detail-head {
+    padding: 0 14px;
+    height: 38px;
+    line-height: 38px;
+    background: #004B82;
+    color: #fff;
+    font-weight: bold;
+}
+.vw-detail-head span { font-weight: normal; }
+.vw-detail-head span:not(:empty)::before { content: " · "; }
+.vw-detail-body { min-height: 48px; }
+
+table.vw-dtl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+table.vw-dtl th {
+    background: #eef4f8;
+    color: #526263;
+    font-weight: bold;
+    padding: 5px 6px;
+    border-top: 1px solid #dde5ea;
+}
+table.vw-dtl td {
+    padding: 5px 6px;
+    border-top: 1px solid #e6ecec;
+    text-align: center;
+    vertical-align: top;
+}
+.vw-dtl-loading { padding: 10px 12px; color: #777; font-size: 12px; text-align: center; }
+table.vw-dtl td.vw-dtl-date { white-space: nowrap; width: 64px; }
+table.vw-dtl td.vw-dtl-doc { text-align: center; word-break: break-all; }
+table.vw-dtl td.vw-dtl-mgr { text-align: center; word-break: break-all; }
+.vw-dtl-cust { color: #777; font-size: 11px; }
+table.vw-dtl td.vw-dtl-price { text-align: center; white-space: nowrap; width: 90px; }
+table.vw-dtl td.vw-dtl-be { color: #888; }
+
+/* 상세 합계행 */
+table.vw-dtl tr.vw-dtl-sum td {
+    background: #eef4f8;
+    font-weight: bold;
+    border-top: 2px solid #b9ccd8;
+}
+table.vw-dtl tr.vw-dtl-sum td.vw-dtl-be { color: #666; }
+
+/* 상세 페이지 이동 */
+.vw-pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-top: 1px solid #e6ecec;
+    font-size: 12px;
+}
+.vw-pager button {
+    padding: 3px 12px;
+    border: 1px solid #b9ccd8;
+    background: #fff;
+    color: #004B82;
+    cursor: pointer;
+    border-radius: 2px;
+}
+.vw-pager button:disabled { color: #bbb; border-color: #ddd; cursor: default; }
+.vw-pager-pos { color: #526263; }
+.vw-pager-tot { margin-left: auto; color: #888; }
+
+.vw-footer {
+    border-top: 1px solid #ccc;
+    font-size: 8pt;
+    margin: 5px;
+    padding: 10px;
+    text-align: center;
+    color: #555;
+}
+
+/* 좁은 창에서는 1열 */
+@media (max-width: 760px) {
+    .vw-groups { grid-template-columns: 1fr; }
+    .vw-cards { grid-template-columns: 1fr; }
+    .vw-search { flex-wrap: wrap; }
+}

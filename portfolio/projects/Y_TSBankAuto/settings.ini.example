@@ -1,0 +1,82 @@
+; Y_TSBankAuto 설정 예시
+; 실제 settings.ini 는 .gitignore 로 커밋 금지하고 Windows ACL로 접근을 제한한다.
+; Bank24 ID/PW는 [login]에서 읽으며, 로그에는 출력하지 않는다.
+; DB UID/PWD는 여기에 저장하지 않는다.
+
+[database]
+; 비시크릿만. UID/PWD 는 여기에 두지 않는다.
+server   = YOUR_DB_SERVER_HOST          ; 예: dbhost.example.local  (placeholder)
+port     = 1433
+database  = YOUR_DB_NAME                 ; 예: apworksXX            (placeholder)
+; APW_RegHist/APW_Customer 조회 전용 호스트. 운영에서는 YTS_LOOKUP_DB_SERVER 환경변수 권장.
+lookup_server = YOUR_READONLY_LOOKUP_DB_SERVER
+driver   = ODBC Driver 18 for SQL Server
+; 보안 기본값(S5). 변경 위험은 README 참고.
+encrypt                  = yes
+trust_server_certificate = false
+
+; 실서버/테스트 구분 및 allowlist (정확 일치 검증; S13)
+[allowlist]
+; 콤마 구분. 실제 연결 전 @@SERVERNAME / DB_NAME() 와 정확 일치 검증.
+servers   = YOUR_DB_SERVER_HOST
+databases = YOUR_DB_NAME
+
+; 읽기 전용 검증 단계 allowlist (독립·비시크릿; 지시 §4)
+; 접속 환경변수(YTS_DB_*)를 기대값으로 재사용하지 않는다. 실값은 settings.ini(ignore)에만 둔다.
+; placeholder/빈 값/wildcard/넓은 CIDR 은 로딩 시 거부된다.
+[ro_allowlist]
+; 연결 전 허용할 hostname 또는 IP (정확 일치). 예: dbhost.example.local
+connect_hosts     = YOUR_DB_SERVER_HOST
+; (선택) DNS 해석 결과 검증용 허용 IP/CIDR. 넓은 CIDR 금지(v4 >=/24, v6 >=/64).
+connect_ips       =
+; hostname→IP DNS 검증 사용 여부. true 면 connect_ips 필수.
+verify_dns        = false
+; 연결 후 DB 가 반환하는 서버 식별값(SERVERPROPERTY('ServerName')). connect_hosts 와 다를 수 있음.
+server_identities = YOUR_SERVER_IDENTITY
+; 연결 후 허용할 DB명(DB_NAME()).
+databases         = YOUR_DB_NAME
+
+[sp]
+; 고정 호출 상수 (비시크릿)
+office   = 10
+app_code = 300611
+
+[reghist]
+; 주소 조회 테이블 (고정 allowlist; 바인딩 전용)
+table = APW_RegHist
+
+[paths]
+; PDF 보관 루트 (사용자 전용 경로 권장). 네트워크 공유는 명시 설정 시에만.
+pdf_root      = C:\Y_TSBankAuto\pdf
+log_dir       = C:\Y_TSBankAuto\logs
+output_dir    = C:\Y_TSBankAuto\output
+retention_days = 90        ; 보존 기간(일). 자동 삭제는 별도 정책 실행 시에만.
+
+[safety]
+; DB 쓰기 가드 (S7). 기본은 쓰기 금지/롤백.
+rollback_test = true
+autocommit    = false
+allow_commit  = false      ; 실제 COMMIT 은 추가 가드 다수 통과 시에만 (README 참조)
+
+[bank24]
+; 신뢰 검증용(창 제목만으로 신뢰 금지; S10). 실행경로/클래스 allowlist.
+exe_path_allow = C:\Bank24\Bank24.exe
+window_class   = (확인 후 입력)
+[login]
+save_credentials = false
+bank24_id =
+REDACTED_CONFIGURE_LOCALLY =
+
+[bankonline]
+; DB 저장 성공 후 REST_BANK_JUBSU_UPD 호출. 기본값은 비활성화.
+enabled = false
+endpoint =
+method = POST
+request_format = json
+timeout_seconds = 10
+allow_http = false
+authorization =
+token_endpoint = https://authtoken.kapanet.or.kr/AuthServer
+kapa_user_name = 이일우
+success_field = success
+success_value = true

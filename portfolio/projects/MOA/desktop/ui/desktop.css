@@ -1,0 +1,164 @@
+/* 데스크톱 전용 추가 스타일 — 웹 dashboard.css/receivables.css 위에 얹는다. */
+
+/* 사이드바 상단 사용자 배지 (context.js가 삽입) */
+.user-badge{
+  margin: 0 10px 14px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #eef4f2;
+  box-shadow: inset 0 0 0 1px rgba(83, 145, 176, .16);
+  color: #244f68;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+/* 입금·미수금 화면에 추가한 본·지사 셀렉트 */
+.receivable-toolbar select{
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: inherit;
+  font-size: 13px;
+}
+.receivable-toolbar select:disabled{ background: #f2f5f4; color: #56625c; }
+.toolbar select:disabled{ background: #f2f5f4; color: #56625c; }
+
+/* 사용자 확인 실패 시 전체 차단 화면 */
+.ctx-error{
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper, #f5f7f5);
+  z-index: 999;
+}
+.ctx-error-card{
+  max-width: 420px;
+  padding: 36px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(22, 43, 35, .12);
+  text-align: center;
+}
+.ctx-error-card h2{ margin: 0 0 12px; }
+.ctx-error-card p{ margin: 6px 0; color: #56625c; line-height: 1.6; }
+.ctx-error-hint{ font-size: 12px; }
+.ctx-error-card button{
+  margin-top: 18px;
+  height: 40px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 8px;
+  background: #244f68;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 인쇄 — 화면에서는 숨겨두고, 인쇄할 때만 이 영역만 출력한다 */
+/* 탭 껍데기(shell) 안에서 열린 화면 — 상단바·사이드바는 껍데기가 그리므로
+   안쪽에서는 감춘다. 본문만 창을 꽉 채운다 (2026-08-20). */
+.in-shell .topbar, .in-shell .sidebar{ display: none !important; }
+.in-shell .app-shell{ display: block; }
+.in-shell body{ background: #fff; }
+.in-shell main{ padding-top: 16px; }
+
+.print-area{ display: none; }
+.print-button{ background: #fff; color: #2f5d3a; }
+
+@media print{
+  @page{ size: A4 landscape; margin: 10mm; }
+  body{ background: #fff; }
+  /* .skip-link 는 화면 밖(top:-4rem)에 두는 접근성 링크인데, 인쇄는 화면 밖도
+     찍어서 '본문으로 바로가기' 가 종이에 남았다 (2026-08-20 제보). */
+  .topbar, .app-shell, .toast, .ctx-error, .context-menu, .skip-link{ display: none !important; }
+  .print-area{ display: block; }
+  /* 제목·조건 줄은 용지 가운데로 (표는 그대로 좌우 꽉 채운다) */
+  .print-area h1{ margin: 0 0 4px; font-size: 15px; text-align: center; }
+  .print-meta{ margin: 0 0 8px; color: #333; font-size: 10px; line-height: 1.5;
+    text-align: center; }
+  .print-area table{ width: 100%; border-collapse: collapse; table-layout: auto; }
+  .print-area thead{ display: table-header-group; }   /* 장마다 머리말 반복 */
+  .print-area tr{ page-break-inside: avoid; }
+  .print-area th, .print-area td{
+    border: 1px solid #999; padding: 3px 5px; font-size: 9.5px;
+    white-space: nowrap; overflow: visible; max-width: none;
+  }
+  .print-area th{ background: #eaeaea; font-weight: 700; text-align: left;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-area td.number, .print-area th.number{ text-align: right; }
+  .print-area tr.print-total td{ font-weight: 700; background: #f2f2f2;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* 폭 조절이 붙은 표는 컬럼 합계 폭을 그대로 쓴다 (공용 min-width 1480px 무시) */
+.list-panel > .table-wrap > table.resizable{ min-width: 0; }
+
+/* MOA 로그인 카드 (usr 파라미터 없이 접속 시) */
+.login-card{ display: flex; flex-direction: column; gap: 10px; }
+.login-logo{ width: 52px; height: 52px; margin: 0 auto 4px; }
+.login-card input{
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.login-card input:focus{ outline: 2px solid #5391b0; outline-offset: -1px; }
+.login-error{ min-height: 16px; margin: 0; color: #c62828; font-size: 12px; }
+.login-card button{ margin-top: 4px; }
+
+/* 사용자 배지 안 로그아웃 버튼 */
+.user-badge{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.logout-button{
+  border: 0;
+  background: none;
+  color: #5d87a0;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* 톱바 왼쪽 MOA 브랜드 로고 */
+.brand-block{ display: flex; align-items: center; gap: 14px; }
+.brand-logo{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+  color: #244f68;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.brand-logo img{ width: 26px; height: 26px; display: block; }
+
+/* 톱바 오른쪽 끝 권한부여 톱니 (본사 전용, context.js가 지사에겐 숨김) */
+.topbar .gear-link{
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 19px;
+  text-decoration: none;
+  color: #56625c;
+  transition: background 180ms ease, transform 180ms ease;
+}
+.topbar .gear-link:hover{
+  background: rgba(226, 242, 250, .72);
+  color: #244f68;
+  transform: rotate(30deg);
+}
+.topbar .gear-link[aria-current="page"]{ color: #244f68; background: #eef4f2; }

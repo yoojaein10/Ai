@@ -1,0 +1,20 @@
+.receivable-toolbar { grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 88px; }
+.receivable-workspace { grid-template-columns: minmax(720px, 1.7fr) minmax(350px, .8fr); }
+.receivable-table { min-width: 1370px; }
+.receivable-table.received-columns { min-width: 2450px; }
+.receivable-table .received { color: var(--green); font-weight: 750; }
+.receivable-table .outstanding { color: var(--red); font-weight: 750; }
+.receivable-table .overpaid { color: #805d18; font-weight: 750; }
+.status.paid { background: var(--green-soft); color: var(--green); }
+.status.overpaid-status { background: #fff2cf; color: #805d18; }
+
+@media (max-width: 1080px) {
+  .receivable-workspace { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .receivable-toolbar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .receivable-toolbar { grid-template-columns: 1fr; }
+  .receivable-toolbar #searchButton { width: 100%; }
+}

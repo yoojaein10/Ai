@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 감정서 LIST</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260902-1">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 세금계산서/현금영수증 발행여부 (2026-08-27) — 입금현황(receivables.css)과 같은 배지·가운데 정렬 */
+    .tax-issued{ display:inline-block; padding:2px 8px; border-radius:999px; background:#e5f2ec; color:#176b4d; font-size:11px; font-weight:700; }
+    th.proof-cell, td.proof-cell{ text-align:center; }
+    td.proof-cell .dim{ color:#9aa4ad; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span>
+      <h1>감정서 LIST</h1>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="검색 조건">
+      <label><span>본·지사</span><select id="officeCode" aria-label="본·지사 선택"></select></label>
+      <label><span>통합검색</span><input id="keyword" type="search" placeholder="소재지·채무자·거래처(기간 안) · 번호(전 기간)" title="글자로 찾으면 위 기간 안에서, 번호(숫자·하이픈)로 찾으면 전 기간에서 찾습니다" aria-label="소재지·채무자·거래처·번호 통합검색"></label>
+      <label><span>감정서번호</span><input id="docId" type="search" placeholder="감정서번호"></label>
+      <label><span>의뢰문서번호</span><input id="custDocId" type="search" placeholder="의뢰문서번호"></label>
+      <label><span>소재지</span><input id="address" type="search" placeholder="소재지"></label>
+      <label><span>거래처명</span><input id="customerName" type="search" placeholder="거래처명"></label>
+      <label><span>유치자</span><input id="manager" type="search" placeholder="유치자"></label>
+      <label><span>조사자</span><input id="charge" type="search" placeholder="조사자"></label>
+      <label><span>목적</span><input id="purpose" type="search" placeholder="예: 담보, 컨설팅"></label>
+      <label>
+        <span>접수 시작일</span>
+        <input id="dateFrom" type="date">
+      </label>
+      <label>
+        <span>접수 종료일</span>
+        <input id="dateTo" type="date">
+      </label>
+      <label class="amount-range">
+        <span>정산 청구액(원)</span>
+        <div>
+          <input id="billFrom" type="number" min="0" step="1" placeholder="최소" aria-label="정산 청구액 최소">
+          <em>~</em>
+          <input id="billTo" type="number" min="0" step="1" placeholder="최대" aria-label="정산 청구액 최대">
+        </div>
+      </label>
+      <label class="amount-range">
+        <span>평가액(원)</span>
+        <div>
+          <input id="priceFrom" type="number" min="0" step="1" placeholder="최소" aria-label="평가액 최소">
+          <em>~</em>
+          <input id="priceTo" type="number" min="0" step="1" placeholder="최대" aria-label="평가액 최대">
+        </div>
+      </label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+
+    <section class="workspace">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>감정서 목록</h2><p id="resultSummary">최근 7일 조회 중...</p></div>
+          <div class="heading-actions">
+            <div class="legend"><span class="dot linked"></span> 전표 연결</div>
+            <button id="manualSaleButton" class="export-button" type="button">+ 수기 매출</button>
+            <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="appraisalTable" class="resizable">
+            <!-- 열 구성 2026-09-01 사용자 확정(+입금상태·증빙 재추가): 번호/입금상태/접수/발송/
+                 업무구분/평가목적/거래처/의뢰번호/채무자/소유자/소재지/담당자/조사자/감정가액/순수수료/
+                 여비및기타/수수료합계/부가세/매출총액/입금액/입금일/미수금/세금계산서·현금영수증/
+                 발행금액. 2026-09-03: LWorkinfo=업무구분·LPurpose=평가목적으로 바로잡고
+                 평가목적·발행금액 칸 추가. 입금 세 칸은 입금현황과 같은 판정식이다. -->
+            <colgroup>
+              <col style="width:140px"><col style="width:92px"><col style="width:95px"><col style="width:95px"><col style="width:100px"><col style="width:130px"><col style="width:160px"><col style="width:200px"><col style="width:120px"><col style="width:105px">
+              <col style="width:105px"><col style="width:240px"><col style="width:80px"><col style="width:80px">
+              <col style="width:125px"><col style="width:105px"><col style="width:95px"><col style="width:95px"><col style="width:95px"><col style="width:95px"><col style="width:95px"><col style="width:95px"><col style="width:110px"><col style="width:95px">
+              <col style="width:115px"><col style="width:115px"><col style="width:95px"><col style="width:105px"><col style="width:130px">
+              <col style="width:110px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th data-sort="doc_id">감정서번호</th><th>입금상태</th><th data-sort="receipt_date">접수일</th><th data-sort="send_date">발송일</th><th data-sort="purpose">업무구분</th><th data-sort="eval_purpose">평가목적</th><th data-sort="customer_name">거래처</th><th data-sort="title">건명</th><th data-sort="cust_doc_id">의뢰번호</th><th data-sort="debtor">채무자</th>
+                <th data-sort="owner_name">소유자</th><th data-sort="address">소재지</th><th data-sort="manager">담당자</th><th data-sort="author">조사자</th>
+                <th class="number" data-sort="appraisal_amount">감정가액</th><th class="number" data-sort="base_fee">순수수료</th><th class="number" data-sort="travel_expense">여비</th><th class="number" data-sort="survey_fee">물건조사비</th><th class="number" data-sort="document_fee">공부발급비</th><th class="number" data-sort="land_survey_fee">토지조사비</th><th class="number" data-sort="other_expense">기타실비</th><th class="number" data-sort="special_service_fee">특별용역비</th><th class="number" data-sort="sales_amount">수수료합계</th><th class="number" data-sort="vat_amount">부가세</th>
+                <th class="number" data-sort="gross_total">매출총액</th><th class="number">입금액</th><th>입금일</th><th class="number">미수금</th><th class="proof-cell">세금계산서/현금영수증</th><th class="number">발행금액</th>
+              </tr>
+            </thead>
+            <tbody id="appraisalRows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조건에 맞는 감정서가 없습니다.</div>
+        </div>
+        <div class="pagination">
+          <button id="prevPage" type="button">이전</button>
+          <span id="pageLabel">1 / 1</span>
+          <button id="nextPage" type="button">다음</button>
+        </div>
+      </article>
+
+      <aside class="detail-panel" aria-live="polite">
+        <div id="detailPlaceholder" class="detail-placeholder">
+          <div class="document-mark">文</div>
+          <h2>감정서를 선택하세요</h2>
+          <p>목록에서 한 건을 선택하면 감정서번호와 연결된 Amaranth 전표가 표시됩니다.</p>
+        </div>
+        <div id="detailContent" class="hidden">
+          <div class="detail-heading">
+            <div><p>관리번호</p><h2 id="selectedDocId"></h2><button id="copyDocId" class="doc-copy" type="button" title="감정서번호 복사">복사</button></div>
+            <span id="matchBadge" class="badge"></span>
+          </div>
+          <section id="feeSummary" class="fee-summary hidden">
+            <h3>청구서상 수수료</h3>
+            <dl id="feeSummaryRows"></dl>
+          </section>
+          <h3 class="detail-section-title">전표 내용</h3>
+          <div id="voucherEmpty" class="empty-card hidden">
+            <strong>연결된 전표가 없습니다</strong>
+            <p>Amaranth 전표의 관리번호(ctNb)에 같은 감정서번호가 있는지 확인해 주세요.</p>
+          </div>
+          <div id="voucherList"></div>
+          <h3 class="detail-section-title">세금계산서 / 현금영수증</h3>
+          <div id="taxEmpty" class="empty-card hidden">
+            <strong>세금계산서 / 현금영수증 내역이 없습니다</strong>
+            <p>이 감정서번호로 발행된 세금계산서 또는 현금영수증이 아직 없습니다.</p>
+          </div>
+          <div id="taxList"></div>
+          <h3 class="detail-section-title">감정서별 비용 지급내역</h3>
+          <div id="paidEmpty" class="empty-card hidden">
+            <strong>지급 내역이 없습니다</strong>
+            <p>이 감정서번호가 붙은 비용 전표(지급수수료·협회비·여비교통비 등)가 없습니다.</p>
+          </div>
+          <div id="paidList"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  </div>
+  <div id="rowContextMenu" class="context-menu hidden" role="menu" aria-label="감정서 작업 메뉴">
+    <button id="createVoucherMenu" type="button" role="menuitem">전표 생성</button>
+    <button id="issueTaxMenu" type="button" role="menuitem">세금계산서 발급</button>
+  </div>
+  <dialog id="partnerDialog" class="partner-dialog">
+    <form method="dialog" class="partner-dialog-card">
+      <div class="partner-dialog-head">
+        <div><p>전표 생성 전 확인</p><h2>Amaranth 거래처 선택</h2></div>
+        <button class="dialog-close" value="cancel" formnovalidate aria-label="닫기">×</button>
+      </div>
+      <div id="partnerDialogLoading" class="partner-loading">APWorks 거래처와 Amaranth 거래처를 확인하고 있습니다.</div>
+      <div id="partnerDialogContent" class="hidden">
+        <section class="apworks-partner-card">
+          <span>APWorks 거래처</span><strong id="apwPartnerName"></strong>
+          <dl><div><dt>Production 검색명</dt><dd id="apwProduction">-</dd></div><div><dt>사업자번호</dt><dd id="apwBusinessNo">-</dd></div><div><dt>대표자</dt><dd id="apwRepresentative">-</dd></div><div><dt>주소</dt><dd id="apwAddress">-</dd></div></dl>
+        </section>
+        <label class="voucher-date-field"><span>전표일자</span><input id="voucherDate" type="date" required></label>
+        <div class="partner-search-row"><input id="partnerSearch" type="search" aria-label="Amaranth 거래처 검색" placeholder="거래처명 또는 거래처코드 끝 5자리"><button id="partnerSearchButton" type="button">검색</button></div>
+        <div class="partner-result-head"><strong>Amaranth 검색 결과</strong><button id="showPartnerCreate" type="button">+ 신규 거래처 추가</button></div>
+        <div id="partnerResults" class="partner-results"></div>
+        <section id="partnerCreatePanel" class="partner-create-panel hidden">
+          <h3>신규 거래처 정보</h3>
+          <div class="partner-form-grid">
+            <label><span>거래처명</span><input id="newPartnerName" required></label>
+            <label><span>사업자번호</span><input id="newBusinessNo" inputmode="numeric" placeholder="10자리"></label>
+            <label><span>대표자</span><input id="newRepresentative"></label>
+            <label><span>전화번호</span><input id="newTelephone"></label>
+            <label><span>업태</span><input id="newBusinessType"></label>
+            <label><span>종목</span><input id="newBusinessItem"></label>
+            <label class="wide"><span>이메일</span><input id="newPartnerEmail" type="email" placeholder="세금계산서 수신 이메일 (담당자정보에도 등록)"></label>
+            <label class="wide"><span>주소</span><input id="newAddress1"></label>
+          </div>
+          <button id="registerPartnerButton" type="button">Amaranth에 거래처 등록</button>
+        </section>
+        <p id="partnerDialogError" class="dialog-error hidden"></p>
+      </div>
+      <div class="partner-dialog-actions"><button value="cancel" formnovalidate>취소</button><button id="confirmVoucherButton" class="primary-button" type="button" disabled>선택한 거래처로 전표 생성</button></div>
+    </form>
+  </dialog>
+  <dialog id="manualSaleDialog" class="manual-sale-dialog">
+    <form method="dialog" class="manual-sale-card">
+      <div class="manual-sale-head">
+        <div><p>감정서번호 없는 탁상·가격자문</p><h2>수기 매출</h2></div>
+        <button class="dialog-close" value="cancel" formnovalidate aria-label="닫기">×</button>
+      </div>
+      <p class="manual-sale-guide">세금계산서를 먼저 발급하면 국세청 승인번호가 전표에 자동 반영됩니다. 이미 외부에서 발급했다면 전표만 생성할 수 있습니다.</p>
+      <div class="manual-sale-grid">
+        <label><span>내부 참조번호</span><input id="manualReference" readonly></label>
+        <label><span>회계단위 *</span><select id="manualOffice" required></select></label>
+        <label><span>작성·전표일자 *</span><input id="manualDate" type="date" required></label>
+        <label><span>영수·청구</span><select id="manualPurpose"><option value="영수">영수</option><option value="청구">청구</option></select></label>
+        <label class="wide"><span>Amaranth 거래처 *</span><div class="manual-search"><input id="manualPartnerSearch" type="search" placeholder="거래처명·사업자번호·코드"><button id="manualPartnerSearchButton" type="button">검색</button></div></label>
+        <div id="manualPartnerResults" class="manual-partner-results wide hidden"></div>
+        <label><span>거래처코드</span><input id="manualPartnerCode" readonly></label>
+        <label><span>상호 *</span><input id="manualPartnerName" required></label>
+        <label><span>사업자번호 *</span><input id="manualBusinessNo" inputmode="numeric" placeholder="10자리"></label>
+        <label><span>대표자</span><input id="manualCeo"></label>
+        <label><span>업태</span><input id="manualBizType"></label>
+        <label><span>종목</span><input id="manualBizClass"></label>
+        <label class="wide"><span>주소</span><input id="manualAddress"></label>
+        <label class="wide"><span>수신 이메일</span><input id="manualEmail" type="email"></label>
+        <label><span>공급가액 *</span><input id="manualSupply" inputmode="numeric" value="30000"></label>
+        <label><span>부가세 *</span><input id="manualTax" inputmode="numeric" value="3000"></label>
+        <label><span>합계</span><output id="manualTotal">33,000</output></label>
+        <label><span>매출 계정</span><select id="manualAccount"><option value="4010002">기타수수료</option><option value="4010001">감정수수료</option><option value="4010003">공시지가등수익</option><option value="4010004">용역수수료</option><option value="4010005">임대수수료</option><option value="9090000">주차장수익</option></select></label>
+        <label><span>매출구분</span><select id="manualSalesDivision"><option value="09">09 약식부분</option><option value="01">01 보상부문</option><option value="02">02 경매부문</option><option value="03">03 담보부문</option><option value="04">04 일반거래부문</option><option value="05">05 컨설팅부문</option><option value="06">06 공시업무</option><option value="07">07 기타(실비)</option></select></label>
+        <label><span>품목명</span><input id="manualItemName" value="탁상수수료"></label>
+        <label class="wide"><span>적요 *</span><input id="manualMemo" value="탁상수수료" required></label>
+      </div>
+      <p id="manualSaleMessage" class="manual-sale-message"></p>
+      <div class="manual-sale-actions">
+        <button value="cancel" formnovalidate>닫기</button>
+        <button id="manualTaxButton" type="button">세금계산서 발급</button>
+        <button id="manualVoucherButton" class="primary-button" type="button">전표 생성</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/panel-resize.js"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/taxinvoice-dialog.js?v=20260910-3"></script>
+  <script src="/ui/dashboard.js?v=20260911-1"></script>
+</body>
+</html>

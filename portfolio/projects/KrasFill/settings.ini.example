@@ -1,0 +1,8 @@
+[database]
+server = 192.0.2.10
+port = 1433
+database = apworksdw
+username = dh
+password = REDACTED_CONFIGURE_LOCALLY
+driver = ODBC Driver 17 for SQL Server
+trust_server_certificate = true

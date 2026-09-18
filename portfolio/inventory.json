@@ -1,0 +1,108 @@
+{
+  "projects": [
+    {
+      "project": "ai-dba-mockup",
+      "published_text_files": 24
+    },
+    {
+      "project": "AutoMap",
+      "published_text_files": 0
+    },
+    {
+      "project": "Bank_Bal",
+      "published_text_files": 655
+    },
+    {
+      "project": "BankAuto",
+      "published_text_files": 29
+    },
+    {
+      "project": "BusinessLogStats",
+      "published_text_files": 15
+    },
+    {
+      "project": "BusinessLogStats_Planning",
+      "published_text_files": 2
+    },
+    {
+      "project": "D_INSA",
+      "published_text_files": 802
+    },
+    {
+      "project": "DBA_ONE_Planning",
+      "published_text_files": 25
+    },
+    {
+      "project": "DocMerger",
+      "published_text_files": 11
+    },
+    {
+      "project": "E-Commerce",
+      "published_text_files": 45
+    },
+    {
+      "project": "gayage-local-redesign",
+      "published_text_files": 23
+    },
+    {
+      "project": "IndividualCostObjectionNotice",
+      "published_text_files": 24
+    },
+    {
+      "project": "IPScan",
+      "published_text_files": 2
+    },
+    {
+      "project": "KrasFill",
+      "published_text_files": 11
+    },
+    {
+      "project": "MOA",
+      "published_text_files": 492
+    },
+    {
+      "project": "MoveWin",
+      "published_text_files": 5
+    },
+    {
+      "project": "ScheduleApp",
+      "published_text_files": 78
+    },
+    {
+      "project": "StockPaperTrader",
+      "published_text_files": 12
+    },
+    {
+      "project": "UpbitPaperTrader",
+      "published_text_files": 22
+    },
+    {
+      "project": "video_analysis",
+      "published_text_files": 0
+    },
+    {
+      "project": "Y_BankAuto",
+      "published_text_files": 92
+    },
+    {
+      "project": "Y_KKBankAuto",
+      "published_text_files": 7
+    },
+    {
+      "project": "Y_SqlMcp",
+      "published_text_files": 7
+    },
+    {
+      "project": "Y_TSBankAuto",
+      "published_text_files": 105
+    }
+  ],
+  "redaction_summary": {
+    "sanitized_files": 194,
+    "runtime_json_excluded": 55,
+    "real_settings_excluded": 6,
+    "operational_text_excluded": 57,
+    "oversized_text_files_excluded": 2,
+    "sql_data_seed_excluded": 3
+  }
+}

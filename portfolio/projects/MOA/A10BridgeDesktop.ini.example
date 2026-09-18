@@ -1,0 +1,5 @@
+[server]
+url = http://127.0.0.1:8010
+
+[user]
+default_usr_seq = 813

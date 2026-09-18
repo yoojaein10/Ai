@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 카드전표</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 이 화면은 자유 배치 툴바 (공통 6칸 그리드 해제) */
+    .toolbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .toolbar .grp{display:flex;gap:10px;align-items:center;font-size:13px}
+    .toolbar .grp strong{white-space:nowrap}
+    .toolbar input[type=file]{width:auto;height:auto;border:0;background:none;padding:0;font-size:12px;box-shadow:none}
+    .toolbar input[type=file]:hover,.toolbar input[type=file]:focus{border:0;background:none;box-shadow:none}
+    /* 브라우저 기본 '파일 선택' 버튼을 MOA 버튼 규격으로 */
+    .toolbar input[type=file]::file-selector-button{
+      height:34px;margin-right:10px;padding:0 14px;
+      border:1px solid var(--line);border-radius:var(--radius-sm);
+      background:#fff;color:var(--ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+      transition:border-color 180ms ease,background 180ms ease;
+    }
+    .toolbar input[type=file]::file-selector-button:hover{border-color:var(--line-strong);background:#f7fafc}
+    .toolbar .chk{display:flex;flex-direction:row;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:650;white-space:nowrap}
+    .toolbar .chk input{width:15px;height:15px;margin:0;padding:0}
+    .toolbar .primary-button{padding:0 18px}
+
+    /* 요약 스트립 — 툴바와 같은 카드 톤 */
+    .cv-summary{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 18px;padding:12px 16px;
+      background:var(--surface);border:1px solid rgba(255,255,255,.86);border-radius:var(--radius-md);
+      box-shadow:0 8px 24px rgba(40,86,106,.055);font-size:13px;color:var(--muted)}
+    .cv-summary b{color:#244f68;font-variant-numeric:tabular-nums}
+
+    /* 위아래 패널 (검증 목록 위 · 확정된 전표 아래) — 검증 목록이 16칸이라
+       가로를 다 쓰는 편이 낫다 (2026-08-20 사용자 요청). */
+    .workspace.cv-split{grid-template-columns:1fr;min-height:0;align-items:start}
+    .cv-split .table-wrap{height:auto;min-height:0;max-height:46vh}
+    .cv-split .table-wrap.short{max-height:23vh}
+    /* 두 패널 사이 경계 — 끌어서 검증 목록 높이를 늘리고 줄인다
+       (2026-08-20 사용자 요청). 더블클릭하면 기본 높이로 돌아간다.
+       그리드 gap(18px) 안에 얹히도록 위아래 음수 여백을 준다. */
+    .cv-row-resizer{height:14px;margin:-16px 0 2px;border-radius:5px;cursor:row-resize;
+      background:transparent;transition:background 150ms ease}
+    .cv-row-resizer::before{content:'';display:block;width:44px;height:3px;margin:5px auto;
+      border-radius:2px;background:rgba(49,93,117,.2)}
+    .cv-row-resizer:hover,.cv-row-resizer.dragging{background:rgba(49,93,117,.14)}
+    .cv-row-resizer:hover::before,.cv-row-resizer.dragging::before{background:rgba(49,93,117,.5)}
+    /* 확정된 전표 기간 조회 — 기본은 당일치 (2026-08-20 사용자 요청) */
+    .cv-draft-range{gap:6px;font-size:12px;color:var(--muted)}
+    .cv-draft-range label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+    .cv-draft-range input{height:30px;width:auto;padding:0 8px;font-size:12px;border-radius:7px}
+    .cv-draft-range button{height:30px;padding:0 14px}
+    #cvDraftNote.warn{color:#a35a12;font-weight:700}
+    /* 계정을 이력에서 자동으로 채운 줄 표시 — 담당자가 훑어보고 고치라는 뜻 */
+    .cv-auto{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:6px;
+      background:#eaf1f6;color:#3d6f8c;font-size:10px;font-weight:750;vertical-align:middle}
+    .list-panel > .table-wrap > table.cv-grid{min-width:0}
+    /* 좁은 표라 첫 컬럼 가로고정·모노스페이스 강조는 끈다 */
+    .list-panel > .table-wrap > table.cv-grid > tbody td:first-child{position:static;box-shadow:none;background:transparent;color:inherit;font-family:inherit;font-weight:inherit}
+    .list-panel > .table-wrap > table.cv-grid > thead th:first-child{left:auto;box-shadow:none}
+    .cv-grid td{max-width:none;padding:8px 10px}
+    /* 머리글은 가운데 정렬 — 공통 스타일과 같게 되돌린다 (2026-08-20 사용자 요청).
+       데이터 칸 정렬은 그대로다(금액은 오른쪽). */
+    /* 머리글 사이 세로선 — 어느 칸을 잡고 끄는지 눈에 보이게 (2026-08-20 사용자 요청).
+       테두리 대신 안쪽 그림자를 쓴다: 폭 조절은 colgroup 값으로 도는데 테두리를
+       더하면 그만큼 칸이 밀린다. 위 th:first-child 규칙이 그림자를 지우므로
+       같은 무게로 뒤에 둬야 이긴다. */
+    .list-panel > .table-wrap > table.cv-grid > thead th:not(:last-child){
+      box-shadow:inset -1px 0 var(--line-strong,rgba(32,55,45,.22))}
+
+    /* 표 안 입력 요소 — 공통 42px 입력 규격을 표용으로 축소 */
+    .cv-grid input,.cv-grid select{height:30px;width:auto;padding:0 8px;font-size:12px;border-radius:7px}
+    .cv-grid input[type=checkbox]{width:15px;height:15px;padding:0}
+    .cv-grid input.num{width:92px;text-align:right}
+    .cv-grid .cv-remark{width:170px}
+    .cv-grid select{max-width:132px}
+    .cv-grid td.locked{color:#8a949f}
+
+    .cv-grid tbody tr.hold{background:#fdf6e7}
+    .cv-grid tbody tr.hold:hover{background:#faf0d8}
+    .cv-grid tbody tr.sel{background:#e5f2f8;box-shadow:inset 3px 0 #69a9c6}
+    .cv-badge{display:inline-block;padding:3px 8px;border-radius:7px;font-size:10px;font-weight:750}
+    .cv-badge.ready{background:#e5f3ea;color:#1b7a43}
+    .cv-badge.hold{background:#fdf0d8;color:#8a6415}
+    /* 안내뿐이라 확정되는 건 — 막히는 '보류' 와 구분한다 */
+    .cv-badge.note{background:#eaf1f6;color:#3d6f8c}
+    .cv-badge.done-S{background:#e8eaf6;color:#3949ab}
+    .cv-badge.done-D{background:#eef2f5;color:#4a5b68}
+    .cv-badge.done-F{background:#fde7e7;color:#c62828}
+    .cv-badge.done-X{background:#eeeeee;color:#666}
+    .cv-grid tr.done td{color:var(--muted)}
+    .cv-hold-why{margin-top:3px;color:#8a6415;font-size:11px;white-space:normal;max-width:230px}
+
+    /* 일괄변경 바 — 체크한 행에 계정·공제를 한 번에 적용 */
+    .cv-bulk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 18px;border-top:1px solid var(--line);font-size:12px}
+    .cv-bulk strong{color:var(--muted);font-size:12px;white-space:nowrap}
+    .cv-bulk select{height:30px;width:auto;padding:0 8px;font-size:12px;border-radius:7px}
+    .cv-bulk button{height:30px;padding:0 14px}
+
+    /* 패널 하단 액션 바 */
+    .cv-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line)}
+    .cv-actions button{height:36px;padding:0 16px}
+    .cv-actions button.primary{border-color:#b8d8e7;color:#244f68;background:#e3f2f9;box-shadow:0 6px 16px rgba(65,123,151,.1)}
+    .cv-actions button.primary:hover:not(:disabled){border-color:#8ebdd2;color:#183f56;background:#d5ebf5}
+    .cv-actions button.send{background:#244f68;color:#fff;border-color:#244f68}
+    .cv-actions button.send:hover:not(:disabled){background:#183f56;border-color:#183f56}
+    .cv-actions button.ghost{background:#fff;color:#8a3b3b;border-color:#e3c9c9}
+    .cv-actions button.ghost:hover:not(:disabled){background:#fbf0f0;border-color:#d3aaaa}
+    .cv-vdate{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .cv-vdate input{height:34px;padding:0 8px}
+    .cv-msg{font-size:12px;min-height:16px}
+    .cv-msg.err{color:#c62828}.cv-msg.ok{color:#1b7a43}
+    .cv-note{margin:10px 18px 14px;color:var(--muted);font-size:11px}
+    .toolbar .cv-note{margin:0}
+    .cv-actions .cv-note{margin:0}
+    .cv-actions .cv-note.warn{color:#a35a12;font-weight:700}
+    .cv-summary .cv-hidden-note{color:var(--muted)}
+    /* 툴바 체크박스와 같은 크기로 (기본 input 높이가 적용되면 과하게 커진다) */
+    .panel-heading label.cv-done-filter{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:650;white-space:nowrap}
+    .panel-heading label.cv-done-filter select{height:30px;width:auto;padding:0 8px;font-size:12px;border-radius:7px}
+
+    /* 오른쪽 패널 안 소제목 (분개 미리보기) */
+    .cv-sub{padding:14px 18px 8px;border-top:1px solid var(--line)}
+    .cv-sub h2{font-size:14px}
+
+    .cv-lines td.dr{color:#2b6a8f;font-weight:700}
+    .cv-lines td.cr{color:#1b7a43;font-weight:700}
+    .cv-drafts td.st-D{color:#8a6415;font-weight:700}
+    .cv-drafts td.st-S{color:#1b7a43;font-weight:700}
+    .cv-drafts td.st-F{color:#c62828;font-weight:700}
+    .cv-drafts td.st-X{color:#8a949f;font-weight:700}
+
+    /* ── 인쇄: 내역분류/결재요청 양식 (2026-08-20 재무팀 양식) ────────────
+       공용 인쇄 규칙(desktop.css)을 쓰되 제목 줄과 결재란만 이 화면에서 덮는다. */
+    @media print{
+      .cv-print-head{display:flex;align-items:flex-start;justify-content:space-between;
+        gap:12px;margin:0 0 6px}
+      .cv-print-head .cv-print-title{flex:1;text-align:center}
+      .print-area h1{margin:0;font-size:16px;text-decoration:underline;letter-spacing:.02em;
+        white-space:nowrap}
+      /* 조회기간은 공용 규칙이 가운데로 밀어서 왼쪽으로 되돌린다 */
+      .print-area .print-meta{margin:2px 0 0;text-align:left}
+      /* 결재란 — 담당·차장·팀장·재무이사 (사인 칸은 비워 인쇄한다) */
+      /* 공용 .print-area table{width:100%} 이 특이도에서 이기므로 클래스를 겹쳐 푼다.
+         안 그러면 결재란이 용지 폭을 다 먹고 제목이 밀려 두 줄이 된다. */
+      .print-area table.cv-approve{flex:0 0 auto;width:auto;border-collapse:collapse;
+        table-layout:fixed}
+      .print-area table.cv-approve col{width:84px}
+      .cv-approve td,.cv-approve th{border:1px solid #999;font-size:10px;text-align:center;
+        padding:3px 8px}
+      .cv-approve .cv-approve-label{width:22px;padding:3px;font-weight:700;line-height:1.15}
+      /* 도장·서명이 들어갈 칸이라 넉넉히 (2026-08-20 사용자 요청) */
+      .cv-approve .cv-approve-sign{height:52px}
+      .cv-approve th{background:#eaeaea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      /* 합계는 맨 마지막에 한 번만 (2026-08-20 사용자 요청).
+         tfoot 은 기본이 table-footer-group 이라 인쇄 때 장마다 되풀이된다 —
+         일반 행 묶음으로 바꿔 표 끝에 한 번만 나오게 한다. */
+      .print-area tfoot{display:table-row-group}
+      /* 공용 규칙은 tr 을 쪼개지 않는데(page-break-inside:avoid), 여기 첫 줄은
+         카드사·카드번호 묶음 칸을 품어 수십 줄 높이다. 그대로 두면 묶음이 통째로
+         다음 장으로 밀려 첫 장이 제목만 나온다 (2026-08-20 실측: 90건에 1장 공백).
+         이 표는 한 줄짜리 행이라 장이 갈려도 읽는 데 문제없다 — 쭉 흐르게 둔다. */
+      .print-area tr{page-break-inside:auto}
+      /* 카드사·카드번호 묶음 칸은 가운데에 놓는다 */
+      .print-area td.cv-group{text-align:center;vertical-align:middle}
+      /* 공용 td:first-child 가 첫 칸을 초록·굵게·고정폭 글꼴로 만든다(감정서번호용).
+         여기 첫 칸은 카드별칭이라 한글이 다른 글꼴로 튀어 나왔다 (2026-08-20 제보). */
+      .print-area td:first-child{color:inherit;font-family:inherit;font-weight:inherit}
+      .print-area th{text-align:center}
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>카드전표</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="엑셀 업로드">
+      <div class="grp">
+        <strong>카드 사용내역 엑셀</strong>
+        <input id="cvFile" type="file" accept=".xls,.xlsx">
+      </div>
+      <label class="chk"><input id="cvAutoRegister" type="checkbox"> 미등록 가맹점 자동 등록</label>
+      <button id="cvUpload" class="primary-button" type="button">업로드·검증</button>
+      <div class="grp">
+        <strong>카드내역</strong>
+        <input id="cvDbFrom" type="date">
+        <span>~</span>
+        <input id="cvDbTo" type="date">
+      </div>
+      <button id="cvFetchDb" class="primary-button" type="button">카드내역 불러오기</button>
+      <span id="cvFileName" class="cv-note"></span>
+    </section>
+
+    <div id="cvSummary" class="cv-summary hidden"></div>
+
+    <section class="workspace cv-split">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>검증 목록</h2><p>승인금액·카드·승인번호는 원천 데이터라 수정할 수 없습니다</p></div>
+          <div class="heading-actions">
+            <label class="cv-done-filter">처리 구분
+              <select id="cvDoneFilter"
+                title="처리 = 아마란스 전송완료 건. 확정만 하고 안 보낸 건과 실패한 건은 미처리에 남습니다">
+                <option value="all">전체</option>
+                <option value="done">처리</option>
+                <option value="open" selected>미처리</option>
+              </select>
+            </label>
+            <span id="cvSaveNote" class="cv-note"></span>
+            <button id="cvSaveWork" class="export-button" type="button"
+              title="분류·체크한 작업을 이 PC 브라우저에 저장해 둡니다. 수정할 때마다 자동으로도 저장되고, 화면을 다시 열면 복원됩니다">임시저장</button>
+            <button id="cvPrint" class="export-button print-button" type="button" disabled
+              title="체크한 건을 결재요청 양식으로 인쇄합니다">인쇄</button>
+            <button id="cvExport" class="export-button" type="button" disabled
+              title="체크한 건만 엑셀로 내려받습니다 (인쇄와 같은 기준)">엑셀 내보내기</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="cv-grid" id="cvTable">
+            <colgroup>
+              <col style="width:44px"><col style="width:160px"><col style="width:80px">
+              <col style="width:84px"><col style="width:96px"><col style="width:150px">
+              <col style="width:96px"><col style="width:84px"><col style="width:190px">
+              <col style="width:110px"><col style="width:104px"><col style="width:142px">
+              <col style="width:100px"><col style="width:100px"><col style="width:108px">
+              <col style="width:100px"><col style="width:200px">
+            </colgroup>
+            <thead><tr>
+              <th><input id="cvCheckAll" type="checkbox" title="전체 선택"></th>
+              <th data-sort="status">상태</th><th data-sort="canceled">정상구분</th>
+              <th data-sort="user_name">사용자</th><th data-sort="card_alias">카드사</th>
+              <th data-sort="card_no">카드번호</th><th data-sort="use_date">사용일자</th>
+              <th data-sort="appr_time">승인시간</th><th data-sort="merchant">가맹점</th>
+              <th data-sort="industry">업종</th>
+              <th class="number" data-sort="total">승인금액</th>
+              <th data-sort="purpose">계정(사용용도)</th><th data-sort="deductible">공제</th>
+              <th data-sort="tax_info">과세정보</th>
+              <th class="number" data-sort="supply">공급가액</th>
+              <th class="number" data-sort="vat">부가세</th><th data-sort="remark">적요</th>
+            </tr></thead>
+            <tbody id="cvRows"><tr><td colspan="17">엑셀을 업로드하세요.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="cv-bulk">
+          <strong>체크한 건 일괄변경</strong>
+          <select id="cvBulkPurpose"><option value="">계정 변경 안 함</option></select>
+          <select id="cvBulkDeduct">
+            <option value="">공제 변경 안 함</option>
+            <option value="1">공제</option>
+            <option value="0">미공제</option>
+          </select>
+          <button id="cvBulkApply" type="button">적용</button>
+          <span id="cvBulkMsg" class="cv-msg"></span>
+        </div>
+        <div class="cv-actions">
+          <label class="cv-vdate">전표일자 <input id="cvVoucherDate" type="date"></label>
+          <button id="cvCreateDraft" class="primary" type="button" disabled>선택 건 확정 + 아마란스 전송</button>
+          <span id="cvPickInfo" class="cv-note"></span>
+          <span id="cvMsg" class="cv-msg"></span>
+        </div>
+        <p class="cv-note">확정하면 바로 아마란스에 등록됩니다(확정전표). 아마란스가 거부하면 확정을 되돌리니 내용을 고친 뒤 다시 확정하세요. 아래 목록의 “아마란스 전송”은 예전에 확정만 해 둔 건·실패한 건용입니다.</p>
+      </article>
+
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>확정된 전표</h2><p id="cvDraftNote">행을 누르면 아래에 분개 미리보기가 열립니다</p></div>
+          <div class="heading-actions cv-draft-range">
+            <label>전표일 <input id="cvDraftFrom" type="date"></label>
+            <span>~</span>
+            <label><input id="cvDraftTo" type="date"></label>
+            <button id="cvDraftSearch" type="button">조회</button>
+          </div>
+        </div>
+        <div class="table-wrap short">
+          <table class="cv-grid cv-drafts">
+            <colgroup>
+              <col style="width:90px"><col style="width:110px"><col style="width:80px">
+              <col style="width:120px"><col style="width:110px"><col style="width:150px">
+            </colgroup>
+            <thead><tr><th>번호</th><th>전표일자</th><th class="number">건수</th>
+              <th class="number">금액</th><th>상태</th><th>아마란스 전표</th></tr></thead>
+            <tbody id="cvDrafts"><tr><td colspan="6">확정된 전표가 없습니다.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="cv-actions">
+          <button id="cvSend" class="send" type="button" disabled>아마란스 전송</button>
+          <button id="cvCancelDraft" class="ghost" type="button" disabled>전표 취소</button>
+          <span id="cvSendMsg" class="cv-msg"></span>
+        </div>
+        <div class="cv-sub"><h2>분개 미리보기</h2></div>
+        <div class="table-wrap short">
+          <table class="cv-grid cv-lines">
+            <colgroup>
+              <col style="width:64px"><col style="width:64px"><col style="width:150px">
+              <col style="width:120px"><col style="width:170px"><col style="width:80px">
+              <col style="width:80px"><col style="width:240px">
+            </colgroup>
+            <thead><tr><th>순번</th><th>차대</th><th>계정</th><th class="number">금액</th>
+              <th>거래처</th><th>세무</th><th>증빙</th><th>적요</th></tr></thead>
+            <tbody id="cvLines"><tr><td colspan="8">전표를 선택하세요.</td></tr></tbody>
+          </table>
+        </div>
+        <p class="cv-note">전송을 취소하려면 아마란스에서 직접 전표를 삭제하세요.</p>
+      </article>
+    </section>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js?v=20260802-1"></script>
+  <script src="/ui/card-vouchers.js?v=20260908-1"></script>
+</body>
+</html>

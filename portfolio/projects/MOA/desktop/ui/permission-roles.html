@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 일괄권한</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <!-- 폰트는 같은 출처라도 브라우저가 CORS 모드로 받는다 — crossorigin 이 없으면
+       preload 한 것과 @font-face 가 받는 것이 서로 다른 요청이 되어 두 번 받는다.
+       실제 등록(@font-face)은 permission-roles.css 맨 위에 있다. -->
+  <link rel="preload" href="/ui/pretendard-variable.woff2?v=20260815-1" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <link rel="stylesheet" href="/ui/permissions-preview.css?v=20260818-11">
+  <!-- CSS·JS 를 고쳤으면 ?v= 를 반드시 올린다. 안 올리면 운영에서 옛 파일이 잡힌다. -->
+  <link rel="stylesheet" href="/ui/permission-roles.css?v=20260817-2">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar permission-topbar">
+    <a class="back-to-main" href="/desktop/permissions" title="권한 관리로 돌아가기">
+      <span aria-hidden="true">←</span> 권한 관리
+    </a>
+    <div class="brand-block">
+      <span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span>
+      <div>
+        <h1>일괄권한</h1>
+      </div>
+    </div>
+    <!-- 이 자리는 '상태' 자리다(형제 화면도 같다). 파급 경고는 상태가 아니라서
+         초록 점을 달고 여기 앉아 있으면 경고로 안 읽힌다 — 빈 상태 카드와
+         저장 줄로 내리고, 여기에는 실제 상태만 적는다. -->
+    <div class="preview-state"><span></span>내 소속 일괄권한</div>
+  </header>
+
+  <main id="main-content" class="permission-page">
+    <!-- '보기 전용' 배너는 2026-08-18 뺐다 — 지사도 자기 소속 일괄권한을 만들고 고친다
+         (소속은 로그인 계정, 서버가 남의 소속 쓰기를 막음). -->
+
+    <section class="roles-wrap">
+      <div class="roles-list">
+        <div class="roles-head">
+          <h2>일괄권한 <span class="legend-count" id="roleCount"></span></h2>
+          <button type="button" id="newRole" class="primary-button">+ 새 일괄권한</button>
+        </div>
+        <ul id="roleList" class="role-items"><li class="empty">불러오는 중…</li></ul>
+      </div>
+
+      <!-- 편집칸이 열리기 전까지 오른쪽이 흰 여백이라, 폼과 같은 자리에서 서로
+           토글한다(openEditor / remove). 종전엔 여기에 '적용 순서'와 '일괄권한은 참조'
+           안내를 뒀는데 2026-08-18 걷어냈다: 부서도 복사로 바뀌어 "고치면 다
+           따라온다"가 틀린 말이 됐고(자동 분리 삭제까지), 담당자에게 불필요했다. -->
+      <div class="editor-empty" id="editorEmpty">
+        <h2>일괄권한을 고르세요</h2>
+        <p class="editor-empty-msg" id="editorEmptyMsg" role="status"></p>
+      </div>
+
+      <form class="role-editor" id="roleEditor" tabindex="-1" aria-labelledby="editorTitle" hidden>
+        <!-- 폼에 제목이 없으면 화면 낭독기에는 오른쪽에 무엇이 열렸는지 안 들린다.
+             저장·선택 때마다 목록을 다시 그려 포커스가 body 로 떨어지므로,
+             이 제목이 포커스를 받을 자리(tabindex="-1")이기도 하다. -->
+        <div class="editor-head">
+          <h2 id="editorTitle">일괄권한</h2>
+        </div>
+
+        <label class="name-field">
+          <span>일괄권한 이름</span>
+          <input id="roleName" type="text" maxlength="60" placeholder="예: 집행부, 일반, 지사 재무">
+        </label>
+        <!-- 소속 선택칸은 2026-08-18 뺐다 — 소속은 로그인 계정으로 정해진다(본사 계정
+             =본사 일괄권한, 21지사 계정=21지사 일괄권한). 서버가 강제하므로 고를 필요가 없다. -->
+        <p class="usage" id="roleUsage"></p>
+
+        <section class="setting-section menu-access-section">
+          <div class="section-heading menu-section-heading">
+            <div>
+              <h3>메뉴 접근권한</h3>
+            </div>
+            <div class="menu-permission-summary">
+              <strong id="menuCount"></strong>
+            </div>
+          </div>
+          <div id="menuChecks"></div>
+        </section>
+
+        <!-- 적용 대상(부서·사람 일괄 체크리스트)은 2026-08-18 걷어냈다. 일괄권한을
+             사람·부서에 붙이는 일은 권한관리 화면에서 한다 — 거기서 사람/부서를
+             고르고 이 일괄권한을 골라 붙인다. 만드는 곳(여기)과 붙이는 곳(권한관리)을
+             나누면 각 화면이 한 가지 일만 한다. -->
+
+        <!-- 조회 범위 — 전체지사조회는 **본사 일괄권한에만**(2026-08-18 사용자 요청). 본사
+             전용이라 JS 가 로그인 소속이 본사(10)일 때만 편다. 지사 일괄권한엔 이 섹션이
+             안 뜨고 개인내역조회만 남는다(지사는 전지사조회를 가질 수 없다). -->
+        <section id="roleViewAllSection" class="setting-section simple-setting-section" hidden>
+          <div class="section-heading"><div><h3>전체지사 조회</h3></div></div>
+          <div class="scope-policy-card">
+            <span class="permission-card-icon scope-icon">전</span>
+            <span class="permission-card-copy"><strong>다른 지사 데이터 조회 허용</strong></span>
+            <label class="inline-switch">
+              <input id="roleViewAll" type="checkbox">
+              <i class="switch-control"></i>
+            </label>
+          </div>
+        </section>
+
+        <section class="setting-section people-scope-section">
+          <div class="section-heading">
+            <div>
+              <h3>개인내역 조회</h3>
+            </div>
+          </div>
+          <div class="scope-policy-card people-scope-card">
+            <span class="permission-card-icon people-icon">인</span>
+            <span class="permission-card-copy">
+              <strong>다른 직원 데이터 조회 허용</strong>
+            </span>
+            <label class="inline-switch">
+              <input id="roleViewOther" type="checkbox">
+              <i class="switch-control"></i>
+            </label>
+          </div>
+        </section>
+
+        <div class="editor-actions">
+          <span class="msg" id="roleMsg" aria-live="polite"></span>
+          <!-- 삭제를 저장 왼쪽에 두고 무게를 낮춘다. 저장이 이 화면의 일이고,
+               삭제는 서버가 이미 막아 주는(쓰는 곳이 있으면 거절) 드문 일이다. -->
+          <button type="button" id="deleteRole" class="danger-button">삭제</button>
+          <button type="submit" class="primary-button" id="saveRole">저장</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/permission-roles.js?v=20260911-1"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+.receivable-toolbar { grid-template-columns: repeat(5, minmax(150px, 1fr)); }
+.receivable-workspace { grid-template-columns: minmax(720px, 1.7fr) minmax(350px, .8fr); }
+.receivable-table { min-width: 1780px; }
+.receivable-table.received-columns { min-width: 2450px; }
+/* 상태 다중선택 — 눌러서 내리면 '☐ 완납'처럼 한 줄에 하나씩 (아무것도 안 고르면 전체) */
+.multi-select { position: relative; }
+.multi-select > button {
+  width: 100%; text-align: left; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+.multi-select > button::after { content: '▾'; float: right; opacity: .55; }
+.multi-menu {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 100%;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .14); padding: 5px;
+}
+/* dashboard.css의 `.receivable-toolbar label { flex-direction: column }`이
+   메뉴 안 라벨까지 세로로 세우므로, 여기서 가로로 되돌린다 (선택자를 더 구체적으로). */
+.receivable-toolbar .multi-menu label {
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: 6px; padding: 4px 7px; color: inherit; font-size: 13px; font-weight: 500;
+  text-align: left; white-space: nowrap; cursor: pointer; border-radius: 6px;
+}
+.receivable-toolbar .multi-menu label:hover { background: rgba(0, 0, 0, .05); }
+.receivable-toolbar .multi-menu input {
+  width: 13px; height: 13px; margin: 0; flex: none; cursor: pointer;
+}
+.multi-clear {
+  width: 100%; margin-top: 4px; padding: 5px; border: 0; border-top: 1px solid var(--border);
+  background: none; color: inherit; font: inherit; font-size: 12px; cursor: pointer; opacity: .7;
+}
+/* 상세 패널은 드래그로 긁어 복사할 수 있게 한다 (감정서번호·전표 금액 옮겨적기용).
+   표 헤더처럼 선택을 막아둔 곳이 있어 여기서 명시적으로 허용한다. */
+.detail-panel, .detail-panel * { user-select: text; -webkit-user-select: text; }
+.detail-heading h2 { cursor: text; }
+.detail-heading h2:hover { background: rgba(0, 0, 0, .04); border-radius: 4px; }
+.doc-copy {
+  margin-left: 6px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); color: var(--muted); font-size: 11px; cursor: pointer;
+  vertical-align: middle;
+}
+.doc-copy:hover { color: var(--ink); }
+
+/* 합계 바 둘째 줄(종료일 당일 입금) */
+.sum-bar .sum-line { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; width: 100%; }
+.sum-bar .sum-line + .sum-line { margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--line); }
+
+.receivable-table .received { color: var(--green); font-weight: 750; }
+.receivable-table .outstanding { color: var(--red); font-weight: 750; }
+.receivable-table .overpaid { color: #805d18; font-weight: 750; }
+.status.paid { background: var(--green-soft); color: var(--green); }
+.status.overpaid-status { background: #fff2cf; color: #805d18; }
+/* 입금상태 배지 (2026-09-03) — 감정서 LIST 와 같은 payment-status 톤. 과입금·선수금은
+   dashboard.css 에 있고, 여기서 완납/부분입금/미입금 색만 더한다. */
+.payment-완납 { background: #e3f3ea; color: #2f6b45; }
+.payment-부분입금 { background: #fff2cf; color: #805d18; }
+.payment-미입금 { background: #f7e9e5; color: #934333; }
+/* 합계 바는 줄 단위로 세로로 쌓는다 (조회 합계 / 종료일 입금). 가로 배치는 .sum-line이 한다. */
+.sum-bar { display: flex; flex-direction: column; gap: 0; padding: 9px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.sum-bar .sum-label { font-weight: 750; color: var(--ink); }
+.sum-bar b { font-weight: 750; color: var(--ink); }
+.sum-bar b.received { color: var(--green); }
+.sum-bar b.outstanding { color: var(--red); }
+
+@media (max-width: 1080px) {
+  .receivable-workspace { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .receivable-toolbar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .receivable-toolbar { grid-template-columns: 1fr; }
+  .receivable-toolbar #searchButton { width: 100%; }
+}
+
+/* 세금계산서/현금영수증 발행여부 (2026-08-07, 08-13 현금영수증 합류). 조용한
+   초록 — 목록에서 눈에 걸리되 숫자 읽는 것을 방해하지 않을 만큼만. */
+.tax-issued { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  background: #e5f2ec; color: #176b4d; font-size: 11px; font-weight: 700; }
+/* 카드매출(세무구분 17)은 계산서가 필요 없다 — '미발행'처럼 보이지 않게 회색 배지 (2026-09-10). */
+.tax-issued.card { background: #eef0f2; color: #5b6770; }
+/* 발행 배지·'-'는 텍스트 열과 달리 가운데가 안정적이다 (2026-08-13 요청). */
+th.proof-cell, td.proof-cell { text-align: center; }

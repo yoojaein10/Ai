@@ -1,0 +1,10 @@
+[run]
+mode = live
+banks = 신한,국민
+interval_seconds = 600
+since_days = 0
+attach_pdf = true
+max_per_round = 20
+statuses = 진행
+only_doc = 
+

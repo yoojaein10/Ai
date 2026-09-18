@@ -1,0 +1,7 @@
+# IP_Scan_Simple 설정 (자동 생성). 비밀번호는 이 PC/사용자 DPAPI 로 암호화됨
+SqlServer=192.0.2.10
+Database=apworksdw
+SqlUser=dh
+SqlPassword=REDACTED_CONFIGURE_LOCALLY
+Prefix=10.40.0
+UseDb=1

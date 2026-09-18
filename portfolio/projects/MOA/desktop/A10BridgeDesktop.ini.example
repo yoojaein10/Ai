@@ -1,0 +1,8 @@
+[server]
+url = http://192.0.2.10:8010
+
+[user]
+; APWorks 연동 전 임시 로그인용. 값은 TMWCMN_USR_BAC_INFO.USR_SEQ(숫자).
+; APWorks가 --usr-seq를 넘기기 시작하면 명령줄 값이 우선하므로
+; 이 줄은 지우거나 그대로 둬도 무방하다.
+default_usr_seq = 813

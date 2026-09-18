@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 상여</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 상여 v2 (2026-08-27) — 지급월 단위, 엑셀 시트 열 순서. 성명~거래처 4열은 왼쪽 고정. */
+    .list-panel > .table-wrap > table.bonus-table > tbody td:first-child{position:static;box-shadow:none;background:transparent}
+    .list-panel > .table-wrap > table.bonus-table > thead th:first-child{left:auto;box-shadow:none;z-index:2}
+    .list-panel > .table-wrap > table.bonus-table > tbody td[data-stick]{position:sticky;z-index:2;background:#fff;box-shadow:inset -1px 0 0 var(--line)}
+    .list-panel > .table-wrap > table.bonus-table > thead th[data-stick]{position:sticky;z-index:4;background:#eef3f0;box-shadow:inset -1px 0 0 var(--line)}
+    .bonus-table{white-space:nowrap}
+    .bonus-table thead th{line-height:1.3;text-align:center}
+    .bonus-table td.number,.bonus-table th.number{text-align:right}
+    .bonus-table tr.person-head td{background:rgba(240,244,241,.94);border-top:2px solid #b7c3cc;color:#2d3a35;font-weight:750;padding:8px 10px}
+    .bonus-table tr.person-head td[data-stick]{background:#eef2f1}
+    .bonus-table tr.block-total td{font-weight:700;background:#f3f4f6}
+    .bonus-table tr.block-total td[data-stick]{background:#f3f4f6}
+    .bonus-table tr.person-total td{font-weight:750;background:#e8eef3}
+    .bonus-table tr.person-total td[data-stick]{background:#e8eef3}
+    .bonus-table tr.grand-total td{font-weight:750;background:#dfe7ee;border-top:2px solid #9ca3af}
+    .bonus-table tr.grand-total td[data-stick]{background:#dfe7ee}
+    .bonus-table tr.excluded td{color:#9aa4ad;text-decoration:line-through}
+    .bonus-table tr.journal-head td{background:#eef3f0;font-weight:750;border-top:2px solid #b7c3cc}
+    .bonus-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+    .bonus-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer;color:#56625c}
+    .bonus-tabs button.active{background:#244f68;border-color:#244f68;color:#fff}
+    .bonus-tabs button .count{margin-left:6px;font-size:11px;opacity:.8}
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#eef4f2;color:#244f68;margin-left:4px}
+    .badge.warn{background:#fff3e0;color:#b26a00}
+    .badge.bad{background:#fdecea;color:#c62828}
+    .badge.ok{background:#e8f5ec;color:#1b7a43}
+    .badge.muted{background:#f1f3f4;color:#6b7680}
+    .status-pill{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:750;font-size:12px;margin-left:10px}
+    .status-pill.open{background:#e8f5ec;color:#1b7a43}
+    .status-pill.closed{background:#eceff1;color:#455a64}
+    .small-button{padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;font-size:11px;color:#244f68}
+    .small-button.danger{color:#b04a4a}
+    .row-menu{border:none;background:none;cursor:pointer;color:#244f68;font-weight:750;padding:0 4px}
+    .deduct-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:#fff8dc;color:#8a6d1a;font-size:11px;font-weight:600}
+    .note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
+    .note.closed{color:#455a64;background:#eceff1}
+    .adjust-hint{color:#8a949f;font-size:12px;margin-left:8px}
+    .list-panel > .table-wrap{scrollbar-width:auto}
+    .list-panel > .table-wrap::-webkit-scrollbar{height:13px;width:13px}
+    .list-panel > .table-wrap::-webkit-scrollbar-thumb{background:#b7c3cc;border-radius:7px;border:3px solid #f4f6f5}
+    .list-panel > .table-wrap::-webkit-scrollbar-track{background:#f4f6f5}
+    .warn-list{margin:0;padding:0 0 0 18px;font-size:12px;line-height:1.7;color:#56625c;white-space:normal}
+    dialog.bonus-dialog{border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:560px;max-width:92vw;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+    dialog.bonus-dialog::backdrop{background:rgba(20,30,40,.35)}
+    dialog.bonus-dialog h3{margin:0 0 4px}
+    dialog.bonus-dialog p.hint{margin:0 0 12px;color:#8a949f;font-size:12px}
+    dialog.bonus-dialog table{width:100%;border-collapse:collapse;font-size:13px}
+    dialog.bonus-dialog th{font-size:11px;color:#8a949f;text-align:left;padding:4px 6px}
+    dialog.bonus-dialog td{padding:4px 6px}
+    dialog.bonus-dialog input,dialog.bonus-dialog select{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:13px}
+    dialog.bonus-dialog input.num{text-align:right}
+    dialog.bonus-dialog td.center{text-align:center}
+    dialog.bonus-dialog td.number{text-align:right}
+    dialog.bonus-dialog input[type=checkbox]{width:auto}
+    dialog.bonus-dialog#deductDialog{min-width:860px}
+    .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+    .preview{display:flex;gap:18px;align-items:baseline;margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#f4f6f5;font-size:13px}
+    .preview b{font-size:16px}
+    .preview .neg{color:#c62828}
+    .preview .delta{color:#8a949f;font-size:12px}
+    .preview .warn{color:#b26a00;font-size:12px}
+    .doc-search{display:flex;gap:8px;align-items:center;margin:0 0 10px}
+    .doc-search input{border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:13px}
+    .doc-list{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+    .doc-list table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+    .doc-list th{position:sticky;top:0;background:#f7f9f8;font-size:11px;color:#8a949f;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+    .doc-list td{padding:5px 8px;border-bottom:1px solid var(--line)}
+    .doc-list tr.included td{color:#9aa4ad}
+    .doc-list tr:hover td{background:#f4f6f5}
+    dialog.bonus-dialog#docDialog{min-width:960px}
+    .dialog-actions .primary-button{padding:7px 16px}
+    .override-grid{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;align-items:center;font-size:13px}
+    .override-grid label.check{display:inline-flex;gap:6px;align-items:center;margin-right:12px}
+    .override-grid input[type=checkbox]{width:auto}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>상여</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="검색 조건">
+      <label><span>지급월</span><input id="period" type="month"></label>
+      <label><span>~ 지급월 (여러 달 검색)</span><input id="periodTo" type="month" title="채우면 검색 탭에서 이 구간을 한꺼번에 봅니다 (최대 12달)"></label>
+      <label><span>감정서번호</span><input id="docFilter" type="text" maxlength="50" placeholder="일부만 넣어도 됩니다"></label>
+      <label><span>유치자</span><input id="personFilter" type="text" maxlength="30" placeholder="이름 (일부만 넣어도 됩니다)"></label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+      <span id="statusPill" class="status-pill open hidden"></span>
+      <span id="periodNote" class="adjust-hint"></span>
+    </section>
+    <section class="workspace single-workspace">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2 id="tabTitle">주주표</h2><p id="resultSummary">조회 중...</p></div>
+          <div>
+            <button id="settingsButton" class="export-button" type="button" title="사람·요율·지분 설정">설정</button>
+            <button id="ledgerButton" class="export-button" type="button" title="공제 대장 — 화환·패널티·감정서경비·선지급을 대기/적용으로 관리">공제 대장</button>
+            <button id="closeButton" class="export-button hidden" type="button" title="이 달 결과를 스냅샷으로 저장하고 잠급니다">마감</button>
+            <button id="reopenButton" class="export-button hidden" type="button" title="마감을 되돌리고 다시 계산합니다">재개</button>
+            <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+          </div>
+        </div>
+        <div class="bonus-tabs" role="tablist">
+          <button data-tab="shareholders" class="active" type="button">주주표<span class="count" id="countShareholders"></span></button>
+          <button data-tab="associates" type="button">평·동표<span class="count" id="countAssociates"></span></button>
+          <button data-tab="advances" type="button">선지급<span class="count" id="countAdvances"></span></button>
+          <button data-tab="summary" type="button">총괄표</button>
+          <button data-tab="held" type="button">보류·경고<span class="count" id="countHeld"></span></button>
+          <button data-tab="search" type="button">검색<span class="count" id="countSearch"></span></button>
+        </div>
+        <p id="screenNote" class="note">지급월의 전달(입금월)에 <b>감정수수료 매출이 잡혔거나 입금이 끝난</b> 감정서가 자동으로 실적 행이 됩니다. 요율은 사람별 접수일 스케줄(설정), 지분은 매출입력 배분 → 지분표 → 거래처명 괄호 순으로 정합니다. 가변비·미납비이월·선지급·화환 같은 사람 단위 항목은 <b>공제 입력</b>, 감정서 하나만 고칠 때는 행 오른쪽 <b>⋯</b>(포함·제외·수수료·요율·지분)를 씁니다. 마감하면 그 달은 스냅샷으로 고정됩니다.</p>
+        <div class="table-wrap">
+          <table id="bonusTable" class="bonus-table">
+            <colgroup id="bonusCols"></colgroup>
+            <thead id="bonusHead"></thead>
+            <tbody id="bonusRows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">해당 월 실적이 없습니다.</div>
+        </div>
+      </article>
+    </section>
+  </main>
+  </div>
+
+  <dialog id="deductDialog" class="bonus-dialog">
+    <h3 id="deductTitle">공제</h3>
+    <p class="hint" id="deductHint">공제 대장에서 이번 달에 뺄 항목을 고릅니다. 금액은 양수 — 부호는 종류가 정합니다.</p>
+    <div id="deductPreview" class="preview"></div>
+    <table><thead><tr><th style="width:44px">적용</th><th style="width:22%">종류</th><th style="width:13%">금액</th><th style="width:15%">감정서</th><th style="width:12%">발생일</th><th>메모</th><th style="width:90px">출처</th><th style="width:32px"></th></tr></thead><tbody id="deductRows"></tbody></table>
+    <div class="dialog-actions"><button id="deductAdd" class="small-button" type="button">줄 추가</button><span style="flex:1"></span><button id="deductCancel" class="export-button" type="button">닫기</button><button id="deductSave" class="primary-button" type="button">저장</button></div>
+  </dialog>
+
+  <dialog id="docDialog" class="bonus-dialog">
+    <h3 id="docTitle">감정서 추가</h3>
+    <p class="hint">자동으로 안 잡힌 감정서를 이 사람 행으로 넣습니다 — 접수일 구간으로 이 사람이 담당(공(X) 포함)인 감정서를 찾아 체크하거나 두 번 클릭하세요. 추가한 감정서는 보류·후보 여부와 상관없이 포함(INCLUDE 오버라이드)됩니다.</p>
+    <div class="doc-search"><label>접수일 <input id="docFrom" type="date"></label><span>~</span><input id="docTo" type="date"><button id="docSearch" class="small-button" type="button">검색</button><span id="docCount" class="delta"></span></div>
+    <div class="doc-list"><table><thead><tr><th style="width:36px"></th><th>감정서</th><th>접수일</th><th>업무구분</th><th>거래처</th><th>담당</th><th class="number">순수수료</th><th>상태</th></tr></thead><tbody id="docRows"></tbody></table></div>
+    <div class="dialog-actions"><button id="docCancel" class="export-button" type="button">닫기</button><button id="docAdd" class="primary-button" type="button">선택 추가</button></div>
+  </dialog>
+
+  <dialog id="overrideDialog" class="bonus-dialog">
+    <h3 id="overrideTitle">감정서 오버라이드</h3>
+    <p class="hint">이 달·이 감정서·이 사람에게만 적용됩니다. 비워 두면 자동값을 씁니다. 모두 비우고 저장하면 오버라이드가 지워집니다.</p>
+    <div class="override-grid">
+      <span>포함 / 제외</span>
+      <span><label class="check"><input id="ovInclude" type="checkbox">보류돼도 포함</label><label class="check"><input id="ovExclude" type="checkbox">이 사람 행 제외</label></span>
+      <label for="ovFee">순수수료(F)</label><input id="ovFee" class="num" type="number" step="1" min="0" placeholder="자동">
+      <label for="ovRate">요율(%)</label><select id="ovRate"><option value="">자동</option></select>
+      <label for="ovShare">지분(%)</label><input id="ovShare" class="num" type="number" step="0.001" min="0.001" max="100" placeholder="자동">
+      <label for="ovWork">업무분류</label><input id="ovWork" type="text" maxlength="30" placeholder="자동 (수기 행만: 담보·가격자문 등)">
+    </div>
+    <div class="dialog-actions"><button id="overrideCancel" class="export-button" type="button">닫기</button><button id="overrideSave" class="primary-button" type="button">저장</button></div>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/bonus-calc.js?v=20260827-1"></script>
+  <script src="/ui/bonus.js?v=20260827-8"></script>
+</body>
+</html>

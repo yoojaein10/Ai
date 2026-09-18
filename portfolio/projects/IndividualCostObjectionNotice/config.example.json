@@ -1,0 +1,9 @@
+{
+  "message_path": "message.txt",
+  "subject_path": "subject.txt",
+  "calendar_overrides_path": "calendar_overrides.json",
+  "state_db_path": "data/send_history.db",
+  "log_path": "logs/app.log",
+  "connection_timeout_seconds": 10,
+  "query_timeout_seconds": 30
+}

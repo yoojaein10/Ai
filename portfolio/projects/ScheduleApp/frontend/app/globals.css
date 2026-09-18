@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   KakaoTalk Calendar Style - Custom CSS
+   ============================================================ */
+
+:root {
+  --cal-red: #FF6B6B;
+  --cal-orange: #FFA94D;
+  --cal-yellow: #FFD43B;
+  --cal-green: #51CF66;
+  --cal-blue: #339AF0;
+  --cal-purple: #9775FA;
+  --cal-pink: #F06595;
+  --cal-gray: #868E96;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8F9FA;
+  --bg-tertiary: #E9ECEF;
+  --text-primary: #212529;
+  --text-secondary: #868E96;
+  --border-color: #E9ECEF;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --accent-color: #339AF0;
+  --accent-contrast: #FFFFFF;
+}
+
+.dark {
+  --bg-primary: #121212;
+  --bg-secondary: #1E1E1E;
+  --bg-tertiary: #2C2C2C;
+  --text-primary: #E4E6EB;
+  --text-secondary: #B0B3B8;
+  --border-color: #2C2C2C;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+/* FullCalendar Overrides - KakaoTalk Style */
+.fc-kakao-wrapper .fc {
+  font-family: inherit;
+  background-color: var(--bg-primary);
+}
+
+.fc-kakao-wrapper .fc .fc-scrollgrid {
+  border: none !important;
+}
+
+.fc-kakao-wrapper .fc .fc-scrollgrid-section > td {
+  border: none !important;
+}
+
+.fc-kakao-wrapper .fc th {
+  border: none !important;
+  padding: 8px 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  background-color: var(--bg-primary);
+}
+
+/* Sunday = red, Saturday = blue */
+.fc-kakao-wrapper .fc .fc-col-header-cell:first-child .fc-col-header-cell-cushion {
+  color: var(--cal-red);
+}
+
+.fc-kakao-wrapper .fc .fc-col-header-cell:last-child .fc-col-header-cell-cushion {
+  color: var(--cal-blue);
+}
+
+.fc-kakao-wrapper .fc td {
+  border-color: var(--border-color) !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day {
+  cursor: pointer;
+  background-color: var(--bg-primary);
+  transition: background-color 0.15s ease;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day:hover {
+  background-color: var(--bg-secondary);
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day.fc-day-today {
+  background-color: transparent !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day-top {
+  justify-content: center;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day-number {
+  padding: 0 !important;
+}
+
+/* Sunday dates in red */
+.fc-kakao-wrapper .fc .fc-day-sun .fc-daygrid-day-number {
+  color: var(--cal-red);
+}
+
+/* Saturday dates in blue */
+.fc-kakao-wrapper .fc .fc-day-sat .fc-daygrid-day-number {
+  color: var(--cal-blue);
+}
+
+/* Other month days */
+.fc-kakao-wrapper .fc .fc-day-other .fc-daygrid-day-top {
+  opacity: 0.35;
+}
+
+/* Event rendering */
+.fc-kakao-wrapper .fc .fc-daygrid-day-events {
+  margin-top: 0 !important;
+  padding: 0 1px !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-event {
+  margin: 1px 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-event .fc-event-main {
+  padding: 0 !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-day-bottom {
+  padding: 0 2px !important;
+  font-size: 11px !important;
+}
+
+.fc-kakao-wrapper .fc .fc-daygrid-more-link {
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+}
+
+/* Remove FullCalendar toolbar */
+.fc-kakao-wrapper .fc .fc-toolbar {
+  display: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* Smooth theme transition */
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Disable transition for animations and transforms */
+[class*="animate-"],
+[class*="translate-"],
+.fc-kakao-wrapper .fc .fc-daygrid-day-events * {
+  transition-property: none !important;
+}
+
+/* Bottom sheet animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Google Sync Button - Brand Guidelines */
+.btn-google {
+  font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+}
+
+.dark .btn-google {
+  background-color: #303134;
+  border-color: #5f6368;
+}
+
+.dark .btn-google:hover {
+  background-color: #3c4043;
+}
+
+.dark .btn-google span {
+  color: #e8eaed;
+}
+
+/* Line clamp utility */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 계산서 등록</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 계산서 등록 (2026-09-11) — 위: 발급 원장 조회(감정서 LIST 처럼 조건 + 목록), [계산서Excel등록] 버튼으로
+       엑셀 등록 창을 목록 위에 연다. 예전 '계산서 일괄발급'의 일반·대주단·국민약식·계산서 적용 탭과
+       한 건씩 입력 폼은 화면에서 뺐다(API 는 남아 있다). */
+    /* 계산서Excel등록 팝업 (2026-09-11) — 거래처 선택 팝업(partner-dialog)과 같은 모양, 표가 넓어 가로를 크게 */
+    .upload-dialog{width:min(1600px,calc(100vw - 28px));max-height:calc(100dvh - 36px);padding:0;border:0;border-radius:18px;background:#fff;box-shadow:0 28px 90px rgba(34,58,70,.28)}
+    .upload-dialog::backdrop{background:rgba(37,52,59,.34);backdrop-filter:blur(4px)}
+    .upload-card{display:flex;flex-direction:column;max-height:calc(100dvh - 36px)}
+    .upload-body{padding:14px 22px 18px;overflow:auto}
+    .upload-actions{display:flex;gap:8px;align-items:center}
+    .pager{display:flex;gap:8px;align-items:center;font-size:12px}
+    .pager button{height:28px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;font-weight:700;cursor:pointer}
+    .pager button:disabled{opacity:.45;cursor:default}
+    .tb-table tr.minus td.number{color:#c62828}
+    #ledgerTable th[data-sort]{cursor:pointer;user-select:none}
+    #ledgerTable th[data-sort]::after{content:attr(data-mark);margin-left:4px;font-size:10px}   /* 정렬 표시 ▲▼ */
+    .doc-cell .doc-fix,.doc-cell button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:1px 6px;font-size:11px;cursor:pointer}
+    .doc-cell input{height:24px;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12px}
+    .doc-cell em.need{color:#c62828;font-style:normal;font-weight:700}
+    .tb-hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+    .tb-tabs{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+    .tb-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:700;cursor:default;color:#56625c}
+    .tb-tabs button.active{background:#244f68;border-color:#244f68;color:#fff}
+    .list-panel > .table-wrap > table.tb-table > tbody td:first-child{font-family:inherit;font-weight:400;color:inherit;position:static;box-shadow:none;background:transparent}
+    .tb-table{white-space:nowrap}
+    .tb-table thead th{text-align:center;line-height:1.3}
+    .tb-table td.number,.tb-table th.number{text-align:right;font-variant-numeric:tabular-nums}
+    .tb-table td.center{text-align:center}
+    .tb-table tr.done td{background:#f4faf6}
+    .tb-table tr.bad td{background:#fff8f7}
+    .tb-table td.clip{max-width:240px;overflow:hidden;text-overflow:ellipsis}   /* 품목명·비고 — 전체는 마우스를 올리면 */
+    .tb-table button.del{border:0;background:none;color:#c62828;cursor:pointer;font-weight:700}
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#eef4f2;color:#244f68}
+    .badge.warn{background:#fff3e0;color:#b26a00}
+    .badge.bad{background:#fdecea;color:#c62828}
+    .badge.ok{background:#e8f5ec;color:#1b7a43}
+    .tb-note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin:0 0 10px}
+    .tb-issue{padding:0 18px}
+    .tb-issue:disabled{opacity:.5}
+    .list-panel > .table-wrap{scrollbar-width:auto}
+    .ext-form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fafcfb}
+    .ext-form .grp{display:flex;flex-direction:column;gap:3px}
+    .ext-form .grp>strong{font-size:11px;color:var(--muted);white-space:nowrap}
+    .ext-form input[type=file]{height:auto;border:0;background:none;padding:0;font-size:12px}
+    .ext-form button{height:30px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#fff;font-weight:700;cursor:pointer}
+    .ext-form a{font-size:12px;font-weight:700;color:#244f68}
+    .ext-form label.chk{display:inline-flex;flex-direction:row;gap:6px;align-items:center;font-size:12px;white-space:nowrap}
+    .ext-form label.chk input{width:15px;height:15px;margin:0;flex:none}   /* 공통 input 스타일이 체크박스를 크게 키웠다 (2026-09-11) */
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>계산서 등록</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="조회 조건">
+      <label><span>본·지사</span><select id="officeCode" aria-label="본·지사 선택"></select></label>
+      <label><span>작성일 시작</span><input id="dateFrom" type="date"></label>
+      <label><span>작성일 종료</span><input id="dateTo" type="date"></label>
+      <label><span>종류</span><select id="docType"><option value="">전체</option><option>세금계산서</option><option>세금취소</option><option>현금영수증</option><option>현금취소</option></select></label>
+      <label><span>출처</span><select id="sourceFilter"><option value="">전체</option><option>MOA팝빌</option><option>팝빌동기화</option><option>TAMS</option><option>국세청</option><option>위하고</option><option>나라장터</option><option>나라빌</option><option>기타</option></select></label>
+      <label><span>감정서번호</span><select id="docFilter"><option value="">전체</option><option value="missing">없는 것만</option></select></label>
+      <label><span>검색</span><input id="keyword" type="search" placeholder="상호(기간 안) · 감정서·승인·사업자번호(전 기간)" title="글자로 찾으면 기간 안에서, 번호(숫자·하이픈)로 찾으면 전 기간에서 찾습니다"></label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+      <button id="exportExcel" type="button">엑셀</button>
+      <button id="openUpload" type="button">계산서Excel등록</button>
+    </section>
+    <section class="workspace single-workspace">
+      <article class="list-panel" id="ledgerPanel">
+        <div class="panel-heading">
+          <div><h2>발급 원장</h2><p id="ledgerSummary">조회 중...</p></div>
+          <div class="pager"><button id="prevPage" type="button">이전</button><span id="pageInfo">1 / 1</span><button id="nextPage" type="button">다음</button></div>
+        </div>
+        <div class="table-wrap">
+          <table id="ledgerTable" class="tb-table">
+            <colgroup><col style="width:96px"><col style="width:80px"><col style="width:130px"><col style="width:220px"><col style="width:110px"><col style="width:110px"><col style="width:100px"><col style="width:110px"><col style="width:90px"><col style="width:130px"><col style="width:130px"></colgroup>
+            <thead><tr>
+              <th data-sort="write_date">작성일자</th><th data-sort="doc_type">종류</th><th data-sort="doc_id">감정서번호</th><th data-sort="receiver_name">공급받는자 상호</th><th data-sort="receiver_corp_num">사업자번호</th>
+              <th class="number" data-sort="supply_cost">공급가액</th><th class="number" data-sort="tax">세액</th><th class="number" data-sort="total">합계</th>
+              <th data-sort="source">출처</th><th data-sort="issue_dt">발행일시</th><th data-sort="created_at">등록일시</th>
+            </tr></thead>
+            <tbody id="ledgerRows"><tr><td colspan="11" class="tb-hint">조회 중...</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+  </div>
+  <dialog id="extDialog" class="upload-dialog" aria-labelledby="extTitle">
+    <div class="upload-card" id="extPanel">
+      <div class="partner-dialog-head">
+        <div><p id="extSummary">국세청 매출 자료나 양식 엑셀을 고르면 등록할 목록이 나옵니다.</p><h2 id="extTitle">계산서Excel등록</h2></div>
+        <div class="upload-actions"><button id="extRegister" class="primary-button tb-issue" type="button" disabled>등록</button><button id="closeUpload" class="dialog-close" type="button" aria-label="닫기" title="닫으면 원장 목록을 다시 조회합니다">×</button></div>
+      </div>
+      <div class="upload-body">
+        <p class="tb-note">국세청 매출 자료(전자세금계산서·현금영수증 .xls)를 그대로 올리면 이미 원장에 있는 건(같은 승인번호, 또는 같은 감정서·작성일·금액)은 걸러지고 나머지는 '등록 가능'으로 뜹니다. 현금영수증은 자료에 감정서번호가 없어 목록에서 적어 넣습니다.<br>
+          우리 양식(.xlsx)도 올릴 수 있습니다. 승인번호가 같은 건은 두 번 들어가지 않습니다. 한 번에 3,000건까지.</p>
+        <div class="ext-form">
+          <div class="grp"><strong>엑셀 파일 (고르면 바로 읽습니다)</strong><input id="exFile" type="file" accept=".xlsx,.xls"></div>
+          <a id="exTemplate" href="#" download>양식 내려받기</a>
+          <label class="chk"><input id="extHideKnown" type="checkbox" checked> 이미 있는 건 숨기기</label>
+        </div>
+        <div class="table-wrap">
+          <table id="extTable" class="tb-table">
+            <thead><tr>
+              <th>#</th><th>작성일자</th><th>공급받는자 사업자번호</th><th>상호</th>
+              <th class="number">합계금액</th><th class="number">공급가액</th><th class="number">세액</th>
+              <th>분류</th><th>종류</th><th>발급유형</th><th>품목명</th><th>비고</th>
+              <th>감정서번호</th><th>거래처(감정서)</th><th>검증 / 결과</th><th></th>
+            </tr></thead>
+            <tbody id="extRows"><tr><td colspan="16" class="tb-hint">엑셀 파일을 고르면 등록할 목록이 여기 나옵니다.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/tax-register-list.js?v=20260911-4"></script>
+  <script src="/ui/tax-bulk-external.js?v=20260911-9"></script>
+</body>
+</html>

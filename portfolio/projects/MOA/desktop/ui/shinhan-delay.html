@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>신한은행 발송기한 관리</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <style>
+    /* 독립 화면 — 회계 MOA 셸 없이 이 파일 하나로 동작한다.
+       2026-09-02 사용자 확정 배치: 임박(D-2·D-1·오늘 마감)은 걷어내고,
+       왼쪽 = 지사별 초과·조정·비조정 집계, 오른쪽 = 상세 + 사유 입력.
+       '초과' = 발송기한(접수 후 4영업일, 공휴일 제외)을 1영업일이라도 넘긴 건.
+       계산은 전부 apworksdw 프로시저(DAYCOUNT_DETAIL) 값 그대로다. */
+    :root{ --line:#d8e0e4; --muted:#6a7a84; --bad:#b6482f; --ok:#2c6b48; --sel:#eaf2f8; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:'맑은 고딕',Malgun Gothic,sans-serif; background:#f4f7f8; color:#20323c; font-size:13px; }
+    header{ display:flex; align-items:center; gap:10px; padding:14px 22px; background:#fff; border-bottom:1px solid var(--line); }
+    header img{ width:22px; height:22px; }
+    header h1{ margin:0; font-size:17px; }
+    header .sub{ color:var(--muted); font-size:12px; }
+    main{ padding:16px 22px 40px; max-width:1700px; margin:0 auto; }
+    .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+    .toolbar label{ display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--muted); font-weight:700; }
+    .toolbar input{ height:34px; border:1px solid var(--line); border-radius:8px; padding:0 8px; font:inherit; background:#fff; }
+    .toolbar button{ height:34px; padding:0 18px; border:0; border-radius:8px; background:#1b5e88; color:#fff; font-weight:700; cursor:pointer; }
+    .layout{ display:flex; gap:14px; align-items:flex-start; }
+    .card{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; }
+    .card h2{ margin:0 0 10px; font-size:14px; }
+    .card h2 small{ color:var(--muted); font-weight:400; margin-left:6px; }
+    .left{ flex:0 0 330px; position:sticky; top:14px; }
+    .right{ flex:1; min-width:0; }
+    table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+    th,td{ border:1px solid #e3e9ec; padding:6px 8px; text-align:center; white-space:nowrap; }
+    th{ background:#f0f4f6; }
+    td.left-cell,th.left-cell{ text-align:left; }
+    .num{ font-variant-numeric:tabular-nums; }
+    /* 집계표 — 행·칸 클릭으로 오른쪽 상세를 거른다 */
+    #summaryRows td{ cursor:pointer; }
+    #summaryRows tr.selected td{ background:var(--sel); }
+    #summaryRows td.picked{ outline:2px solid #1b5e88; outline-offset:-2px; font-weight:800; }
+    .cnt-over{ color:var(--bad); font-weight:800; }
+    .cnt-adj{ color:var(--ok); font-weight:700; }
+    .cnt-raw{ color:var(--bad); font-weight:700; }
+    td.zero{ color:#b8c3c9; font-weight:400 !important; cursor:default; }
+    tr.total-row td{ background:#f7fafb; font-weight:800; }
+    .overday{ display:inline-block; min-width:44px; padding:2px 7px; border-radius:8px; font-weight:800; background:#f9e3dc; color:var(--bad); }
+    .nosend{ color:var(--bad); font-weight:700; }
+    .adj-badge{ display:inline-block; padding:2px 7px; border-radius:8px; font-size:11px; font-weight:800; }
+    .adj-badge.y{ background:#e2f0e8; color:var(--ok); }
+    .adj-badge.n{ background:#f9e3dc; color:var(--bad); }
+    td.memo-cell{ min-width:320px; }
+    .memo-row{ display:flex; gap:6px; align-items:center; }
+    .memo-row input[type=text]{ flex:1; height:30px; border:1px solid var(--line); border-radius:7px; padding:0 8px; font:inherit; }
+    .memo-row button{ height:30px; padding:0 12px; border:0; border-radius:7px; background:#2c6b48; color:#fff; font-weight:700; cursor:pointer; }
+    .memo-row button:disabled{ opacity:.5; cursor:default; }
+    .empty{ padding:22px; text-align:center; color:var(--muted); }
+    #toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:#20323c; color:#fff; padding:9px 18px; border-radius:9px; font-size:12.5px; opacity:0; transition:opacity .25s; pointer-events:none; }
+    #toast.show{ opacity:.95; }
+    .auth-warn{ margin:40px auto; max-width:520px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:26px; text-align:center; color:var(--muted); }
+    @media (max-width: 1100px){ .layout{ flex-direction:column; } .left{ position:static; flex:none; width:100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/ui/moa-icon.svg" alt="">
+    <h1>신한은행 발송기한 관리</h1>
+    <span class="sub">접수 후 4영업일(공휴일 제외) 이내 발송 — 넘긴 건은 연락해 사유를 남깁니다</span>
+  </header>
+  <main id="main" hidden>
+    <section class="toolbar">
+      <label>접수 시작일<input id="dateFrom" type="date"></label>
+      <label>접수 종료일<input id="dateTo" type="date"></label>
+      <button id="searchBtn" type="button">조회</button>
+    </section>
+
+    <div class="layout">
+      <section class="card left">
+        <h2>지사별 초과 현황 <small>칸을 누르면 오른쪽이 걸러집니다</small></h2>
+        <table>
+          <thead><tr>
+            <th class="left-cell">본·지사</th>
+            <th title="발송기한을 1영업일이라도 넘긴 건">초과</th>
+            <th title="연락해 사유를 입력한 건">조정</th>
+            <th title="아직 사유가 없는 건">비조정</th>
+          </tr></thead>
+          <tbody id="summaryRows"></tbody>
+        </table>
+      </section>
+
+      <section class="card right">
+        <h2 id="detailTitle">상세 내역</h2>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>감정서번호</th><th>지사</th><th>경과</th><th>접수일</th><th>발송기한</th><th>발송일</th>
+            <th class="left-cell">거래처</th><th class="left-cell">소재지</th><th>담당자</th><th>진행상태</th>
+            <th>조정</th>
+            <th class="left-cell">지연 사유 (연락 후 입력)</th>
+          </tr></thead>
+          <tbody id="detailRows"></tbody>
+        </table>
+        </div>
+        <div id="detailEmpty" class="empty" hidden>해당 건이 없습니다.</div>
+      </section>
+    </div>
+  </main>
+  <div id="authWarn" class="auth-warn" hidden>
+    로그인 정보가 없습니다.<br>MOA에서 발급된 주소(…?usr=사번)로 열어 주세요.
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  'use strict';
+  // usr 는 주소로 받는다 (MOA 화면들과 같은 방식) — API 호출마다 헤더로 싣는다.
+  const USR = new URLSearchParams(location.search).get('usr') || new URLSearchParams(location.search).get('usr_seq') || '';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // 초과 건 전부(경과 OverDay >= 1)를 한 번에 받아 두고, 왼쪽 집계·오른쪽 상세를
+  // 클라이언트에서 거른다 — 칸 클릭마다 서버를 다시 부르지 않는다.
+  let rows = [];                       // 초과 건들
+  let pick = { office: '', type: '' }; // office ''=전체, type ''=전부 | 'Y' 조정 | 'N' 비조정
+
+  if (!USR) { $('authWarn').hidden = false; } else { $('main').hidden = false; init(); }
+
+  function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2400); }
+
+  async function api(method, url, body){
+    const res = await fetch(url, {
+      method,
+      headers: { 'X-MOA-USR-SEQ': USR, ...(body ? {'Content-Type': 'application/json'} : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload.success === false) throw new Error(payload.message || `요청 실패 (${res.status})`);
+    return payload;
+  }
+
+  async function load(){
+    $('summaryRows').innerHTML = '<tr><td colspan="4">조회 중...</td></tr>';
+    $('detailRows').innerHTML = '<tr><td colspan="12">조회 중...</td></tr>';
+    const q = new URLSearchParams({ check_gubun: '전체', office: '', day_gubun: '' });
+    if ($('dateFrom').value) q.set('date_from', $('dateFrom').value);
+    if ($('dateTo').value) q.set('date_to', $('dateTo').value);
+    const payload = await api('GET', `/api/shinhan-delay/detail?${q}`);
+    // 상세 프로시저는 임박(D-2·D-1·당일)도 주지만 이 화면은 넘긴 건만 관리한다
+    rows = (payload.data.items || []).filter(r => Number(r.OverDay || 0) >= 1);
+    renderSummary();
+    renderDetail();
+  }
+
+  function counts(list){
+    const adj = list.filter(r => r.EditYN === 'Y').length;
+    return { over: list.length, adj, raw: list.length - adj };
+  }
+
+  function renderSummary(){
+    const byOffice = new Map();
+    rows.forEach(r => {
+      if (!byOffice.has(r.OFFICENAME)) byOffice.set(r.OFFICENAME, []);
+      byOffice.get(r.OFFICENAME).push(r);
+    });
+    const offices = [...byOffice.keys()].sort((a, b) => byOffice.get(b).length - byOffice.get(a).length);
+    const line = (name, list, isTotal) => {
+      const c = counts(list);
+      const cell = (n, cls, type) => `<td class="num ${n ? cls : 'zero'}" data-office="${esc(isTotal ? '' : name)}" data-type="${type}">${n}</td>`;
+      return `<tr${isTotal ? ' class="total-row"' : ''} data-office="${esc(isTotal ? '' : name)}">`
+        + `<td class="left-cell" data-office="${esc(isTotal ? '' : name)}" data-type="">${esc(name)}</td>`
+        + cell(c.over, 'cnt-over', '') + cell(c.adj, 'cnt-adj', 'Y') + cell(c.raw, 'cnt-raw', 'N') + '</tr>';
+    };
+    $('summaryRows').innerHTML =
+      line('총계', rows, true) + offices.map(name => line(name, byOffice.get(name), false)).join('');
+    $('summaryRows').querySelectorAll('td').forEach(td => {
+      if (td.classList.contains('zero')) return;
+      td.addEventListener('click', () => {
+        pick = { office: td.dataset.office || '', type: td.dataset.type || '' };
+        renderSummary(); renderDetail();
+      });
+    });
+    // 현재 선택 표시
+    $('summaryRows').querySelectorAll('tr').forEach(tr => {
+      tr.classList.toggle('selected', (tr.dataset.office || '') === pick.office);
+    });
+    $('summaryRows').querySelectorAll('td[data-type]').forEach(td => {
+      td.classList.toggle('picked',
+        (td.dataset.office || '') === pick.office && (td.dataset.type || '') === pick.type && !td.classList.contains('zero'));
+    });
+  }
+
+  function filtered(){
+    return rows.filter(r =>
+      (!pick.office || r.OFFICENAME === pick.office)
+      && (!pick.type || r.EditYN === pick.type));
+  }
+
+  const TYPE_LABEL = { '': '전체', 'Y': '조정', 'N': '비조정' };
+
+  function renderDetail(){
+    const list = filtered();
+    $('detailTitle').textContent = `상세 내역 — ${pick.office || '전체'} · ${TYPE_LABEL[pick.type]} ${list.length}건`;
+    $('detailRows').innerHTML = list.map(row => `
+      <tr>
+        <td>${esc(row.DOCID)}</td>
+        <td>${esc(row.OFFICENAME)}</td>
+        <td><span class="overday">+${esc(row.OverDay)}일</span></td>
+        <td>${esc(row.JubSuDate)}</td>
+        <td>${esc(row.SendDueDate)}</td>
+        <td>${row.BalSongDate ? esc(row.BalSongDate) : '<span class="nosend">미발송</span>'}</td>
+        <td class="left-cell" title="${esc(row.REASON)}">${esc(row.CustName)}</td>
+        <td class="left-cell">${esc(row.GamAddress)}</td>
+        <td>${esc(row.Manager || row.Charge || '')}</td>
+        <td>${esc(row.APResult)}</td>
+        <td><span class="adj-badge ${row.EditYN === 'Y' ? 'y' : 'n'}">${row.EditYN === 'Y' ? '조정' : '비조정'}</span></td>
+        <td class="memo-cell"><div class="memo-row">
+          <input type="checkbox" class="edit-yn" title="조정(사유 확인됨)" ${row.EditYN === 'Y' ? 'checked' : ''}>
+          <input type="text" class="memo" maxlength="1000" placeholder="지연 사유" value="${esc(row.EditMemo)}">
+          <button type="button" class="save" data-doc="${esc(row.DOCID)}">저장</button>
+        </div></td>
+      </tr>`).join('');
+    $('detailEmpty').hidden = list.length !== 0;
+    $('detailRows').querySelectorAll('button.save').forEach(btn => btn.addEventListener('click', () => saveMemo(btn)));
+  }
+
+  async function saveMemo(btn){
+    const tr = btn.closest('tr');
+    const body = {
+      doc_id: btn.dataset.doc,
+      edit_yn: tr.querySelector('.edit-yn').checked,
+      memo: tr.querySelector('.memo').value.trim(),
+    };
+    if (body.edit_yn && !body.memo && !confirm('사유 없이 조정으로 표시할까요?')) return;
+    btn.disabled = true; btn.textContent = '저장 중';
+    try {
+      await api('POST', '/api/shinhan-delay/memo', body);
+      // 받아 둔 행을 고쳐 왼쪽 집계·오른쪽 표를 다시 그린다 (재조회 없이)
+      const row = rows.find(r => r.DOCID === body.doc_id);
+      if (row) { row.EditYN = body.edit_yn ? 'Y' : 'N'; row.EditMemo = body.memo; }
+      toast(`${body.doc_id} 저장 완료`);
+      renderSummary(); renderDetail();
+    } catch (e) {
+      toast(`저장 실패: ${e.message}`);
+      btn.disabled = false; btn.textContent = '저장';
+    }
+  }
+
+  function init(){
+    // 기본 기간: 시작일 2026-07-20 고정(2026-09-02 사용자 지정) ~ 오늘
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    $('dateFrom').value = '2026-07-20'; $('dateTo').value = fmt(new Date());
+    $('searchBtn').addEventListener('click', () => { pick = { office: '', type: '' }; load().catch(e => toast(e.message)); });
+    load().catch(e => toast(e.message));
+  }
+  </script>
+</body>
+</html>

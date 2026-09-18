@@ -1,0 +1,8 @@
+olefile>=0.47
+pyodbc>=5.0
+python-dotenv>=1.0
+pywinauto>=0.6.9
+pyperclip>=1.8        # verify_docs_live: 그리드 행 확인(Ctrl+C)
+
+# 개발/테스트
+pytest>=8.0

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 권한 관리</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <link rel="stylesheet" href="/ui/permissions-preview.css?v=20260818-11">
+  <style>
+    /* 전표 캐시 수동 동기화(옛 권한부여 화면에서 이식) */
+    .cache-sync-card{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;
+      background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:15px 18px;margin-bottom:16px}
+    .cache-sync-copy strong{display:block;font-size:14px}
+    .cache-sync-copy p{margin:4px 0 0;font-size:12px;color:var(--muted,#6b7280)}
+    .sync-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+    .sync-form label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+    .sync-form input,.sync-form select{width:150px}
+    .sync-status{font-size:12px;color:var(--muted,#6b7280);margin:0;align-self:center;flex-basis:100%}
+    .sync-status.error{color:#c62828}
+    .yak-hint{font-size:12px;color:var(--muted,#6b7280);align-self:center}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar permission-topbar">
+    <a id="backToMain" class="back-to-main" href="/desktop" title="메인 화면으로 돌아가기">
+      <span aria-hidden="true">←</span> 메인으로
+    </a>
+    <div class="brand-block">
+      <span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span>
+      <div>
+        <h1>권한 관리</h1>
+      </div>
+    </div>
+    <div class="preview-state"><span></span>실제 조직 기준</div>
+  </header>
+
+  <main id="main-content" class="permission-page">
+    <!-- 상단 안내 블록(permission-guide)은 2026-08-18 걷어냈다 — 담당자에게 불필요
+         하고 회색 설명이 화면을 흐렸다(사용자 요청). '부서 미입력 계정' 안내가
+         필요하면 짧게 되살린다. -->
+
+
+    <section class="permission-layout" aria-label="사용자별 권한 설정">
+      <aside class="organization-panel">
+        <div class="panel-title">
+          <div>
+            <h2>재직 사용자</h2>
+            <p id="employeeCount">실제 조직을 불러오는 중...</p>
+          </div>
+        </div>
+
+        <div class="organization-filter">
+          <label>
+            <span>본·지사</span>
+            <select id="officeFilter">
+              <option value="">불러오는 중...</option>
+            </select>
+          </label>
+          <label>
+            <span>직원 검색</span>
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.1-5.4a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+              <input id="employeeSearch" type="search" placeholder="이름, 부서, 직급">
+            </div>
+          </label>
+        </div>
+
+        <div id="organizationTree" class="organization-tree" role="tree" aria-label="조직도"></div>
+      </aside>
+
+      <article class="permission-detail">
+        <!-- 부서 권한 패널 (2026-08-16 요청).
+             종전에는 부서를 눌러도 접기/펴기뿐이었고 권한은 사람을 하나씩 눌러야
+             했다. 부서명을 누르면 여기가 열려 **그 부서 전원**을 한 번에 정한다.
+             사람 패널(#employeePanel)과 같은 자리에서 서로 토글한다. -->
+        <!-- 부서 권한 패널 (2026-08-16 요청).
+             **사람 화면과 같은 모양**이다 — 부서명을 누르면 김민주를 누른 것처럼
+             여기가 열리고, 같은 토글로 권한을 준다. 다른 점은 대상이 사람 하나가
+             아니라 그 부서 전원이라는 것뿐이다.
+             사람 패널(#employeePanel)과 같은 자리에서 서로 토글한다. -->
+        <div id="departmentPanel" class="department-panel" hidden>
+          <header class="selected-user">
+            <div class="avatar dept-avatar">부</div>
+            <div class="selected-user-copy">
+              <div class="user-name-line">
+                <h2 id="deptName">부서</h2>
+              </div>
+              <p id="deptMeta">-</p>
+            </div>
+            <button id="deptClose" class="subtle-button" type="button">닫기</button>
+          </header>
+
+          <div class="permission-summary">
+            <div>
+              <span>소속</span>
+              <strong id="deptSummaryOffice">-</strong>
+            </div>
+            <div>
+              <span>인원</span>
+              <strong id="deptSummaryPeople">-</strong>
+            </div>
+            <div>
+              <span>조회 범위</span>
+              <strong id="deptSummaryScope">-</strong>
+            </div>
+            <div>
+              <span>허용 메뉴</span>
+              <strong id="deptSummaryMenus">-</strong>
+            </div>
+            <div>
+              <span>부서 권한</span>
+              <strong id="deptSummaryRole">-</strong>
+            </div>
+          </div>
+
+          <section class="setting-section menu-access-section">
+            <div class="section-heading menu-section-heading">
+              <div>
+                <h3>메뉴 접근권한</h3>
+              </div>
+              <div class="menu-permission-summary">
+                <strong id="deptMenuCount">0 / 0 허용</strong>
+              </div>
+            </div>
+
+            <div class="menu-bulk-actions" aria-label="메뉴 권한 일괄 설정">
+              <!-- '일괄권한 적용'과 '일괄권한 만들기·관리'를 한
+                   드롭다운 안에 묶는다(2026-08-18). '관리'는 이 화면
+                   에서 일괄권한 화면으로 가는 **유일한 문**이라, 세트가 0개여도 드롭
+                   다운은 늘 열려 '만들기'로 이어져야 한다(paintPresetMenu 가 menu 를
+                   숨기지 않는다). <select> 가 아닌 이유는 preview.js 렌더 주석 참고. -->
+              <details class="preset-menu" id="deptPresetMenu">
+                <summary><span>일괄권한 적용</span><span id="deptPresetPick" class="preset-pick"></span></summary>
+                <div class="preset-list">
+                  <div id="deptPresets" class="preset-rows"></div>
+                  <a class="preset-manage" href="/desktop/permission-roles">일괄권한 만들기·관리 ↗</a>
+                </div>
+              </details>
+              <button id="deptAllowAll" class="menu-action-button" type="button">전체 허용</button>
+              <button id="deptDenyAll" class="menu-action-button danger" type="button">전체 해제</button>
+            </div>
+
+            <div id="deptMenuGroups" class="menu-permission-groups"></div>
+          </section>
+
+          <!-- 조회 범위 토글 — 2026-08-18 부서 패널에 되살렸다(사용자 요청). 부서에
+               붙는 일괄권한의 조회 범위를 여기서 정한다. 전체지사조회는 본사 전용이라
+               지사 부서에는 숨긴다(JS 가 office !== '10' 이면 deptViewAllSection 을
+               감춘다). 개인내역조회는 본사·지사 모두. 개인마다 세부는 사람 편집기에서. -->
+          <section id="deptViewAllSection" class="setting-section simple-setting-section">
+            <div class="section-heading"><div><h3>전체지사 조회</h3></div></div>
+            <div class="scope-policy-card">
+              <span class="permission-card-icon scope-icon">전</span>
+              <span class="permission-card-copy"><strong>다른 지사 데이터 조회 허용</strong></span>
+              <label class="inline-switch">
+                <input id="deptViewAllToggle" type="checkbox">
+                <i class="switch-control"></i>
+              </label>
+            </div>
+          </section>
+
+          <section class="setting-section people-scope-section">
+            <div class="section-heading"><div><h3>개인내역 조회</h3></div></div>
+            <div class="scope-policy-card people-scope-card">
+              <span class="permission-card-icon people-icon">인</span>
+              <span class="permission-card-copy"><strong>다른 직원 데이터 조회 허용</strong></span>
+              <label class="inline-switch">
+                <input id="deptViewOtherToggle" type="checkbox">
+                <i class="switch-control"></i>
+              </label>
+            </div>
+          </section>
+
+          <footer class="permission-actions">
+            <div>
+              <strong id="deptImpact">부서 권한 저장</strong>
+              <span id="deptChangeStatus"></span>
+            </div>
+            <span class="msg" id="deptMsg" aria-live="polite"></span>
+            <button id="deptApply" class="secondary-button" type="button">부서에 저장</button>
+          </footer>
+        </div>
+
+        <div id="employeePanel">
+        <header class="selected-user">
+          <div class="avatar" id="selectedAvatar">···</div>
+          <div class="selected-user-copy">
+            <div class="user-name-line">
+              <h2 id="selectedName">불러오는 중</h2>
+              <span id="selectedStatus" class="status-chip">-</span>
+            </div>
+            <p id="selectedMeta">불러오는 중…</p>
+          </div>
+          <button id="resetButton" class="subtle-button" type="button">초기화</button>
+        </header>
+
+        <div class="permission-summary">
+          <div>
+            <span>사용자 구분</span>
+            <strong id="summaryCategory">-</strong>
+          </div>
+          <div>
+            <span>소속</span>
+            <strong id="summaryOffice">-</strong>
+          </div>
+          <div>
+            <span>전체지사</span>
+            <strong id="summaryScope">-</strong>
+          </div>
+          <div>
+            <span>허용 메뉴</span>
+            <strong id="summaryMenus">-</strong>
+          </div>
+          <div>
+            <span>개인내역</span>
+            <strong id="summaryPeopleScope">-</strong>
+          </div>
+        </div>
+
+        <section class="setting-section menu-access-section">
+          <div class="section-heading menu-section-heading">
+            <div>
+              <h3>메뉴 접근권한</h3>
+            </div>
+            <div class="menu-permission-summary">
+              <strong id="menuPermissionCount">0 / 0 허용</strong>
+            </div>
+          </div>
+
+          <div class="menu-bulk-actions" aria-label="메뉴 권한 일괄 설정">
+            <!-- 적용(일괄권한)과 관리(일괄권한 편집)를 한 드롭다운으로. 일괄권한 0개여도 열려
+                 '만들기'로 이어진다 — 부서 패널과 같은 구조(2026-08-18). -->
+            <details class="preset-menu" id="personPresetMenu">
+              <summary><span>일괄권한 적용</span><span id="personPresetPick" class="preset-pick"></span></summary>
+              <div class="preset-list">
+                <div id="personPresets" class="preset-rows"></div>
+                <a class="preset-manage" href="/desktop/permission-roles">일괄권한 만들기·관리 ↗</a>
+              </div>
+            </details>
+            <button id="allowAllMenus" class="menu-action-button" type="button">전체 허용</button>
+            <button id="denyAllMenus" class="menu-action-button danger" type="button">전체 해제</button>
+          </div>
+
+          <div id="menuPermissionGroups" class="menu-permission-groups"></div>
+        </section>
+
+        <!-- 조회 범위 토글 — 2026-08-18 사람별로 되살렸다. 전지사조회는 본사만
+             줄 수 있고(지사는 코드가 막는다 → 지사 사람에겐 아예 숨긴다), 개인내역
+             조회는 본사·지사 모두 준다. 일괄권한은 메뉴만 정하고, 조회 넓이는 여기서
+             정한다. 기본값과 다르게 켜고 끈 것만 개인 예외로 저장된다. -->
+        <section id="viewAllSection" class="setting-section simple-setting-section">
+          <div class="section-heading">
+            <div>
+              <h3>전체지사 조회</h3>
+            </div>
+          </div>
+          <div id="scopePolicyCard" class="scope-policy-card">
+            <span class="permission-card-icon scope-icon">전</span>
+            <span class="permission-card-copy">
+              <strong id="scopeTitle">다른 지사 데이터 조회 허용</strong>
+            </span>
+            <label class="inline-switch">
+              <input id="viewAllToggle" type="checkbox">
+              <i class="switch-control"></i>
+            </label>
+          </div>
+        </section>
+
+        <section class="setting-section people-scope-section">
+          <div class="section-heading">
+            <div>
+              <h3>개인내역 조회</h3>
+            </div>
+          </div>
+          <div id="peopleScopeCard" class="scope-policy-card people-scope-card">
+            <span class="permission-card-icon people-icon">인</span>
+            <span class="permission-card-copy">
+              <strong id="peopleScopeTitle">자기 데이터만 조회</strong>
+            </span>
+            <label class="inline-switch">
+              <input id="viewOtherUsersToggle" type="checkbox">
+              <i class="switch-control"></i>
+            </label>
+          </div>
+        </section>
+
+        <footer class="permission-actions">
+          <div>
+            <strong>권한 저장</strong>
+            <span id="previewChangeStatus"></span>
+          </div>
+          <input id="saveMemo" class="save-memo-input" type="text" maxlength="200" placeholder="변경 사유(선택)" aria-label="변경 사유">
+          <button id="saveButton" class="secondary-button" type="button">변경사항 저장</button>
+        </footer>
+        </div><!-- /#employeePanel -->
+      </article>
+    </section>
+
+    <!-- 전표 캐시 동기화는 권한과 무관한 관리 작업이라 첫 화면 최상단에서
+         내렸다(2026-08-16). 필요할 때만 펴서 쓴다 — 매일 여는 화면의 첫 줄은
+         이 화면의 본업(권한)이 차지해야 한다. -->
+    <details id="cacheSyncSection" class="cache-sync-details hidden">
+      <summary>전표 가져오기</summary>
+      <div class="cache-sync-card" aria-label="전표 캐시 동기화">
+      <div class="sync-form">
+        <label><span>조회 방식</span><select id="syncMode"><option value="days">최근 일수</option><option value="range">기간 직접 지정</option></select></label>
+        <label id="syncDaysLabel"><span>전표 가져올 일수 (최대 365)</span><input id="syncDays" type="number" min="1" max="365" value="60"></label>
+        <label id="syncFromLabel" class="hidden"><span>시작일</span><input id="syncDateFrom" type="date"></label>
+        <label id="syncToLabel" class="hidden"><span>종료일</span><input id="syncDateTo" type="date"></label>
+        <button id="syncButton" class="secondary-button" type="button">전표 가져오기</button>
+        <p id="syncStatus" class="sync-status"></p>
+      </div>
+      </div>
+    </details>
+
+    <!-- 약식(400*) 입금전표 회차 수동 실행 — 서버 예약 작업을 즉시 1회 실행한다.
+         서버에 접속해 schtasks /run 을 치던 일을 버튼으로 옮겼다(2026-08-28). -->
+    <details id="yakRunSection" class="cache-sync-details hidden">
+      <summary>약식 입금전표 실행</summary>
+      <div class="cache-sync-card" aria-label="약식 입금전표 회차 수동 실행">
+      <div class="sync-form">
+        <span class="yak-hint">약식(400*) 묶음전표는 매일 17시에 나갑니다 — 그 전에 필요할 때 씁니다.</span>
+        <button id="yakRunButton" class="secondary-button" type="button">약식 입금전표 지금 실행</button>
+        <p id="yakStatus" class="sync-status"></p>
+      </div>
+      </div>
+    </details>
+  </main>
+
+  <div id="previewToast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/permissions-preview.js?v=20260911-1"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+/* INSA Design Tokens — OKLCH-based
+ * Source of truth for custom (non-AntD) components.
+ * Hex equivalents live in tokens/antd-theme.ts and must be updated together.
+ */
+
+:root {
+  /* ─── Surfaces (neutrals with micro-warm tint toward h=85) ─── */
+  --surface-canvas:  oklch(98.5% 0.002 85);
+  --surface-raised:  oklch(100% 0 0);
+  --surface-sunken:  oklch(97% 0.003 85);
+  --surface-inset:   oklch(94.5% 0.004 85);
+
+  /* ─── Primary (Daehwa navy, h=275) ─── */
+  --color-primary:        oklch(15% 0.04 275);
+  --color-primary-hover:  oklch(22% 0.05 275);
+  --color-primary-active: oklch(10% 0.04 275);
+  --color-primary-ink:    oklch(98% 0 0);
+
+  /* tints of primary — used sparingly, never as decorative stripes */
+  --color-primary-tint-04: color-mix(in oklab, oklch(15% 0.04 275) 4%, transparent);
+  --color-primary-tint-06: color-mix(in oklab, oklch(15% 0.04 275) 6%, transparent);
+  --color-primary-tint-12: color-mix(in oklab, oklch(15% 0.04 275) 12%, transparent);
+
+  /* ─── Accent (warm amber, h=75 — avatar, empty-state illustrations, badges) ─── */
+  --color-accent:        oklch(72% 0.13 75);
+  --color-accent-hover:  oklch(66% 0.13 75);
+  --color-accent-ink:    oklch(20% 0.04 75);
+
+  /* ─── Text ─── */
+  --text-primary:    oklch(22% 0.01 265);
+  --text-secondary:  oklch(48% 0.012 265);
+  --text-tertiary:   oklch(64% 0.01 265);
+  --text-disabled:   oklch(78% 0.008 265);
+  --text-inverse:    oklch(98% 0 0);
+  --text-inverse-muted: oklch(98% 0 0 / 0.62);
+
+  /* ─── Borders ─── */
+  --border-subtle:  oklch(94% 0.004 265);
+  --border-default: oklch(90% 0.005 265);
+  --border-strong:  oklch(80% 0.008 265);
+
+  /* ─── Status ─── */
+  --color-success: oklch(60% 0.12 145);
+  --color-warning: oklch(72% 0.13 75);
+  --color-danger:  oklch(55% 0.15 25);
+  --color-info:    oklch(55% 0.10 245);
+
+  /* ─── Avatar palette (5 warm tones, AA vs white) ─── */
+  --avatar-1: oklch(60% 0.12 30);    /* clay */
+  --avatar-2: oklch(62% 0.11 85);    /* ochre */
+  --avatar-3: oklch(58% 0.09 110);   /* olive */
+  --avatar-4: oklch(58% 0.08 160);   /* sage */
+  --avatar-5: oklch(56% 0.10 220);   /* muted slate */
+
+  /* ─── Spacing (4pt scale, semantic) ─── */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs:  8px;
+  --space-sm:  12px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* ─── Radius (intentionally asymmetric to avoid template feel) ─── */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+
+  /* ─── Shell dimensions ─── */
+  --shell-topbar-h: 48px;
+  --shell-sider-w:  216px;
+  --shell-sider-w-collapsed: 64px;
+  --shell-page-header-h: 48px;
+  --shell-toolbar-h: 44px;
+
+  /* ─── Typography ─── */
+  --font-body:    "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Gowun Dodum", "Wanted Sans Variable", var(--font-body);
+  --font-mono:    "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --text-2xs: 11px;
+  --text-xs:  12px;
+  --text-sm:  13px;
+  --text-md:  14px;
+  --text-lg:  16px;
+  --text-xl:  20px;
+  --text-2xl: 24px;
+  --text-3xl: clamp(28px, 2.4vw, 34px);
+
+  --leading-tight:   1.2;
+  --leading-body:    1.5;
+  --leading-relaxed: 1.7;
+
+  /* ─── Motion ─── */
+  --ease-out-quart: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* ─── Elevation (minimal; no generic drop shadows) ─── */
+  --shadow-popover: 0 1px 2px oklch(0% 0 0 / 0.04), 0 8px 24px oklch(15% 0.04 275 / 0.08);
+  --shadow-overlay: 0 4px 16px oklch(0% 0 0 / 0.06), 0 24px 48px oklch(15% 0.04 275 / 0.16);
+  --ring-focus: 0 0 0 2px var(--surface-canvas), 0 0 0 4px oklch(15% 0.04 275 / 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* ─── Global body baseline ─── */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  color: var(--text-primary);
+  background: var(--surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular figures everywhere numeric data lives */
+.tabular-nums,
+.ant-table-tbody,
+.ant-table-thead,
+.ant-descriptions-view,
+.ant-input-number input,
+.ant-statistic-content {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* Display face reserved for page H1 and a few hero moments */
+.display-face {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}

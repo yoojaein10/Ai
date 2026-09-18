@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 선수금 반제</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .bj-toolbar{display:block}
+    .bj-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .bj-row .grp{display:flex;gap:6px;align-items:center}
+    .bj-row .grp>strong{white-space:nowrap;flex:none}
+    .bj-row input[type=date],.bj-row input[type=search],.bj-row select{width:auto;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:#fff}
+    .bj-row input[type=search]{width:176px}
+    .bj-row .grp.muted{opacity:.42}
+    .bj-row label.grp{cursor:pointer;font-size:13px;white-space:nowrap}
+    .bj-row input[type=checkbox]{width:15px;height:15px;flex:none;margin:0;accent-color:var(--brand,#1b7a43)}
+    .bj-summary{font-size:13px;color:var(--muted);margin:12px 0}
+    .bj-summary b{color:var(--ink);font-weight:800}
+    .bj-summary .ex-note{display:inline-block;margin-left:8px;color:#b26a00;font-size:12px}
+    .tag-nonstd{display:inline-block;padding:0 5px;border-radius:6px;background:#fdf0d5;color:#b26a00;font-size:11px;font-weight:700}
+    .tag-bundle{display:inline-block;padding:0 5px;border-radius:6px;background:#e8f0fb;color:#2b6a8f;font-size:11px;font-weight:700}
+    .bj-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+    .bj-table col.c-doc{width:132px}.bj-table col.c-date{width:88px}.bj-table col.c-amt{width:104px}
+    .bj-table th,.bj-table td{padding:7px 9px;border-bottom:1px solid #f0f3f1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bj-table th{text-align:center}
+    .bj-table td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:650}
+    .bj-table th.num{text-align:center}
+    .bj-table td.bal{color:#c62828}
+    .bj-table tbody tr{cursor:pointer}
+    .bj-table tbody tr:hover td{background:#f7faf8}
+    .bj-table tr.sel td{background:#eef5f1}
+    .bj-table td.remark{color:#8a949f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
+    .bj-workspace{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:16px;align-items:start}
+    .bj-detail{border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:sticky;top:12px}
+    .bj-detail h3{margin:0 0 4px;font-size:14px}
+    .bj-detail .ph{color:var(--muted);font-size:13px;padding:24px 0;text-align:center}
+    .bj-vtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+    .bj-vtable th,.bj-vtable td{padding:5px 6px;border-bottom:1px solid #f0f3f1}
+    .bj-vtable td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .bj-vtable td.dr{color:#2b6a8f}.bj-vtable td.cr{color:#1b7a43}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>선수금 반제</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar bj-toolbar" aria-label="검색 조건">
+      <div class="bj-row">
+        <div class="grp"><strong>구분</strong>
+          <select id="mode">
+            <option value="settled">반제 내역</option>
+            <option value="open">미반제 잔액</option>
+          </select>
+        </div>
+        <div class="grp hidden" id="basisWrap"><strong>기간 기준</strong>
+          <select id="basis"><option value="settle"></option><option value="gen"></option></select>
+        </div>
+        <div class="grp" id="dateWrap"><strong id="dateLabel">반제일(전표일자)</strong><input id="dateFrom" type="date"> ~ <input id="dateTo" type="date"></div>
+        <div class="grp hidden" id="asOfWrap"><strong>잔액 기준일</strong><input id="asOf" type="date" title="이 날짜까지의 전표만 반영해 잔액을 계산합니다."></div>
+        <label class="grp hidden" id="nonstdWrap"><input id="nonstd" type="checkbox"> 비표준 관리번호 포함</label>
+        <div class="grp"><strong>감정서번호</strong><input id="docQuery" type="search" placeholder="예: 01-2603-1-0109" title="번호를 넣으면 기간과 상관없이 전체에서 찾습니다. 뒤 4자리만 넣어도 됩니다."></div>
+        <button id="searchButton" class="primary-button" type="button">조회</button>
+        <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+      </div>
+    </section>
+    <p id="summary" class="bj-summary">기간을 선택하고 조회하세요.</p>
+    <div class="bj-workspace">
+      <div class="table-wrap">
+        <table id="banjeTable" class="bj-table">
+          <colgroup id="cols"></colgroup>
+          <thead id="head"></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="emptyList" class="empty hidden"></div>
+      </div>
+      <aside class="bj-detail">
+        <h3>전표 내용</h3>
+        <div id="detail" class="ph">감정서번호를 클릭하면 해당 전표가 여기 나옵니다.</div>
+      </aside>
+    </div>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script>window.BANJE_KIND = 'advance';</script>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/panel-resize.js"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/banje.js?v=20260821-1"></script>
+</body>
+</html>

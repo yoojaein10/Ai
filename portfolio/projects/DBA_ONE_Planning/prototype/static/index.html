@@ -1,0 +1,1243 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DBA ONE 프로토타입 v0.13</title>
+<style>
+  :root{
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#222221; --border:rgba(255,255,255,.10);
+    --ink:#fff; --ink-2:#c3c2b7; --muted:#898781; --grid:#2c2c2a;
+    --series:#3987e5; --series-dim:#1c5cab;
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--page);color:var(--ink-2);font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:13.5px;line-height:1.55;min-height:100vh;display:flex}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  h1{font-size:17px;color:var(--ink)} h2{font-size:14.5px;color:var(--ink)}
+  small{color:var(--muted)}
+
+  /* ── 왼쪽 메뉴 ── */
+  .sidenav{width:200px;flex:0 0 200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 10px;gap:2px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px}
+  .brand .logo,.logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--series),var(--series-dim));display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;flex:0 0 30px}
+  .brand b{color:var(--ink);font-size:14.5px}
+  .brand small{display:block;font-size:9.5px;letter-spacing:.6px}
+  .nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;color:var(--ink-2);text-align:left;width:100%;font-size:13px}
+  .nav-item:hover{background:var(--surface-2)}
+  .nav-item.active{background:var(--surface-2);color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--series)}
+  .nav-item .ico{width:17px;text-align:center;opacity:.85}
+  .nav-item .soon{margin-left:auto;font-size:9.5px;color:var(--muted);border:1px solid var(--grid);border-radius:8px;padding:0 5px}
+  .nav-sep{height:1px;background:var(--border);margin:8px 6px}
+  .nav-foot{margin-top:auto;padding:8px 6px 0;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+  /* ── 상단바·공통 ── */
+  .app{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:10px;padding:11px 20px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--border);border-radius:20px;padding:3px 10px}
+  .chip .dot,.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.off{background:var(--muted)} .dot.critical{background:var(--critical)}
+  .env-badge{background:var(--critical);color:#fff;font-weight:700;font-size:11px;letter-spacing:1px;border-radius:5px;padding:3px 9px}
+  .env-badge.dev{background:var(--surface-2);color:var(--good);border:1px solid var(--border)}
+  .btn{border:1px solid var(--border);background:var(--surface-2);border-radius:8px;padding:6px 12px;color:var(--ink)}
+  .btn:hover{border-color:var(--series)}
+  .btn.primary{background:var(--series);border-color:var(--series);color:#fff;font-weight:600}
+  .btn.sm{padding:3px 9px;font-size:12px}
+  .pane{display:none;padding:18px 20px;overflow:auto;flex:1}
+  .pane.active{display:block}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:15px;margin-bottom:14px}
+  .card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .card-h .right{margin-left:auto}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+  .kpi b{display:block;font-size:21px;color:var(--ink);font-weight:700}
+  .kpi span{font-size:11.5px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--muted);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--muted);word-break:break-all}
+  .sel-row td{background:var(--surface-2)}
+  .layout{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}}
+  .ai-out{white-space:pre-wrap;font-size:12.5px;background:var(--page);border:1px solid var(--grid);border-radius:8px;padding:12px;max-height:430px;overflow:auto}
+  .ai-out b{color:var(--ink)}
+  details{border:1px solid var(--grid);border-radius:8px;padding:8px 10px;margin:10px 0;font-size:12px}
+  summary{cursor:pointer;color:var(--series)}
+  details pre{white-space:pre-wrap;margin-top:8px;color:var(--muted);font-size:11.5px;max-height:220px;overflow:auto}
+  .note{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{padding:4px 11px;font-size:12px;color:var(--muted)}
+  .seg button.active{background:var(--surface-2);color:var(--ink);font-weight:600}
+  .toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);cursor:pointer;user-select:none}
+  .plan-cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px}
+  .plan-box{border:1px solid var(--grid);border-radius:9px;padding:11px}
+  .plan-box.bad{border-color:color-mix(in srgb,var(--serious) 45%,transparent)}
+  .plan-box.goodb{border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+  .plan-op{display:flex;justify-content:space-between;gap:8px;padding:3px 8px;border-radius:6px;background:var(--surface-2);margin-top:5px;font-size:12px}
+  .blk-node{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--grid);border-radius:8px;margin-bottom:6px;background:var(--surface-2);font-size:12.5px;flex-wrap:wrap}
+  .blk-node.blocker{border-color:color-mix(in srgb,var(--critical) 50%,transparent)}
+  .blk-indent{margin-left:26px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--series);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .stub{display:grid;place-items:center;height:60vh;text-align:center}
+
+  /* ── 전역 플로팅 챗봇 ── */
+  .fab{position:fixed;right:24px;bottom:24px;width:56px;height:56px;border-radius:50%;
+       background:linear-gradient(135deg,var(--series),var(--series-dim));color:#fff;font-size:24px;
+       box-shadow:0 6px 22px rgba(0,0,0,.5);z-index:40;display:grid;place-items:center}
+  .fab:hover{transform:translateY(-2px)}
+  .fab .badge{position:absolute;top:-2px;right:-2px;background:var(--critical);color:#fff;
+       font-size:10px;font-weight:700;border-radius:9px;min-width:17px;height:17px;display:none;place-items:center;padding:0 4px}
+  .chatw{position:fixed;right:24px;bottom:90px;width:min(440px,calc(100vw - 32px));height:min(620px,calc(100vh - 130px));
+       background:var(--surface);border:1px solid var(--border);border-radius:14px;z-index:41;
+       display:none;flex-direction:column;box-shadow:0 12px 44px rgba(0,0,0,.55);overflow:hidden}
+  .chatw.show{display:flex}
+  .chatw.max{width:min(900px,calc(100vw - 48px));height:calc(100vh - 130px)}
+  .chatw-head{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .chatw-head .ai-orb{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--series),var(--series-dim));display:grid;place-items:center;color:#fff;font-size:10px;font-weight:800}
+  .chatw-tabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--border)}
+  .chatw-tabs button{padding:8px 12px;font-size:12.5px;color:var(--muted);border-bottom:2px solid transparent}
+  .chatw-tabs button.active{color:var(--ink);border-bottom-color:var(--series);font-weight:600}
+  .chatw-body{flex:1;overflow:auto;padding:12px}
+  .chatw-foot{border-top:1px solid var(--border);padding:10px 12px}
+  .iconbtn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--ink-2)}
+  .iconbtn:hover{background:var(--surface-2)}
+
+  /* ── 연결 온보딩 ── */
+  .conn-overlay{position:fixed;inset:0;background:var(--page);z-index:50;display:none;align-items:center;justify-content:center;overflow:auto;padding:24px}
+  .conn-overlay.show{display:flex}
+  .conn-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(560px,94vw);padding:26px}
+  .type-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 14px}
+  .type-cards button{border:1px solid var(--border);border-radius:10px;padding:11px 10px;text-align:center;font-size:13px;color:var(--ink)}
+  .type-cards button.sel{border-color:var(--series);background:color-mix(in srgb,var(--series) 10%,transparent)}
+  .type-cards button:disabled{opacity:.4;cursor:default}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  .field input,.field select{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--ink);font:inherit}
+  .field input:focus,.field select:focus{outline:2px solid var(--series);outline-offset:1px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .conn-msg{font-size:12.5px;border-radius:8px;padding:9px 12px;margin:10px 0;display:none}
+  .conn-msg.err{display:block;background:color-mix(in srgb,var(--critical) 14%,transparent);color:#f0b9b9}
+  .conn-msg.ok{display:block;background:color-mix(in srgb,var(--good) 12%,transparent);color:#b9e6b9}
+  .conn-msg.warn2{display:block;background:color-mix(in srgb,var(--warn) 12%,transparent);color:#f4dfae}
+  .saved-conn{display:flex;align-items:center;gap:10px;border:1px solid var(--grid);border-radius:9px;padding:9px 12px;margin-bottom:7px;font-size:12.5px}
+  .saved-conn b{color:var(--ink)}
+  .saved-conn .env{font-size:10.5px;border-radius:4px;padding:1px 6px;font-weight:700}
+  .saved-conn .env.운영{background:var(--critical);color:#fff}
+  .saved-conn .env.스테이징{background:color-mix(in srgb,var(--serious) 30%,transparent);color:var(--serious)}
+  .saved-conn .env.테스트{background:color-mix(in srgb,var(--series) 25%,transparent);color:var(--series)}
+  .saved-conn .env.개발{background:color-mix(in srgb,var(--good) 22%,transparent);color:var(--good)}
+</style>
+</head>
+<body>
+
+<nav class="sidenav">
+  <div class="brand"><div class="logo">D1</div><div><b>DBA ONE</b><small>프로토타입 v0.13</small></div></div>
+  <button class="nav-item active" data-pane="home"><span class="ico">⌂</span>홈</button>
+  <button class="nav-item" data-pane="monitor"><span class="ico">📈</span>모니터링</button>
+  <button class="nav-item" data-pane="db"><span class="ico">🗄</span>데이터베이스</button>
+  <button class="nav-item" data-pane="incident"><span class="ico">🔥</span>인시던트</button>
+  <button class="nav-item" data-pane="stub" data-title="변경 승인"><span class="ico">✅</span>변경 승인<span class="soon">예정</span></button>
+  <div class="nav-sep"></div>
+  <button class="nav-item" data-pane="alerts"><span class="ico">🔔</span>알림 센터<span class="soon" id="alertBadge" style="display:none;background:var(--critical);color:#fff;border-color:var(--critical)">0</span></button>
+  <button class="nav-item" data-pane="audit"><span class="ico">📜</span>감사 로그</button>
+  <button class="nav-item" onclick="openConnect()"><span class="ico">⚙</span>연결 설정</button>
+  <div class="nav-foot">로컬 실행 · 127.0.0.1 전용<br>운영 변경 기능 없음 (읽기 전용)</div>
+</nav>
+
+<div class="app">
+  <header class="topbar">
+    <span class="env-badge dev" id="envBadge">개발</span>
+    <span class="chip" id="dbChip"><span class="dot off"></span>확인 중…</span>
+    <span class="chip" id="aiChip"><span class="dot off"></span>AI 확인 중…</span>
+    <div style="flex:1"></div>
+    <small id="collectedAt"></small>
+    <button class="btn sm" onclick="loadOverview()">↻ 새로고침</button>
+  </header>
+
+  <!-- ═══ 홈 ═══ -->
+  <div class="pane active" id="pane-home">
+    <div class="kpis" id="kpis"></div>
+    <div class="layout">
+      <div>
+        <div class="card">
+          <div class="card-h">
+            <h2>느린 쿼리 (24시간)</h2>
+            <div class="seg" id="sortSeg">
+              <button class="active" data-sort="avg">평균 순</button>
+              <button data-sort="total">총 부담 순</button>
+              <button data-sort="reads">총 읽기 순</button>
+            </div>
+            <label class="toggle"><input type="checkbox" id="procOnly" onchange="renderQueries()" checked> 날쿼리(ad hoc) 포함 안 함</label>
+            <small class="right" id="qsNote"></small>
+          </div>
+          <table>
+            <thead><tr><th>객체</th><th class="num">평균 ms</th><th class="num">실행수</th><th class="num" id="thDynamic">총 부담(초)</th><th class="num">논리읽기</th><th class="num">계획</th><th></th></tr></thead>
+            <tbody id="queryRows"><tr><td colspan="7"><small>불러오는 중…</small></td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="planCard" style="display:none">
+          <div class="card-h"><h2>실행 계획 비교</h2><small id="planNote"></small>
+            <button class="btn sm right" onclick="document.getElementById('planCard').style.display='none'">닫기</button></div>
+          <div id="planVerdict" style="margin-bottom:10px;font-size:12.5px"></div>
+          <div class="plan-cmp" id="planBoxes"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>활성 세션 · Blocking</h2></div>
+          <div id="blkTree"></div>
+          <table>
+            <thead><tr><th>세션</th><th>블로커</th><th>대기</th><th class="num">대기(초)</th><th>프로그램</th><th>SQL</th></tr></thead>
+            <tbody id="sessionRows"><tr><td colspan="6"><small>불러오는 중…</small></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="position:sticky;top:66px">
+        <div class="card-h"><h2>AI 진단</h2><small class="right" id="aiTarget"></small></div>
+        <div id="aiIdle"><small>느린 쿼리 목록에서 <b style="color:var(--ink-2)">AI 분석</b>을 누르면, 외부로 전송될 마스킹된 데이터를 먼저 보여주고 확인 후 Gemini에 분석을 요청합니다.</small></div>
+        <div id="aiPreviewBox" style="display:none">
+          <p style="font-size:12.5px"><b style="color:var(--ink)">1단계 — 전송 미리보기</b> <small>(리터럴 마스킹됨 · 파라미터 값 미포함)</small></p>
+          <details open><summary>외부(Gemini)로 전송될 데이터</summary><pre id="aiPreview"></pre></details>
+          <button class="btn primary" id="sendBtn" onclick="sendAnalyze()">이 내용으로 분석 요청</button>
+          <button class="btn" onclick="resetAi()">취소</button>
+        </div>
+        <div id="aiResultBox" style="display:none">
+          <p style="font-size:12.5px;margin-bottom:8px"><b style="color:var(--ink)">2단계 — 분석 결과</b> <small id="aiModelNote"></small></p>
+          <div class="ai-out" id="aiResult"></div>
+          <details><summary>전송된 데이터 다시 보기</summary><pre id="aiPreview2"></pre></details>
+          <button class="btn" onclick="resetAi()">닫기</button>
+        </div>
+        <p class="note">AI 출력은 제안입니다 — 이 프로토타입에는 어떤 실행 경로도 없습니다. 모든 AI 호출은 감사 로그에 기록됩니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 모니터링 ═══ -->
+  <div class="pane" id="pane-monitor">
+    <div class="card-h" style="margin-bottom:12px">
+      <div class="seg" id="monRange">
+        <button data-h="1">1시간</button>
+        <button class="active" data-h="24">24시간</button>
+        <button data-h="168">7일</button>
+      </div>
+      <small class="right" id="monStatus"></small>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>활성 세션 · 블로킹 추이</h2>
+        <small class="right"><span style="color:var(--series)">━</span> 세션 &nbsp;<span style="color:var(--critical)">━</span> 블로킹</small></div>
+      <svg id="chartServer" width="100%" height="170" viewBox="0 0 800 170" preserveAspectRatio="none" role="img" aria-label="세션·블로킹 시계열"></svg>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)"><span id="srvT0"></span><span id="srvT1"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>쿼리 성능 추이</h2>
+        <select id="monQuery" onchange="loadMonitorQuery()" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:5px 9px;color:var(--ink);font:inherit;font-size:12px;max-width:420px"></select>
+        <small class="right"><span style="color:var(--series)">━</span> 평균 ms (기준선: 회색 점선)</small></div>
+      <svg id="chartQuery" width="100%" height="170" viewBox="0 0 800 170" preserveAspectRatio="none" role="img" aria-label="쿼리 평균 실행시간 시계열"></svg>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)"><span id="qryT0"></span><span id="qryT1"></span></div>
+      <p class="note">기준선은 30분 이전 스냅샷들의 평균입니다. 스냅샷이 3개 이상 쌓여야 기준선·배율이 표시됩니다 (60초 주기 수집).</p>
+    </div>
+  </div>
+
+  <!-- ═══ 데이터베이스 ═══ -->
+  <div class="pane" id="pane-db">
+    <div class="card-h" style="margin-bottom:12px">
+      <div class="seg" id="dbSeg">
+        <button class="active" data-view="explore">객체 탐색</button>
+        <button data-view="unused">미사용 분석</button>
+      </div>
+      <small class="right" id="dbNote"></small>
+    </div>
+
+    <div id="dbExplore" style="display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start">
+      <div class="card" style="margin-bottom:0">
+        <input id="objSearch" placeholder="⌕ 객체 이름 검색" oninput="renderObjTree()"
+               style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--ink);font:inherit;margin-bottom:8px">
+        <div class="seg" style="margin-bottom:10px" id="objTypeSeg">
+          <button class="active" data-t="">전체</button>
+          <button data-t="U">테이블</button>
+          <button data-t="V">뷰</button>
+          <button data-t="P">프로시저</button>
+        </div>
+        <div id="objTree" style="max-height:62vh;overflow:auto;font-size:12.5px"><small>불러오는 중…</small></div>
+      </div>
+      <div class="card" style="margin-bottom:0" id="objDetail">
+        <small>왼쪽에서 객체를 선택하면 컬럼·인덱스·정의·의존성이 표시됩니다.</small>
+      </div>
+    </div>
+
+    <div id="dbUnused" style="display:none">
+      <div class="card">
+        <div class="card-h"><h2>미사용 후보</h2><small id="unusedNote"></small>
+          <small class="right">"미사용 단정"이 아니라 "관찰 기간 중 사용 흔적 없음"입니다 — 신뢰도와 주의 요인을 반드시 확인하세요</small></div>
+        <table>
+          <thead><tr><th>객체</th><th>유형</th><th class="num">크기 MB</th><th class="num">행 수</th><th>마지막 수정</th><th class="num">신뢰도</th><th>주의 요인 · 권장</th></tr></thead>
+          <tbody id="unusedRows"><tr><td colspan="7"><small>불러오는 중…</small></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 인시던트 ═══ -->
+  <div class="pane" id="pane-incident">
+    <div class="card-h" style="margin-bottom:12px"><h1 style="font-size:16px">인시던트</h1>
+      <small class="right" id="incNote"></small></div>
+    <div id="incLayout" style="display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start">
+      <div id="incList"></div>
+      <div class="card" id="incDetail" style="margin-bottom:0"><small>왼쪽에서 인시던트를 선택하세요.</small></div>
+    </div>
+  </div>
+
+  <!-- ═══ 알림 센터 ═══ -->
+  <div class="pane" id="pane-alerts">
+    <div class="card">
+      <div class="card-h"><h2>활성 알림</h2><small id="alertActiveNote"></small>
+        <button class="btn sm right" onclick="loadAlerts()">↻ 새로고침</button></div>
+      <div id="alertActive"><small>불러오는 중…</small></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>정상화된 알림</h2><small>최근 30건</small></div>
+      <div id="alertResolved"></div>
+    </div>
+    <p class="note">알림은 60초 수집 주기마다 규칙(블로킹 발생 · 기준선 2배 초과 · Query Store 비활성)으로 평가됩니다.
+      동일 원인은 하나로 묶고, 조건이 해소되면 자동으로 정상화 처리됩니다.</p>
+  </div>
+
+  <!-- ═══ 감사 로그 ═══ -->
+  <div class="pane" id="pane-audit">
+    <div class="card">
+      <div class="card-h"><h2>감사 로그</h2><small>AI 호출·연결 변경 기록 (최근 50건, 최신순)</small>
+        <button class="btn sm right" onclick="loadAudit()">↻ 새로고침</button></div>
+      <table>
+        <thead><tr><th>시각(UTC)</th><th>이벤트</th><th>대상</th><th>상세</th></tr></thead>
+        <tbody id="auditRows"><tr><td colspan="4"><small>불러오는 중…</small></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 개발 예정 ═══ -->
+  <div class="pane" id="pane-stub">
+    <div class="stub">
+      <div>
+        <div style="font-size:34px;margin-bottom:10px">🚧</div>
+        <h1 id="stubTitle">개발 예정</h1>
+        <p style="margin-top:8px;max-width:420px">Phase 1 본개발에서 구현할 화면입니다.<br>
+          화면 구조는 목업(<span class="mono">mockup/index.html</span>)에서 확인할 수 있습니다.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 전역 플로팅 챗봇 ═══ -->
+<button class="fab" id="chatFab" onclick="toggleChat()" title="AI DBA 챗봇" aria-label="AI DBA 챗봇">✦<span class="badge" id="chatFabBadge"></span></button>
+<div class="chatw" id="chatWidget">
+  <div class="chatw-head">
+    <div class="ai-orb">AI</div>
+    <div style="flex:1"><b style="color:var(--ink);font-size:13.5px">AI DBA</b>
+      <small id="chatCtx" style="display:block;font-size:10.5px">데이터 조회 · 객체/상태 질문 · 대화 맥락 기억</small></div>
+    <button class="iconbtn" onclick="resetChat()" title="새 대화 (맥락 초기화)">↺</button>
+    <button class="iconbtn" onclick="maxChat()" title="넓게/좁게" id="chatMaxBtn">⤢</button>
+    <button class="iconbtn" onclick="toggleChat()" title="닫기">✕</button>
+  </div>
+  <div class="chatw-tabs">
+    <button class="active" data-ctab="chat" onclick="chatTab('chat')">질의</button>
+    <button data-ctab="glossary" onclick="chatTab('glossary')">용어집 <small id="glossCount"></small></button>
+  </div>
+
+  <div id="ctab-chat" style="flex:1;display:flex;flex-direction:column;min-height:0">
+    <div id="chatLog" class="chatw-body" style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:12.5px;color:var(--muted)">
+        질문 유형을 스스로 판단해 답합니다 — <b style="color:var(--ink-2)">데이터 조회</b>는 SELECT를 만들어 드리고(실행 버튼을 눌러야 이 PC에서 조회),
+        <b style="color:var(--ink-2)">객체 질문</b>(새 테이블·프로시저 등)과 <b style="color:var(--ink-2)">상태·성능 상담</b>은 수집된 자료로 바로 답합니다.
+        <b style="color:var(--ink-2)">프로시저 진단</b>("SP_X가 느린 것 같아 파악해봐")은 소스 정적 분석 + 실행 통계 + 계획 회귀를 모아 진단합니다(이때 해당 소스가 AI로 전송됨).
+        이전 대화를 기억하므로 후속 질문이 가능합니다.
+      </div>
+    </div>
+    <div class="chatw-foot">
+      <div style="display:flex;gap:8px">
+        <input id="chatInput" placeholder="자연어로 질문하세요…" onkeydown="if(event.key==='Enter')chatAsk()"
+          style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--ink);font:inherit;font-size:12.5px">
+        <button class="btn primary sm" id="chatBtn" onclick="chatAsk()">질문</button>
+      </div>
+      <p class="note" style="margin-top:6px">질문·대화 맥락·객체 이름/생성일·마스킹된 SQL 구조는 Gemini로 전송, 데이터 값·조회 결과는 전송 안 됨. SELECT 외 명령 차단.</p>
+    </div>
+  </div>
+
+  <div id="ctab-glossary" class="chatw-body" style="display:none">
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+      <b style="color:var(--ink);font-size:12.5px">용어집</b><small id="knowStats"></small></div>
+    <div id="glossaryList" style="font-size:12.5px;margin-bottom:10px"></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <input id="gTerm" placeholder="용어 (예: 접수일)" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--ink);font:inherit;font-size:12px">
+      <input id="gMap" placeholder="의미 (예: APW_RegHist.MDATE 컬럼)" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--ink);font:inherit;font-size:12px">
+      <select id="gScope" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--ink);font:inherit;font-size:12px">
+        <option value="target">현재 DB 전용</option>
+        <option value="global">모든 DB 공통</option>
+      </select>
+      <button class="btn sm primary" onclick="addGlossary()">＋ 용어 추가</button>
+    </div>
+    <p class="note">기본값은 현재 DB 전용입니다. 공통 용어는 실제 객체·컬럼에 의존하지 않는 DBA 개념에만 사용하세요. SQL을 수정해 실행한 교정 사례도 현재 DB에만 축적됩니다.</p>
+  </div>
+</div>
+
+<!-- ═══ 연결 화면 ═══ -->
+<div class="conn-overlay" id="connOverlay">
+  <div class="conn-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div class="logo">D1</div>
+      <div><b style="color:var(--ink);font-size:16px">DBA ONE</b><br><small>데이터베이스 연결</small></div>
+      <button class="btn sm" id="connCloseBtn" style="margin-left:auto;display:none"
+              onclick="skipDemo()" title="연결 변경 없이 돌아가기">✕ 닫기</button>
+    </div>
+
+    <div id="savedList" style="margin-top:12px"></div>
+
+    <div class="type-cards">
+      <button class="sel">Microsoft<br>SQL Server</button>
+      <button disabled title="Phase 3 지원 예정">Oracle<br><small>지원 예정</small></button>
+      <button disabled title="후속 지원 예정">PostgreSQL<br><small>지원 예정</small></button>
+    </div>
+
+    <div id="connStep1">
+      <div class="field"><label>서버 주소 <small>(예: localhost · 192.0.2.10,1433 · 서버명\인스턴스)</small></label>
+        <input id="cServer" placeholder="localhost"></div>
+      <div class="field"><label>인증 방식</label>
+        <select id="cAuth" onchange="authChanged()">
+          <option value="sql">SQL Server 계정 (ID/PW)</option>
+          <option value="windows">Windows 인증 (현재 로그인 사용자)</option>
+        </select></div>
+      <div class="row2" id="cCredRow">
+        <div class="field"><label>아이디</label><input id="cUid" placeholder="읽기 전용 계정 권장"></div>
+        <div class="field"><label>비밀번호</label><input id="cPwd" type="password" autocomplete="off"></div>
+      </div>
+      <div class="conn-msg" id="connMsg1"></div>
+      <button class="btn primary" id="cTestBtn" style="width:100%" onclick="connTest()">연결 테스트</button>
+    </div>
+
+    <div id="connStep2" style="display:none">
+      <div class="conn-msg ok" id="connServerInfo"></div>
+      <div class="row2">
+        <div class="field"><label>데이터베이스 선택</label><select id="cDb"></select></div>
+        <div class="field"><label>환경 구분</label>
+          <select id="cEnv"><option>개발</option><option>테스트</option><option>스테이징</option><option>운영</option></select></div>
+      </div>
+      <div class="conn-msg" id="connMsg2"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="backToStep1()">← 뒤로</button>
+        <button class="btn primary" id="cSaveBtn" style="flex:1" onclick="connSave()">이 데이터베이스로 연결</button>
+      </div>
+    </div>
+
+    <p class="note" style="margin-top:14px">비밀번호는 이 PC의 config.json에만 저장되며 로그·화면에 표시되지 않습니다.
+      연결 테스트는 읽기 명령만 수행합니다.
+      <a href="#" style="color:var(--series)" onclick="skipDemo();return false">건너뛰고 데모 모드로 둘러보기 →</a></p>
+  </div>
+</div>
+
+<script>
+let health = {}, currentQ = null, currentPreview = "", lastOv = null, sortMode = "avg";
+
+async function jget(u){ const r = await fetch(u); return r.json(); }
+async function jpost(u,b){ const r = await fetch(u,{method:"POST",headers:{"Content-Type":"application/json","X-DBAONE-Nonce":window.DBAONE_NONCE||""},body:JSON.stringify(b)}); return r.json(); }
+const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+/* ── 왼쪽 메뉴 ── */
+document.querySelectorAll(".nav-item[data-pane]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  b.classList.add("active");
+  document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
+  document.getElementById("pane-"+b.dataset.pane).classList.add("active");
+  if (b.dataset.pane === "stub") document.getElementById("stubTitle").textContent = b.dataset.title + " — 개발 예정";
+  if (b.dataset.pane === "audit") loadAudit();
+  if (b.dataset.pane === "db" && !objData) loadObjects();
+  if (b.dataset.pane === "monitor") (lastOv ? Promise.resolve() : loadOverview()).then(loadMonitor);
+  if (b.dataset.pane === "alerts") loadAlerts();
+  if (b.dataset.pane === "incident") loadIncidents();
+}));
+
+/* ── 인시던트 ── */
+let incidents = [];
+async function loadIncidents(){
+  const res = await jget("/api/incidents");
+  incidents = res.incidents || [];
+  const act = incidents.filter(i=>i.active).length;
+  document.getElementById("incNote").textContent =
+    `${res.mode==="demo"?"데모 · ":""}진행 ${act}건 · 전체 ${incidents.length}건`;
+  const sev = {critical:"var(--critical)",serious:"var(--serious)",warning:"var(--warn)",info:"var(--muted)"};
+  document.getElementById("incList").innerHTML = incidents.length ? incidents.map((i,idx)=>`
+    <div class="card" style="margin-bottom:8px;padding:12px;cursor:pointer;${i.active?'border-color:color-mix(in srgb,'+(sev[i.severity]||'var(--muted)')+' 45%,transparent)':''}"
+         onclick="showIncident(${idx})">
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:4px">
+        <span class="chip" style="font-size:10.5px;color:${i.active?(sev[i.severity]||'var(--muted)'):'var(--good)'}">${i.active?'진행 중':'해결'}</span>
+        ${i.count>1?`<small>${i.count}회</small>`:''}<small style="margin-left:auto">${esc(i.last_ts||"")}</small></div>
+      <b style="color:var(--ink);font-size:12.5px">${esc(i.title)}</b>
+    </div>`).join("") : '<div class="card"><small><span style="color:var(--good)">●</span> 인시던트 없음 — 정상입니다.</small></div>';
+  if (incidents.length) showIncident(0);
+  else document.getElementById("incDetail").innerHTML = '<small>진행 중이거나 최근 해결된 인시던트가 없습니다.</small>';
+}
+function showIncident(idx){
+  const i = incidents[idx];
+  if (!i) return;
+  const kindColor = k => k.includes("경보")||k.includes("발생") ? "var(--critical)"
+    : k.includes("정상화")||k.includes("검증") ? "var(--good)"
+    : k.includes("계획")||k.includes("통계")||k.includes("파급") ? "var(--warn)" : "var(--series)";
+  document.getElementById("incDetail").innerHTML = `
+    <div class="card-h"><h2>${esc(i.title)}</h2>
+      <span class="chip" style="font-size:10.5px">${i.active?'진행 중':'해결'}</span></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px">
+      <div>
+        <h3 style="margin-bottom:8px">타임라인</h3>
+        <div style="border-left:2px solid var(--baseline,var(--grid));padding-left:14px">
+          ${i.timeline.map(t=>`
+            <div style="margin-bottom:12px;position:relative">
+              <span style="position:absolute;left:-19px;top:4px;width:9px;height:9px;border-radius:50%;background:${kindColor(t.kind)}"></span>
+              <small style="font-variant-numeric:tabular-nums">${esc(t.ts)}</small>
+              <div style="font-size:12.5px"><b style="color:var(--ink)">${esc(t.kind)}</b> — ${esc(t.text)}</div>
+            </div>`).join("")}
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px">요약</h3>
+        <div style="font-size:12.5px"><small>원인 후보</small><br>${esc(i.cause)}</div>
+        <div style="font-size:12.5px;margin-top:8px"><small>권장 조치</small><br><b style="color:var(--series)">${esc(i.action)}</b></div>
+        ${(i.sessions&&i.sessions.length)?`
+        <div style="margin-top:12px"><small>블로킹 당시 세션 (${i.sessions.length})</small>
+          <div style="overflow:auto;border:1px solid var(--grid);border-radius:8px;margin-top:4px">
+          <table style="font-size:11.5px"><thead><tr><th>세션</th><th>블로커</th><th>대기</th><th>프로그램·로그인</th><th>SQL</th></tr></thead><tbody>
+          ${i.sessions.map(s=>`<tr>
+            <td><b style="color:var(--ink)">${s.session_id}</b></td>
+            <td>${s.blocking_session_id?('<span style="color:var(--critical)">←'+s.blocking_session_id+'</span>'):'<small>Blocker</small>'}</td>
+            <td><small>${esc(s.wait_type)||'—'}${s.wait_s?' '+Math.round(s.wait_s)+'s':''}</small></td>
+            <td><small>${esc(s.program)} · ${esc(s.login)}</small></td>
+            <td><div class="mono">${esc((s.sql_text||'').slice(0,70))}</div></td></tr>`).join("")}
+          </tbody></table></div></div>`:''}
+        <button class="btn sm primary" style="margin-top:12px" onclick="incidentAI('${esc(i.key)}',this)">✦ AI 인시던트 요약</button>
+        <div id="incAI" style="margin-top:8px"></div>
+      </div>
+    </div>`;
+}
+async function incidentAI(key, btn){
+  const box = document.getElementById("incAI");
+  btn.disabled = true; box.innerHTML = '<span class="spin"></span> AI 요약 중…';
+  const r = await jpost("/api/incident/summary", {key});
+  btn.disabled = false;
+  box.innerHTML = r.ok ? `<div class="ai-out" style="max-height:300px">${esc(r.summary)}</div>`
+    : `<small style="color:var(--critical)">${esc(r.error)}</small>`;
+}
+
+/* ── 알림 센터 ── */
+const SEV = {critical:{c:"var(--critical)",t:"위험"}, serious:{c:"var(--serious)",t:"주의"},
+             warning:{c:"var(--warn)",t:"경고"}, info:{c:"var(--muted)",t:"정보"}};
+function alertCard(a, resolved){
+  const s = SEV[a.severity] || SEV.info;
+  return `<div style="display:flex;gap:11px;padding:11px;border:1px solid var(--grid);border-radius:9px;margin-bottom:8px;${resolved?'opacity:.6':''}">
+    <span style="width:9px;height:9px;border-radius:50%;background:${s.c};margin-top:4px;flex:0 0 9px"></span>
+    <div style="flex:1">
+      <div style="display:flex;gap:8px;align-items:baseline"><b style="color:var(--ink)">${esc(a.title)}</b>
+        <span class="chip" style="font-size:10.5px;color:${s.c};border-color:color-mix(in srgb,${s.c} 40%,transparent)">${resolved?'정상화':s.t}</span>
+        ${a.count>1?`<small>${a.count}회 발생</small>`:''}</div>
+      <div style="font-size:12.5px;color:var(--ink-2);margin:3px 0">${esc(a.cause)}</div>
+      ${!resolved?`<div style="font-size:12px"><b style="color:var(--series)">다음 행동:</b> ${esc(a.action)}</div>`:''}
+      <small>${esc(a.first_ts)}${a.last_ts!==a.first_ts?` ~ ${esc(a.last_ts)}`:''}</small>
+    </div></div>`;
+}
+async function loadAlerts(){
+  const res = await jget("/api/alerts");
+  if (res.error){ document.getElementById("alertActive").innerHTML = `<small style="color:var(--critical)">${esc(res.error)}</small>`; return; }
+  document.getElementById("alertActiveNote").textContent = `${res.active_count}건`;
+  document.getElementById("alertActive").innerHTML =
+    res.active.length ? res.active.map(a=>alertCard(a,false)).join("")
+                      : '<small><span style="color:var(--good)">●</span> 활성 알림 없음 — 정상입니다.</small>';
+  document.getElementById("alertResolved").innerHTML =
+    res.resolved.length ? res.resolved.map(a=>alertCard(a,true)).join("") : '<small>정상화 이력 없음</small>';
+  const badge = document.getElementById("alertBadge");
+  if (res.active_count > 0){ badge.style.display = "inline-block"; badge.textContent = res.active_count; }
+  else badge.style.display = "none";
+}
+
+/* ── 모니터링 시계열 ── */
+let monHours = 24;
+document.querySelectorAll("#monRange button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#monRange button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); monHours = Number(b.dataset.h); loadMonitor();
+}));
+
+function drawSeries(svgId, points, series, baseline){
+  // points: [{ts, v1, v2}], series: [{key,color,scale?}] — 단순 폴리라인 차트
+  const svg = document.getElementById(svgId);
+  const W = 800, H = 170, P = 8;
+  if (!points.length){ svg.innerHTML = '<text x="20" y="40" fill="var(--muted)" font-size="12">데이터 없음 — 수집이 쌓이면 표시됩니다</text>'; return; }
+  const xs = i => P + i * (W - 2*P) / Math.max(1, points.length - 1);
+  let maxV = Math.max(1, ...series.flatMap(s => points.map(p => Number(p[s.key])||0)));
+  if (baseline) maxV = Math.max(maxV, baseline);
+  maxV *= 1.15;
+  const ys = v => H - P - (v / maxV) * (H - 2*P);
+  let g = "";
+  [0.25, 0.5, 0.75].forEach(f => {
+    g += `<line x1="0" y1="${ys(maxV*f)}" x2="${W}" y2="${ys(maxV*f)}" stroke="var(--grid)" stroke-width="1"/>`
+       + `<text x="4" y="${ys(maxV*f)-3}" fill="var(--muted)" font-size="10">${Math.round(maxV*f).toLocaleString()}</text>`;
+  });
+  if (baseline) g += `<line x1="0" y1="${ys(baseline)}" x2="${W}" y2="${ys(baseline)}" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 5" opacity=".8"/>`;
+  series.forEach(s => {
+    const pts = points.map((p,i)=>`${xs(i).toFixed(1)},${ys(Number(p[s.key])||0).toFixed(1)}`).join(" ");
+    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  svg.innerHTML = g;
+}
+
+async function loadMonitor(){
+  try {
+    const st = await jget("/api/monitor/status");
+    document.getElementById("monStatus").textContent =
+      `수집 ${st.interval_s}초 주기 · 스냅샷 ${st.snap_count.toLocaleString()}개 · 보존 ${st.retention_days}일` +
+      (st.last_ts ? ` · 마지막 ${st.last_ts}` : "");
+  } catch(e){}
+  const ts = await jget(`/api/timeseries?kind=server&hours=${monHours}`);
+  drawSeries("chartServer", ts.points||[], [{key:"v1",color:"var(--series)"},{key:"v2",color:"var(--critical)"}]);
+  const p = ts.points||[];
+  document.getElementById("srvT0").textContent = p.length ? p[0].ts : "";
+  document.getElementById("srvT1").textContent = p.length ? p[p.length-1].ts : "";
+  const sel = document.getElementById("monQuery");
+  const qs = (lastOv && lastOv.queries) || [];
+  const cur = sel.value;
+  sel.innerHTML = qs.map(q=>`<option value="${q.query_id}">${esc(q.object_name)} (id ${q.query_id})</option>`).join("")
+    || '<option value="">홈에서 느린 쿼리를 먼저 불러오세요</option>';
+  if (cur) sel.value = cur;
+  loadMonitorQuery();
+}
+
+async function loadMonitorQuery(){
+  const qid = document.getElementById("monQuery").value;
+  if (!qid){ drawSeries("chartQuery", [], [{key:"v1",color:"var(--series)"}]); return; }
+  const ts = await jget(`/api/timeseries?kind=query&hours=${monHours}&query_id=${qid}`);
+  const q = (lastOv && lastOv.queries || []).find(x=>String(x.query_id)===String(qid));
+  drawSeries("chartQuery", ts.points||[], [{key:"v1",color:"var(--series)"}], q && q.baseline_ms);
+  const p = ts.points||[];
+  document.getElementById("qryT0").textContent = p.length ? p[0].ts : "";
+  document.getElementById("qryT1").textContent = p.length ? p[p.length-1].ts : "";
+}
+
+/* ── 상태 ── */
+async function loadHealth(){
+  health = await jget("/api/health");
+  const db = document.getElementById("dbChip");
+  db.innerHTML = health.db === "live"
+    ? '<span class="dot good"></span>MSSQL 실연결'
+    : '<span class="dot warn"></span>데모 모드' + (health.pyodbc ? '' : ' · pyodbc 미설치');
+  if (health.saved_conn) db.innerHTML += ` <small>${esc(health.saved_conn.server)} · ${esc(health.saved_conn.database)}</small>`;
+  const ai = document.getElementById("aiChip");
+  ai.innerHTML = health.ai
+    ? '<span class="dot good"></span>AI: ' + esc(health.model)
+    : '<span class="dot off"></span>AI 비활성 (GEMINI_API_KEY)';
+  const env = document.getElementById("envBadge");
+  env.className = "env-badge" + (health.env_label === "운영" ? "" : " dev");
+  env.textContent = health.env_label === "운영" ? "운영 PRODUCTION" : health.env_label;
+}
+
+async function loadOverview(){
+  const ov = await jget("/api/overview");
+  lastOv = ov;
+  document.getElementById("collectedAt").textContent = "수집: " + ov.collected_at;
+  if (ov.mode === "error") {
+    document.getElementById("queryRows").innerHTML = `<tr><td colspan="7" style="color:var(--critical)">${esc(ov.error)}</td></tr>`;
+    document.getElementById("sessionRows").innerHTML = `<tr><td colspan="6"><small>—</small></td></tr>`;
+    return;
+  }
+  const st = ov.status, blocked = st.blocked_requests;
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><span>서버</span><b style="font-size:15px">${esc(st.server_name)}</b><span>v${esc(st.version)}</span></div>
+    <div class="kpi"><span>활성 세션</span><b>${st.sessions}</b></div>
+    <div class="kpi"><span>블로킹된 요청</span><b style="color:${blocked>0?'var(--critical)':'var(--good)'}">${blocked}</b></div>
+    <div class="kpi"><span>Query Store</span><b style="font-size:15px;color:${ov.qs_on===false?'var(--muted)':ov.perms.query_store==='READ_WRITE'?'var(--good)':'var(--warn)'}">${ov.qs_on===false?'미지원':esc(ov.perms.query_store||'확인 불가')}</b>
+      <span>${ov.qs_on===false?'SQL 2016 미만 — 쿼리 이력 불가':'VIEW SERVER STATE '+(ov.perms.view_server_state?'✓':'✗ 권한 없음')}</span></div>`;
+  document.getElementById("qsNote").textContent = ov.mode === "demo" ? "데모 데이터" : "Query Store";
+  renderQueries();
+  renderBlockingTree(ov.sessions||[]);
+  document.getElementById("sessionRows").innerHTML = (ov.sessions||[]).map(s=>`
+    <tr>
+      <td><b style="color:var(--ink)">${s.session_id}</b></td>
+      <td>${s.blocking_session_id ? '<span style="color:var(--critical)">← '+s.blocking_session_id+'</span>' : '<small>—</small>'}</td>
+      <td><small>${esc(s.wait_type)||'—'}</small></td>
+      <td class="num">${s.wait_s||0}</td>
+      <td><small>${esc(s.program_name)} · ${esc(s.login_name)}</small></td>
+      <td><div class="mono">${esc((s.sql_text||"").slice(0,80))}</div></td>
+    </tr>`).join("") || '<tr><td colspan="6"><small>활성 요청 없음</small></td></tr>';
+}
+
+/* ── 느린 쿼리: 정렬·필터 ── */
+document.querySelectorAll("#sortSeg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#sortSeg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); sortMode = b.dataset.sort; renderQueries();
+}));
+
+function renderQueries(){
+  if (!lastOv) return;
+  let qs = (lastOv.queries||[]).slice();
+  if (document.getElementById("procOnly").checked) qs = qs.filter(q=>q.object_name !== "(ad hoc)");
+  const totalMs = q => Number(q.avg_ms) * Number(q.executions);
+  const totalReads = q => Number(q.avg_reads) * Number(q.executions);
+  if (sortMode === "total") qs.sort((a,b)=>totalMs(b)-totalMs(a));
+  else if (sortMode === "reads") qs.sort((a,b)=>totalReads(b)-totalReads(a));
+  else qs.sort((a,b)=>Number(b.avg_ms)-Number(a.avg_ms));
+  document.getElementById("thDynamic").textContent =
+    sortMode === "reads" ? "총 읽기" : "총 부담(초)";
+  document.getElementById("queryRows").innerHTML = qs.map(q=>{
+    const dyn = sortMode === "reads"
+      ? Math.round(totalReads(q)).toLocaleString()
+      : (totalMs(q)/1000).toLocaleString(undefined,{maximumFractionDigits:1});
+    return `
+    <tr id="qr${q.query_id}">
+      <td><b style="color:var(--ink)">${esc(q.object_name)}</b><div class="mono">${esc(q.query_sql_text.slice(0,110))}…</div></td>
+      <td class="num" style="color:${q.avg_ms>2000?'var(--critical)':q.avg_ms>800?'var(--warn)':'inherit'}">${Number(q.avg_ms).toLocaleString()}${q.baseline_factor>=1.5?` <span style="color:var(--serious);font-size:10.5px" title="기준선 ${q.baseline_ms}ms 대비">▲${q.baseline_factor}×</span>`:""}</td>
+      <td class="num">${Number(q.executions).toLocaleString()}</td>
+      <td class="num" style="color:var(--ink)">${dyn}</td>
+      <td class="num">${Number(q.avg_reads).toLocaleString()}</td>
+      <td class="num">${q.plan_count>1
+        ? `<button class="btn sm" style="color:${q.regression?'var(--serious)':'inherit'}" onclick="showPlans(${q.query_id})">${q.plan_count}개${q.regression?' ⚠':''}</button>`
+        : q.plan_count}</td>
+      <td><button class="btn sm" onclick="previewAnalyze(${q.query_id}, this)">AI 분석</button></td>
+    </tr>`;}).join("") || (lastOv.qs_on === false
+      ? '<tr><td colspan="7"><small>이 서버는 Query Store 미지원(SQL 2016 미만) — 느린 쿼리 이력·계획 회귀를 표시할 수 없습니다. 세션·블로킹 모니터링과 객체 탐색은 정상 동작합니다.</small></td></tr>'
+      : '<tr><td colspan="7"><small>데이터 없음 (Query Store 이력 부족이거나 필터에 걸러짐)</small></td></tr>');
+}
+
+/* ── Blocking Tree ── */
+function renderBlockingTree(sessions){
+  const el = document.getElementById("blkTree");
+  const blockers = new Set(sessions.filter(s=>s.blocking_session_id).map(s=>s.blocking_session_id));
+  const roots = sessions.filter(s => blockers.has(s.session_id) && !s.blocking_session_id);
+  if (!roots.length){ el.innerHTML = '<p style="font-size:12px;color:var(--muted);margin-bottom:8px"><span style="color:var(--good)">●</span> 블로킹 체인 없음</p>'; return; }
+  const node = (s, isRoot) => `
+    <div class="blk-node ${isRoot?'blocker':''}">
+      ${isRoot?'<span style="color:var(--critical)">●</span>':'<span style="color:var(--muted)">└</span>'}
+      <b style="color:var(--ink)">세션 ${s.session_id}</b>
+      <small>${esc(s.program_name)} · ${esc(s.login_name)} · ${esc(s.host_name)}</small>
+      ${isRoot?'<small style="color:var(--critical)">최초 Blocker · 열린 트랜잭션 의심</small>'
+              :`<small style="color:var(--warn)">${esc(s.wait_type)} · ${Math.round(s.wait_s)}초 대기</small>`}
+      <div class="mono" style="flex-basis:100%">${esc((s.sql_text||"").slice(0,100))}</div>
+    </div>`;
+  const children = pid => sessions.filter(s=>s.blocking_session_id===pid)
+    .map(s => node(s,false) + `<div class="blk-indent">${children(s.session_id)}</div>`).join("");
+  el.innerHTML = roots.map(r =>
+    `${node(r,true)}<div class="blk-indent">${children(r.session_id)}</div>`).join("")
+    + '<p style="font-size:11.5px;color:var(--muted);margin:2px 0 10px">세션 종료는 이 프로토타입에서 실행되지 않습니다 — 영향 분석 후 승인 절차 대상입니다(Phase 2).</p>';
+}
+
+/* ── 실행 계획 비교 ── */
+async function showPlans(id){
+  const card = document.getElementById("planCard");
+  card.style.display = "block";
+  document.getElementById("planNote").textContent = "query_id " + id;
+  document.getElementById("planVerdict").innerHTML = '<span class="spin"></span> 계획 이력 조회 중…';
+  document.getElementById("planBoxes").innerHTML = "";
+  const ps = await jget("/api/plans?query_id=" + id);
+  if (ps.error){ document.getElementById("planVerdict").textContent = ps.error; return; }
+  if (!ps.plans.length){ document.getElementById("planVerdict").textContent = "계획 이력이 없습니다 (Query Store 이력 부족일 수 있음)."; return; }
+  document.getElementById("planVerdict").innerHTML = ps.regression
+    ? `<span style="color:var(--serious)">⚠ 계획 회귀 감지</span> — 현재 계획이 이전 최적 계획보다 <b style="color:var(--serious)">${ps.factor}배</b> 느립니다. 근본 개선(쿼리 수정)을 우선 검토하고, 계획 강제는 임시 조치로만 사용하세요.`
+    : `<span style="color:var(--good)">●</span> 계획 ${ps.plans.length}개 — 회귀 기준(1.5배)을 넘는 성능 차이는 없습니다.`;
+  document.getElementById("planBoxes").innerHTML = ps.plans.slice(0,2).map((p,i)=>`
+    <div class="plan-box ${ps.regression ? (i===0?'bad':'goodb') : ''}">
+      <b style="color:${ps.regression ? (i===0?'var(--serious)':'var(--good)') : 'var(--ink)'}">
+        plan ${p.plan_id} ${i===0?'(현재)':'(이전)'}</b>${p.forced?' <small>· 강제됨</small>':''}
+      <div style="margin:6px 0 2px"><small>평균</small> <b style="color:var(--ink)">${Number(p.avg_ms).toLocaleString()}ms</b>
+        · <small>실행 ${Number(p.executions).toLocaleString()}회 · 마지막 ${esc(p.last_exec)}</small></div>
+      ${Object.entries(p.ops).map(([op,c])=>`<div class="plan-op"><span>${esc(op)}</span><span>×${c}</span></div>`).join("")}
+    </div>`).join("");
+}
+
+/* ── AI 분석 ── */
+async function previewAnalyze(id, btn){
+  currentQ = id;
+  document.querySelectorAll("tr.sel-row").forEach(r=>r.classList.remove("sel-row"));
+  document.getElementById("qr"+id)?.classList.add("sel-row");
+  btn.innerHTML = '<span class="spin"></span>';
+  const res = await jpost("/api/ai/analyze", {query_id:id, dry_run:true});
+  btn.textContent = "AI 분석";
+  currentPreview = res.preview || "";
+  document.getElementById("aiIdle").style.display = "none";
+  document.getElementById("aiResultBox").style.display = "none";
+  document.getElementById("aiPreviewBox").style.display = "block";
+  document.getElementById("aiPreview").textContent = currentPreview;
+  document.getElementById("aiTarget").textContent = "query_id " + id;
+  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("sendBtn").textContent = res.ai ? "이 내용으로 분석 요청" : "AI 비활성 — 미리보기만 가능";
+}
+async function sendAnalyze(){
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 분석 중…';
+  const res = await jpost("/api/ai/analyze", {query_id: currentQ});
+  document.getElementById("aiPreviewBox").style.display = "none";
+  document.getElementById("aiResultBox").style.display = "block";
+  document.getElementById("aiResult").innerHTML =
+    esc(res.analysis).replace(/^(결론|근거|원인 후보|권장 조치|신뢰도):/gm, "<b>$1:</b>");
+  document.getElementById("aiPreview2").textContent = res.preview || currentPreview;
+  document.getElementById("aiModelNote").textContent = res.ai ? "(Gemini · 제안일 뿐 실행되지 않음)" : "";
+}
+function resetAi(){
+  document.getElementById("aiPreviewBox").style.display = "none";
+  document.getElementById("aiResultBox").style.display = "none";
+  document.getElementById("aiIdle").style.display = "block";
+  document.getElementById("aiTarget").textContent = "";
+  document.querySelectorAll("tr.sel-row").forEach(r=>r.classList.remove("sel-row"));
+}
+
+/* ── 데이터베이스: 객체 탐색 ── */
+let objData = null, objTypeFilter = "";
+const TYPE_KO = {U:"테이블", V:"뷰", P:"프로시저", FN:"함수", IF:"함수", TF:"함수"};
+
+document.querySelectorAll("#dbSeg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#dbSeg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  const unused = b.dataset.view === "unused";
+  document.getElementById("dbExplore").style.display = unused ? "none" : "grid";
+  document.getElementById("dbUnused").style.display = unused ? "block" : "none";
+  if (unused) loadUnused();
+}));
+document.querySelectorAll("#objTypeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#objTypeSeg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); objTypeFilter = b.dataset.t; renderObjTree();
+}));
+
+async function loadObjects(){
+  const res = await jget("/api/objects");
+  if (res.error){ document.getElementById("objTree").innerHTML = `<span style="color:var(--critical)">${esc(res.error)}</span>`; return; }
+  objData = res;
+  document.getElementById("dbNote").textContent =
+    `${res.mode==="demo"?"데모 데이터 · ":""}객체 ${res.objects.length}개 · 서버 가동 ${res.server.uptime_days}일 (${res.server.started}부터)`;
+  renderObjTree();
+}
+
+function renderObjTree(){
+  if (!objData) return;
+  const kw = (document.getElementById("objSearch").value||"").toLowerCase();
+  let list = objData.objects.filter(o =>
+    (!objTypeFilter || o.obj_type === objTypeFilter || (objTypeFilter==="P" && ["FN","IF","TF"].includes(o.obj_type)))
+    && (!kw || (o.schema_name+"."+o.name).toLowerCase().includes(kw)));
+  const bySchema = {};
+  list.forEach(o => (bySchema[o.schema_name] = bySchema[o.schema_name]||[]).push(o));
+  document.getElementById("objTree").innerHTML = Object.keys(bySchema).sort().map(s=>`
+    <div style="color:var(--muted);font-size:11px;letter-spacing:.5px;margin:8px 0 4px">${esc(s)} (${bySchema[s].length})</div>
+    ${bySchema[s].map(o=>`
+      <button class="btn" style="display:flex;width:100%;gap:8px;align-items:center;border:none;background:none;padding:5px 8px;border-radius:7px;text-align:left"
+              onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='none'"
+              onclick="showObject(${o.object_id})">
+        <span style="font-size:11px;color:var(--muted);width:44px;flex:0 0 44px">${TYPE_KO[o.obj_type]||o.obj_type}</span>
+        <span style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.name)}</span>
+        <small style="margin-left:auto;white-space:nowrap">${o.obj_type==="U" ? (o.size_mb!=null? Number(o.size_mb).toLocaleString()+"MB":"")
+          : (o.execs!=null ? Number(o.execs).toLocaleString()+"회" : "")}</small>
+      </button>`).join("")}`).join("") || "<small>검색 결과 없음</small>";
+}
+
+async function showObject(id){
+  const o = objData.objects.find(x=>x.object_id===id) || {};
+  const el = document.getElementById("objDetail");
+  el.innerHTML = '<span class="spin"></span> 상세 조회 중…';
+  const d = await jget("/api/object?id="+id);
+  if (d.error){ el.innerHTML = `<span style="color:var(--critical)">${esc(d.error)}</span>`; return; }
+  const usedLine = o.obj_type==="U"
+    ? `마지막 읽기 <b style="color:var(--ink)">${esc(o.last_read||"흔적 없음")}</b> · 마지막 쓰기 ${esc(o.last_write||"흔적 없음")}`
+    : (o.obj_type==="P" ? `마지막 실행 <b style="color:var(--ink)">${esc(o.last_exec||"흔적 없음(Query Store 기준)")}</b> · 누적 ${Number(o.execs||0).toLocaleString()}회` : "");
+  let html = `
+    <div style="margin-bottom:10px">
+      <h2>${esc(o.schema_name)}.${esc(o.name)} <small>${TYPE_KO[o.obj_type]||""}</small></h2>
+      <small>생성 ${esc(o.created)} · 수정 ${esc(o.modified)}
+        ${o.row_count!=null ? " · 행 "+Number(o.row_count).toLocaleString()+" · "+Number(o.size_mb).toLocaleString()+"MB" : ""}</small>
+      <div style="font-size:12.5px;margin-top:4px">${usedLine}</div>
+    </div>`;
+  if (d.columns && d.columns.length) html += `
+    <details open><summary>컬럼 ${d.columns.length}개</summary>
+      <table style="margin-top:6px"><thead><tr><th>이름</th><th>타입</th><th>NULL</th></tr></thead><tbody>
+      ${d.columns.map(c=>`<tr><td>${esc(c.name)}</td><td><small>${esc(c.type_name)}</small></td><td><small>${c.is_nullable?"허용":"—"}</small></td></tr>`).join("")}
+      </tbody></table></details>`;
+  if (d.indexes && d.indexes.length) html += `
+    <details open><summary>인덱스 ${d.indexes.length}개 (사용 통계)</summary>
+      <table style="margin-top:6px"><thead><tr><th>이름</th><th>유형</th><th class="num">읽기</th><th class="num">쓰기</th><th>마지막 읽기</th></tr></thead><tbody>
+      ${d.indexes.map(i=>`<tr><td>${esc(i.name)}</td><td><small>${esc(i.type_desc)}</small></td>
+        <td class="num">${Number(i.reads||0).toLocaleString()}</td><td class="num">${Number(i.writes||0).toLocaleString()}</td>
+        <td><small style="color:${i.last_read?'inherit':'var(--warn)'}">${esc(i.last_read||"흔적 없음")}</small></td></tr>`).join("")}
+      </tbody></table>
+      <p class="note">읽기 0 · 쓰기만 있는 인덱스는 부하만 유발하는 미사용 인덱스 후보입니다.</p></details>`;
+  if (d.definition) html += `
+    <details><summary>정의 (소스)</summary><pre>${esc(d.definition)}</pre></details>
+    <div style="margin:10px 0">
+      <button class="btn sm primary" onclick="runStatic(${id})">⚡ 정적 분석 (규칙 기반 · 로컬)</button>
+      <div id="staticBox${id}" style="margin-top:8px"></div>
+    </div>`;
+  html += `
+    <details open><summary>의존성</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;font-size:12.5px">
+        <div><small>이 객체를 참조 (${(d.deps_in||[]).length})</small>
+          ${(d.deps_in||[]).map(n=>`<div class="mono">← ${esc(n)}</div>`).join("")||'<div><small>없음</small></div>'}</div>
+        <div><small>이 객체가 참조 (${(d.deps_out||[]).length})</small>
+          ${(d.deps_out||[]).map(n=>`<div class="mono">→ ${esc(n)}</div>`).join("")||'<div><small>없음</small></div>'}</div>
+      </div></details>`;
+  el.innerHTML = html;
+}
+
+/* ── 정적 분석 ── */
+async function runStatic(id){
+  const box = document.getElementById("staticBox"+id);
+  box.innerHTML = '<span class="spin"></span> 규칙 검사 중…';
+  const r = await jget("/api/static?id="+id);
+  if (!r.ok){ box.innerHTML = `<small style="color:var(--critical)">${esc(r.error)}</small>`; return; }
+  const sev = {serious:{c:"var(--serious)",t:"주의"}, warning:{c:"var(--warn)",t:"경고"}, info:{c:"var(--muted)",t:"정보"}};
+  box.innerHTML = `
+    <div style="font-size:12.5px;margin-bottom:6px"><b style="color:var(--ink)">규칙 검사: ${r.findings.length}건</b>
+      <small>· 코드 ${r.line_count}줄 · 로컬 분석(외부 전송 없음)</small></div>
+    ${r.findings.length ? r.findings.map(f=>{
+      const s = sev[f.severity]||sev.info;
+      return `<div style="display:flex;gap:9px;padding:7px 0;border-top:1px solid var(--grid)">
+        <span class="chip" style="font-size:10.5px;color:${s.c};border-color:color-mix(in srgb,${s.c} 40%,transparent);align-self:flex-start">${s.t}</span>
+        <div style="flex:1;font-size:12.5px"><b style="color:var(--ink)">${esc(f.title)}</b>${f.line?` <small>(약 ${f.line}행)</small>`:''}
+          <div style="color:var(--ink-2)">${esc(f.desc)}</div></div></div>`;
+    }).join("") : '<small><span style="color:var(--good)">●</span> 규칙 위반 없음</small>'}
+    <button class="btn sm" style="margin-top:8px" onclick="runStaticAI(${id})">✦ AI 심화 리뷰</button>
+    <p class="note">⚠ AI 심화 리뷰는 <b>프로시저 전체 소스</b>를 Gemini로 전송합니다 (규칙 검사는 전송 없음).</p>
+    <div id="staticAI${id}"></div>`;
+}
+async function runStaticAI(id){
+  const box = document.getElementById("staticAI"+id);
+  box.innerHTML = '<div style="margin-top:6px"><span class="spin"></span> AI 리뷰 중… (소스 전송됨)</div>';
+  const r = await jpost("/api/static/ai", {id});
+  box.innerHTML = r.ok
+    ? `<div class="ai-out" style="margin-top:8px;max-height:340px">${esc(r.analysis)}</div>`
+    : `<small style="color:var(--critical)">${esc(r.error)}</small>`;
+}
+
+/* ── 데이터베이스: 미사용 분석 ── */
+async function loadUnused(){
+  const res = await jget("/api/unused");
+  if (res.error){ document.getElementById("unusedRows").innerHTML = `<tr><td colspan="7" style="color:var(--critical)">${esc(res.error)}</td></tr>`; return; }
+  document.getElementById("unusedNote").textContent =
+    `관찰 기간 ${res.observation_days}일 (서버 가동 ${res.server.uptime_days}일 기준) · 후보 ${res.total_candidates}개${res.total_candidates>100?" (크기순 100개 표시)":""}`;
+  document.getElementById("unusedRows").innerHTML = res.candidates.map(c=>`
+    <tr>
+      <td><b style="color:var(--ink)">${esc(c.schema_name)}.${esc(c.name)}</b></td>
+      <td><small>${esc(c.kind)}</small></td>
+      <td class="num">${c.size_mb!=null?Number(c.size_mb).toLocaleString():"—"}</td>
+      <td class="num">${c.row_count!=null?Number(c.row_count).toLocaleString():"—"}</td>
+      <td><small>${esc(c.modified||"")}</small></td>
+      <td class="num"><b style="color:${c.confidence>=75?'var(--warn)':'var(--muted)'}">${c.confidence}%</b></td>
+      <td><small>${c.factors.map(esc).join("<br>")}<br><b style="color:var(--series)">${esc(c.advice)}</b></small></td>
+    </tr>`).join("") || '<tr><td colspan="7"><small>관찰 기간 내 사용 흔적이 없는 객체가 없습니다.</small></td></tr>';
+}
+
+/* ── 전역 플로팅 챗봇 ── */
+function toggleChat(){
+  const w = document.getElementById("chatWidget");
+  const opening = !w.classList.contains("show");
+  w.classList.toggle("show");
+  if (opening){ loadKnowledge(); document.getElementById("chatInput").focus(); }
+}
+function maxChat(){ document.getElementById("chatWidget").classList.toggle("max"); }
+async function resetChat(){
+  await jpost("/api/chat/reset", {});
+  document.getElementById("chatLog").innerHTML =
+    '<div style="font-size:12.5px;color:var(--muted)">새 대화를 시작합니다 — 이전 맥락이 초기화되었습니다.</div>';
+}
+function chatTab(t){
+  document.querySelectorAll(".chatw-tabs button").forEach(b=>b.classList.toggle("active", b.dataset.ctab===t));
+  document.getElementById("ctab-chat").style.display = t==="chat" ? "flex" : "none";
+  document.getElementById("ctab-glossary").style.display = t==="glossary" ? "block" : "none";
+}
+
+/* ── AI 챗봇 ── */
+let chatSeq = 0;
+const chatMeta = {};
+let knowledgeLegacy = [];
+
+async function loadKnowledge(){
+  try {
+    const k = await jget("/api/knowledge");
+    document.getElementById("knowStats").textContent =
+      `현재 DB 사례 ${k.history_count}건 · 교정 ${k.edited_count}건 · ${k.target_id}`;
+    const gc = document.getElementById("glossCount");
+    if (gc) gc.textContent = (k.glossary||[]).length ? `(${k.glossary.length})` : "";
+    renderGlossary(k.glossary || [], k.legacy || []);
+  } catch(e){}
+}
+function renderGlossary(items, legacy=[]){
+  knowledgeLegacy = legacy;
+  const active = items.length ? items.map(g=>`
+      <div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--grid)">
+        <b style="color:var(--ink);white-space:nowrap">${esc(g.term)}</b>
+        <span style="flex:1;color:var(--ink-2)">${esc(g.mapping)}</span>
+        <small>${g.target_id==="global"?"공통":"현재 DB"}</small>
+        <button class="btn sm" style="color:var(--muted)" data-del-term="${esc(g.term)}" data-del-target="${esc(g.target_id)}">×</button>
+      </div>`).join("") : '<small>현재 DB에 등록된 용어 없음</small>';
+  const old = legacy.length ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+      <small style="color:var(--warn)">미귀속 기존 용어 ${legacy.length}건 — 확인 후 현재 DB로 가져오세요</small>
+      ${legacy.map((g,i)=>`<div style="display:flex;gap:8px;align-items:baseline;padding:4px 0">
+        <b>${esc(g.term)}</b><span style="flex:1;color:var(--ink-2)">${esc(g.mapping)}</span>
+        <button class="btn sm" data-adopt-idx="${i}">현재 DB로 가져오기</button>
+        <button class="btn sm" data-del-term="${esc(g.term)}" data-del-target="legacy/unassigned">×</button>
+      </div>`).join("")}</div>` : "";
+  document.getElementById("glossaryList").innerHTML = active + old;
+}
+async function addGlossary(){
+  const term = document.getElementById("gTerm").value.trim();
+  const mapping = document.getElementById("gMap").value.trim();
+  const scope = document.getElementById("gScope").value;
+  if (!term || !mapping) return;
+  const res = await jpost("/api/knowledge/glossary", {term, mapping, scope});
+  if (res.ok){ document.getElementById("gTerm").value=""; document.getElementById("gMap").value=""; loadKnowledge(); }
+}
+async function delGlossary(term, target_id){
+  const res = await jpost("/api/knowledge/glossary/delete", {term, target_id});
+  if (res.ok) loadKnowledge();
+}
+async function adoptGlossary(idx){
+  const g = knowledgeLegacy[idx];
+  if (!g) return;
+  const res = await jpost("/api/knowledge/glossary/adopt", {term:g.term, mapping:g.mapping});
+  if (res.ok) loadKnowledge();
+}
+// 문자열 보간 인라인 onclick 대신 이벤트 위임 (DOM XSS 표면 축소)
+document.getElementById("glossaryList").addEventListener("click", e => {
+  const t = e.target.closest("[data-del-term]");
+  if (t){ delGlossary(t.dataset.delTerm, t.dataset.delTarget); return; }
+  const a = e.target.closest("[data-adopt-idx]");
+  if (a) adoptGlossary(Number(a.dataset.adoptIdx));
+});
+function chatAppend(html){
+  const log = document.getElementById("chatLog");
+  log.insertAdjacentHTML("beforeend", html);
+  log.scrollTop = log.scrollHeight;
+}
+async function chatAsk(){
+  const input = document.getElementById("chatInput"), btn = document.getElementById("chatBtn");
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = ""; btn.disabled = true;
+  chatAppend(`<div style="align-self:flex-end;background:var(--series-dim);color:#fff;border-radius:11px;padding:9px 12px;max-width:85%;font-size:12.5px">${esc(q)}</div>`);
+  const id = ++chatSeq;
+  chatAppend(`<div id="chatWork${id}" style="font-size:12.5px;color:var(--muted)"><span class="spin"></span> 관련 테이블 선정 및 SQL 생성 중…</div>`);
+  const res = await jpost("/api/chat", {question: q});
+  const work = document.getElementById("chatWork"+id);
+  btn.disabled = false;
+  if (!res.ok){
+    work.innerHTML = `<span style="color:var(--critical)">✗ ${esc(res.error)}</span>${res.detail?`<div class="mono">${esc(String(res.detail).slice(0,150))}</div>`:""}`;
+    return;
+  }
+  chatMeta[id] = {question: q, generated_sql: res.sql, tables: res.tables,
+                  glossary_suggestion: res.glossary_suggestion};
+  if (res.answer !== undefined){  // metadata/proc/general 경로 — 텍스트 답변
+    const label = res.route === "metadata" ? "DB 카탈로그 기반 답변"
+                : res.route === "proc" ? `객체 성능 진단${res.object?" · "+esc(res.object):""} · 소스·통계 전송됨`
+                : "AI DBA 상담";
+    work.outerHTML = `
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:11px 13px;max-width:95%;font-size:12.5px">
+        <div><small>${label}${res.route==="proc"?"":" · 수집된 자료 근거, 데이터 값 미전송"}</small></div>
+        <div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(res.answer)}</div>
+        ${res.glossary_suggestion ? `<button class="btn sm" style="margin-top:8px" onclick="proposeGlossary(${id})">업무 의미를 용어집 입력안으로 열기</button>` : ""}
+      </div>`;
+    return;
+  }
+  work.outerHTML = `
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:11px 13px;max-width:95%;font-size:12.5px">
+      <div><small>참고한 테이블:</small> ${res.tables.map(t=>`<span class="chip" style="font-size:10.5px">${esc(t)}</span>`).join(" ")}</div>
+      <div style="margin:8px 0 4px">${esc(res.explanation)}</div>
+      ${res.caveat?`<div style="color:var(--warn);font-size:12px">⚠ ${esc(res.caveat)}</div>`:""}
+      ${res.glossary_suggestion ? `<button class="btn sm" style="margin-top:7px" onclick="proposeGlossary(${id})">업무 의미를 용어집 입력안으로 열기</button>` : ""}
+      <textarea id="chatSql${id}" rows="6" spellcheck="false"
+        style="width:100%;margin-top:8px;background:var(--page);border:1px solid var(--grid);border-radius:8px;padding:10px;color:var(--ink-2);font-family:ui-monospace,Consolas,monospace;font-size:12px">${esc(res.sql)}</textarea>
+      ${res.invalid_reason
+        ? `<div style="color:var(--critical);font-size:12px;margin-top:6px">✗ 검증 실패: ${esc(res.invalid_reason)} — 실행이 차단됩니다.</div>`
+        : (health && health.db==="live" && health.safe_run===false && !health.unsafe_override)
+        ? `<div style="margin-top:8px">
+             <button class="btn sm" disabled style="opacity:.5;cursor:not-allowed">실행 차단 — 안전하지 않은 권한 감지</button>
+             <div style="font-size:11.5px;color:var(--warn);margin-top:5px">${esc((health.unsafe_reasons||[]).slice(0,3).join("; "))} — 전용 읽기 계정(dbaone_reader)으로 접속하면 실행할 수 있습니다. SQL은 복사해 직접 검토·사용하세요.</div>
+           </div>`
+        : `<div style="margin-top:8px;display:flex;gap:8px">
+             <button class="btn primary sm" onclick="chatRun(${id})">이 SQL 실행 (내 PC → DB, 외부 전송 없음)</button>
+             <small style="align-self:center">실행 전 SQL을 수정할 수 있습니다 — 수정해도 SELECT 검증은 유지됩니다</small>
+           </div>`}
+      <div id="chatResult${id}"></div>
+    </div>`;
+}
+function proposeGlossary(id){
+  const s = (chatMeta[id]||{}).glossary_suggestion;
+  if (!s) return;
+  document.getElementById("gTerm").value = s.term || "";
+  document.getElementById("gMap").value = s.mapping || "";
+  document.getElementById("gScope").value = "target";
+  chatTab("glossary");
+  document.getElementById("gTerm").focus();
+}
+async function chatRun(id){
+  const sql = document.getElementById("chatSql"+id).value;
+  const box = document.getElementById("chatResult"+id);
+  box.innerHTML = '<div style="margin-top:8px;font-size:12px"><span class="spin"></span> 실행 중…</div>';
+  const meta = chatMeta[id] || {};
+  const res = await jpost("/api/chat/run", {sql, question: meta.question,
+                                            generated_sql: meta.generated_sql, tables: meta.tables});
+  if (!res.ok){ box.innerHTML = `<div style="color:var(--critical);font-size:12px;margin-top:8px">✗ ${esc(res.error)}</div>`; return; }
+  if (res.saved_as_example) loadKnowledge();
+  box.innerHTML = `
+    ${res.result_summary ? `<div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:var(--series-dim);color:#fff">
+      <small>${esc(res.result_summary.label)}</small><br><b style="font-size:16px">${esc(res.result_summary.value==null?"NULL":res.result_summary.value)}</b>
+    </div>` : ""}
+    <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+      ${res.row_count}행${res.capped?" (200행 제한 — 더 있음)":""} · ${res.elapsed_s}초 · 결과는 이 화면에만 표시됩니다
+      ${res.saved_as_example ? (res.edited ? ' · <span style="color:var(--good)">교정 사례로 축적됨 ✓</span>' : ' · 사례로 축적됨 ✓') : ''}</div>
+    <div style="overflow:auto;max-height:320px;margin-top:6px;border:1px solid var(--grid);border-radius:8px">
+      <table style="font-size:12px"><thead><tr>${res.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead>
+      <tbody>${res.rows.map(r=>`<tr>${r.map(v=>`<td>${esc(v==null?"NULL":v)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    </div>`;
+  document.getElementById("chatLog").scrollTop = document.getElementById("chatLog").scrollHeight;
+}
+
+/* ── 감사 로그 ── */
+async function loadAudit(){
+  const res = await jget("/api/audit");
+  document.getElementById("auditRows").innerHTML = (res.entries||[]).map(e=>`
+    <tr>
+      <td class="num"><small>${esc((e.ts||"").replace("T"," ").replace("+00:00",""))}</small></td>
+      <td><b style="color:var(--ink)">${esc(e.event)}</b></td>
+      <td>${esc(e.target||e.database||(e.tables||[]).join(", ")||"")}</td>
+      <td><small>${e.event==="ai.analyze"
+            ? `모델 ${esc(e.model)} · 페이로드 ${esc(e.payload_sha256||"")} · ${e.ok?"성공":"실패"}`
+            : e.event==="chat.generate"
+            ? `질문 "${esc((e.question||"").slice(0,60))}" · 검증 ${e.valid?"통과":"실패"} · SQL ${esc(e.sql_sha256||"")}`
+            : e.event==="chat.run"
+            ? `SQL ${esc(e.sql_sha256||"")} · ${e.rows}행 · ${e.elapsed_s}초`
+            : e.event==="chat.answer"
+            ? `[${esc(e.route||"")}] 질문 "${esc((e.question||"").slice(0,60))}" · ${e.ok?"성공":"실패"}`
+            : e.event==="chat.proc"
+            ? `진단 ${esc(e.object||"")} · 질문 "${esc((e.question||"").slice(0,40))}" · ${e.ok?"성공":"실패"}`
+            : `서버 ${esc(e.server||"")} · ${esc(e.auth||"")} · 경고 ${e.warnings??0}건`}</small></td>
+    </tr>`).join("") || '<tr><td colspan="4"><small>기록 없음</small></td></tr>';
+}
+
+/* ── 연결 화면 ── */
+let connDismissed = false;
+function markEntered(){ try { sessionStorage.setItem("dbaone_entered", "1"); } catch(e){} }
+function hasEntered(){ try { return sessionStorage.getItem("dbaone_entered") === "1"; } catch(e){ return false; } }
+function skipDemo(){ connDismissed = true; markEntered(); closeConnect(); }
+function closeConnect(){ document.getElementById("connOverlay").classList.remove("show"); }
+document.addEventListener("keydown", e => {  // ESC로 연결 화면 닫기 (닫기 허용 상태일 때만)
+  if (e.key === "Escape"
+      && document.getElementById("connOverlay").classList.contains("show")
+      && document.getElementById("connCloseBtn").style.display !== "none") skipDemo();
+});
+
+async function openConnect(){
+  const list = document.getElementById("savedList");
+  list.innerHTML = "";
+  try {
+    const res = await jget("/api/connections");
+    if (res.connections && res.connections.length){
+      list.innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">저장된 연결 (최근 사용 순)</div>'
+        + res.connections.map((c,i)=>`
+        <div class="saved-conn">
+          <span class="env ${esc(c.env_label)}">${esc(c.env_label)}</span>
+          <span style="flex:1"><b>${esc(c.server)}</b> · ${esc(c.database)}
+            <small>${c.auth==="windows"?"Windows 인증":"계정 "+esc(c.uid)}</small></span>
+          ${i===0?'<small style="color:var(--good)">현재 ✓</small> <button class="btn primary sm" onclick="skipDemo()">대시보드로 →</button>'
+                 :`<button class="btn primary sm" data-use-server="${esc(c.server)}" data-use-db="${esc(c.database)}">연결 →</button>`}
+        </div>`).join("");
+    }
+  } catch(e){}
+  // 이미 들어와 있는 상태에서 열었다면(잘못 누름 등) 닫기 버튼 표시
+  document.getElementById("connCloseBtn").style.display =
+    (hasEntered() || health.db === "live") ? "inline-block" : "none";
+  document.getElementById("connOverlay").classList.add("show");
+}
+
+function afterConnChange(){
+  // 연결이 바뀌면 이전 DB 기준 화면 캐시를 모두 버리고 활성 화면을 다시 불러온다
+  objData = null;
+  document.getElementById("objTree").innerHTML = "<small>불러오는 중…</small>";
+  document.getElementById("objDetail").innerHTML =
+    "<small>왼쪽에서 객체를 선택하면 컬럼·인덱스·정의·의존성이 표시됩니다.</small>";
+  document.getElementById("chatLog").innerHTML =
+    '<div style="font-size:12.5px;color:var(--muted)">연결이 변경되어 새 대화를 시작합니다 — 이전 DB의 대화 맥락은 초기화되었습니다.</div>';
+  loadHealth().then(loadOverview).then(()=>{
+    const pane = document.querySelector(".nav-item.active")?.dataset.pane;
+    if (pane === "db"){
+      if (document.getElementById("dbUnused").style.display !== "none") loadUnused();
+      else loadObjects();
+    }
+    if (pane === "monitor") loadMonitor();
+    loadAlerts();
+  });
+}
+async function useConn(server, database){
+  const res = await jpost("/api/connect/use", {server, database});
+  if (!res.ok){ alert(res.error); return; }
+  markEntered(); closeConnect(); afterConnChange();
+}
+document.getElementById("savedList").addEventListener("click", e => {
+  const t = e.target.closest("[data-use-server]");
+  if (t) useConn(t.dataset.useServer, t.dataset.useDb);
+});
+
+function authChanged(){
+  const win = document.getElementById("cAuth").value === "windows";
+  document.getElementById("cCredRow").style.display = win ? "none" : "grid";
+}
+function backToStep1(){
+  document.getElementById("connStep2").style.display = "none";
+  document.getElementById("connStep1").style.display = "block";
+}
+function connParams(){
+  return { server: document.getElementById("cServer").value,
+           auth: document.getElementById("cAuth").value,
+           uid: document.getElementById("cUid").value,
+           pwd: document.getElementById("cPwd").value };
+}
+async function connTest(){
+  const btn = document.getElementById("cTestBtn"), msg = document.getElementById("connMsg1");
+  msg.className = "conn-msg"; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 연결 확인 중…';
+  const res = await jpost("/api/connect/test", connParams());
+  btn.disabled = false; btn.textContent = "연결 테스트";
+  if (!res.ok){ msg.className = "conn-msg err"; msg.textContent = res.error; return; }
+  document.getElementById("connServerInfo").innerHTML =
+    `✓ <b>${esc(res.server_name)}</b> · v${esc(res.version)} · ${esc(res.edition)}`;
+  document.getElementById("cDb").innerHTML =
+    res.databases.map(d=>`<option>${esc(d)}</option>`).join("") || '<option value="">(사용자 DB 없음)</option>';
+  document.getElementById("connStep1").style.display = "none";
+  document.getElementById("connStep2").style.display = "block";
+}
+async function connSave(){
+  const btn = document.getElementById("cSaveBtn"), msg = document.getElementById("connMsg2");
+  msg.className = "conn-msg"; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 연결 중…';
+  const p = connParams();
+  p.database = document.getElementById("cDb").value;
+  p.env_label = document.getElementById("cEnv").value;
+  const res = await jpost("/api/connect/save", p);
+  btn.disabled = false; btn.textContent = "이 데이터베이스로 연결";
+  if (!res.ok){ msg.className = "conn-msg err"; msg.textContent = res.error; return; }
+  markEntered();
+  if (res.warnings && res.warnings.length){
+    msg.className = "conn-msg warn2";
+    msg.innerHTML = "연결됨 (주의)<br>· " + res.warnings.map(esc).join("<br>· ");
+    setTimeout(()=>{ closeConnect(); afterConnChange(); }, 2600);
+  } else {
+    msg.className = "conn-msg ok"; msg.textContent = "연결 완료 — 대시보드를 불러옵니다.";
+    setTimeout(()=>{ closeConnect(); afterConnChange(); }, 900);
+  }
+}
+
+loadHealth().then(() => {
+  loadOverview();
+  loadAlerts();  // 진입 시 사이드바 배지 갱신
+  loadKnowledge();  // 용어집 카운트
+  if ((!hasEntered() && !location.search.includes("main=1")) || location.search.includes("connect=1")) openConnect();
+  const h = location.hash.slice(1);
+  if (h === "chat"){ toggleChat(); }
+  else if (h){
+    const pane = h.split("-")[0];
+    document.querySelector(`.nav-item[data-pane="${pane}"]`)?.click();
+    if (h === "db-unused") document.querySelector('#dbSeg button[data-view="unused"]')?.click();
+  }
+});
+setInterval(loadOverview, 30000);
+</script>
+</body>
+</html>

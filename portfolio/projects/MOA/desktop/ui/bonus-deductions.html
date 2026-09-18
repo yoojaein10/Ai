@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 상여 공제 대장</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 상여 공제 대장 (2026-08-27) — 화환·패널티·감정서경비·선지급 같은 공제를 발생 → 대기 → 적용으로 관리한다 */
+    .toolbar label input[list]{min-width:120px}
+    .ledger-table{white-space:nowrap}
+    .ledger-table thead th{text-align:center;line-height:1.3}
+    .ledger-table td.number,.ledger-table th.number{text-align:right}
+    .ledger-table td.memo{white-space:normal;max-width:360px}
+    .ledger-table tr.void td{color:#9aa4ad;text-decoration:line-through}
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#eef4f2;color:#244f68;margin-left:2px}
+    .badge.pending{background:#fff3e0;color:#b26a00}
+    .badge.applied{background:#e8f5ec;color:#1b7a43}
+    .badge.void{background:#fdecea;color:#c62828}
+    .badge.locked{background:#eceff1;color:#455a64}
+    .badge.muted{background:#f1f3f4;color:#6b7680}
+    .small-button{padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;font-size:11px;color:#244f68;margin-right:2px}
+    .small-button.danger{color:#b04a4a}
+    .small-button:disabled{opacity:.4;cursor:default}
+    .pending-chips{margin:0 0 10px;font-size:12px;color:#56625c;white-space:normal}
+    .pending-chips .chip{display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:8px;background:#fff8dc;color:#8a6d1a;font-weight:600;cursor:pointer}
+    .note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
+    .back-button{display:inline-flex;align-items:center;gap:4px;margin-right:14px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#244f68;font-weight:750;font-size:13px;text-decoration:none}
+    .back-button:hover{background:#eef4f2}
+    #importFile{display:none}
+    .import-errors{white-space:normal;color:#b04a4a;font-size:12px;margin:0 0 8px}
+    dialog.bonus-dialog{border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:520px;max-width:92vw;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+    dialog.bonus-dialog::backdrop{background:rgba(20,30,40,.35)}
+    dialog.bonus-dialog h3{margin:0 0 4px}
+    dialog.bonus-dialog p.hint{margin:0 0 12px;color:#8a949f;font-size:12px}
+    .form-grid{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;align-items:center;font-size:13px}
+    .form-grid input,.form-grid select{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px}
+    .form-grid input.num{text-align:right}
+    .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+    .dialog-actions .primary-button{padding:7px 16px}
+    .list-panel > .table-wrap{scrollbar-width:auto}
+    .list-panel > .table-wrap::-webkit-scrollbar{height:13px;width:13px}
+    .list-panel > .table-wrap::-webkit-scrollbar-thumb{background:#b7c3cc;border-radius:7px;border:3px solid #f4f6f5}
+    .list-panel > .table-wrap::-webkit-scrollbar-track{background:#f4f6f5}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <a class="back-button" href="/desktop/bonus" title="상여 화면으로 돌아가기">← 상여 화면</a>
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>상여 공제 대장</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="검색 조건">
+      <label><span>상태</span><select id="statusFilter">
+        <option value="ALL">대기 + 적용</option><option value="PENDING">대기(미처리)</option><option value="APPLIED">적용(처리됨)</option><option value="VOID">무효</option>
+      </select></label>
+      <label><span>지급월 (적용분)</span><input id="periodFilter" type="month"></label>
+      <label><span>사람</span><input id="personFilter" list="personList" placeholder="전체" maxlength="30"><datalist id="personList"></datalist></label>
+      <label><span>종류</span><select id="kindFilter"><option value="">전체</option></select></label>
+      <label><span>검색</span><input id="textFilter" placeholder="감정서·메모" maxlength="50"></label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+    <section class="workspace single-workspace">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>공제 대장</h2><p id="resultSummary">조회 중...</p></div>
+          <div>
+            <button id="backButton" class="export-button" type="button" title="상여 화면으로">상여 화면</button>
+            <button id="newButton" class="export-button hidden" type="button">새 항목</button>
+            <button id="importButton" class="export-button hidden" type="button" title="사람·종류·금액·감정서·발생일·메모·적용월 표">엑셀 올리기</button>
+            <button id="templateButton" class="export-button" type="button" title="올리기 양식(xlsx) 받기">양식</button>
+            <input id="importFile" type="file" accept=".xlsx">
+            <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+          </div>
+        </div>
+        <p class="note">공제는 생길 때 <b>대기</b>로 올려 두고, 상여 화면의 사람별 공제에서 골라 <b>적용</b>하면 처리된 것으로 봅니다. 적용된 달이 마감되면 잠깁니다(재개 전엔 못 고침). 대기 항목만 고칠 수 있고, 잘못 올린 것은 지우지 않고 <b>무효</b> 처리합니다(사유 기록). 상여가 0이라 못 뺀 화환류는 마감 때 자동으로 대기로 돌아옵니다. 종류가 곧 빠지는 자리입니다 — 화환·패널티류는 <b>세전(W)</b>에서 빠져 세금이 줄고, <b>미수금 회수(AB)</b>는 세금 다 뗀 지급액에서 빠집니다(법인카드 사적사용 등 회사가 대신 낸 돈 돌려받기). 큰 미수금은 <b>분할</b>로 나눠 몇 달에 걸쳐 회수할 수 있습니다.</p>
+        <div id="pendingChips" class="pending-chips"></div>
+        <p id="importErrors" class="import-errors hidden"></p>
+        <div class="table-wrap">
+          <table id="ledgerTable" class="ledger-table">
+            <thead><tr><th>상태</th><th>사람</th><th>종류</th><th class="number">금액</th><th>감정서</th><th>발생일</th><th>메모</th><th>출처</th><th>적용 지급월</th><th>등록일</th><th></th></tr></thead>
+            <tbody id="ledgerRows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조건에 맞는 항목이 없습니다.</div>
+        </div>
+      </article>
+    </section>
+  </main>
+  </div>
+
+  <dialog id="itemDialog" class="bonus-dialog">
+    <h3 id="itemTitle">새 공제 항목</h3>
+    <p class="hint">금액은 양수 — 부호는 종류가 정합니다. 지급월을 적으면 그 달(열려 있어야 함)에 바로 적용됩니다.</p>
+    <div class="form-grid">
+      <label for="fPerson">사람</label><input id="fPerson" list="personList" maxlength="30" placeholder="이름">
+      <label for="fKind">종류</label><select id="fKind"></select>
+      <label for="fAmount">금액</label><input id="fAmount" class="num" type="number" min="0" step="1" placeholder="0">
+      <label for="fDoc">감정서(선택)</label><input id="fDoc" maxlength="50" placeholder="01-2607-3-0001">
+      <label for="fDate">발생일</label><input id="fDate" type="date">
+      <label for="fMemo">메모</label><input id="fMemo" maxlength="200" placeholder="내역">
+      <label for="fApply">바로 적용할 지급월</label><input id="fApply" type="month">
+    </div>
+    <div class="dialog-actions"><button id="itemCancel" class="export-button" type="button">닫기</button><button id="itemSave" class="primary-button" type="button">저장</button></div>
+  </dialog>
+
+  <dialog id="splitDialog" class="bonus-dialog">
+    <h3>분할 — 일부만 회수</h3>
+    <p class="hint" id="splitHint"></p>
+    <div class="form-grid"><label for="splitAmount">떼어낼 금액</label><input id="splitAmount" class="num" type="number" min="1" step="1" placeholder="이번 달에 뺄 금액"></div>
+    <div class="dialog-actions"><button id="splitCancel" class="export-button" type="button">닫기</button><button id="splitSave" class="primary-button" type="button">나누기</button></div>
+  </dialog>
+
+  <dialog id="voidDialog" class="bonus-dialog">
+    <h3>무효 처리</h3>
+    <p class="hint" id="voidHint">이 항목을 무효로 돌립니다. 지우지 않고 사유와 함께 남습니다.</p>
+    <div class="form-grid"><label for="voidReason">사유</label><input id="voidReason" maxlength="200" placeholder="예: 잘못 등록"></div>
+    <div class="dialog-actions"><button id="voidCancel" class="export-button" type="button">닫기</button><button id="voidSave" class="primary-button" type="button">무효 처리</button></div>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/bonus-deductions.js?v=20260827-3"></script>
+</body>
+</html>

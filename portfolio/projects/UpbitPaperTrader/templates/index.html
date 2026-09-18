@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trading HQ Paper Trader</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">MULTI-DEPARTMENT PAPER TRADING</p>
+      <h1>Trading HQ</h1>
+    </div>
+    <div class="header-actions">
+      <span id="connection" class="status waiting">연결 중</span>
+      <label id="autoControl" class="switch-row">
+        <span>자동 모의매매</span>
+        <input id="autoToggle" type="checkbox">
+        <span class="switch"></span>
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <section class="department-nav">
+      <button class="department-card active" data-department="crypto">
+        <span class="department-icon">₿</span>
+        <span><strong>코인부서</strong><small id="cryptoDepartmentStatus">연결 확인 중</small></span>
+        <b id="cryptoChiefMini">WAIT</b>
+      </button>
+      <button class="department-card" data-department="stocks">
+        <span class="department-icon stock">K</span>
+        <span><strong>국내주식부서</strong><small>KIS API 연결 대기</small></span>
+        <b>OFFLINE</b>
+      </button>
+      <div class="hq-safety">
+        <span>총괄 안전모드</span>
+        <strong>모의투자 전용 · 실주문 차단</strong>
+      </div>
+    </section>
+
+    <section id="stockDepartment" class="department-view hidden">
+      <article class="panel offline-panel">
+        <div>
+          <p class="eyebrow">DOMESTIC STOCK DEPARTMENT</p>
+          <h2>한국투자 API 연결 대기</h2>
+          <p>정식 실시간 데이터가 연결될 때까지 분석과 주문을 모두 차단합니다.</p>
+        </div>
+        <span class="offline-badge">OFFLINE</span>
+      </article>
+      <section class="stock-readiness">
+        <article class="panel">
+          <div class="panel-title"><span>연결 준비사항</span><strong>0 / 4</strong></div>
+          <ol id="stockRequirements">
+            <li>한국투자 계좌 개설</li>
+            <li>KIS 모의투자 App Key·App Secret</li>
+            <li>실시간 WebSocket 시세 연결</li>
+            <li>코인부서와 분리된 가상계좌</li>
+          </ol>
+        </article>
+        <article class="panel">
+          <div class="panel-title"><span>주식 수석 트레이더</span><strong>OFFLINE</strong></div>
+          <p class="signal-help">연결 전에는 공개 웹 시세로 대체하거나 주문을 추정하지 않습니다.</p>
+          <div id="stockAgents" class="agent-grid compact"></div>
+        </article>
+      </section>
+    </section>
+
+    <div id="coinDepartment" class="department-view">
+    <section class="notice">
+      <strong>모의매매 전용</strong>
+      <span id="universeText">BTC·ETH 포함 거래대금 상위 종목을 자동 감시합니다.</span>
+    </section>
+
+    <section class="panel office-panel office-v2">
+      <div class="office-heading">
+        <div>
+          <p class="eyebrow">LIVE PAPER TRADING OFFICE</p>
+          <h2>코인부서 모의매매 상황실</h2>
+        </div>
+        <div class="office-legend">
+          <span><i class="legend-dot working"></i>분석·보고</span>
+          <span><i class="legend-dot waiting"></i>대기</span>
+          <span><i class="legend-dot blocked"></i>차단</span>
+        </div>
+      </div>
+      <div class="game-office" aria-label="코인 분석 직원들이 근무하는 모의매매 사무실">
+        <img class="game-office-bg" src="/static/assets/trading-office-v2.png" alt="" draggable="false">
+        <div class="office-hud">
+          <div class="office-clock"><span id="officeClock">--:--:--</span></div>
+          <div class="office-board">
+            <small>COIN PAPER DESK</small>
+            <strong id="officeBoardDecision">WAIT</strong>
+          </div>
+        </div>
+        <div id="officeWorkers" class="office-actors"></div>
+        <article id="chiefActor" class="office-actor chief-actor waiting">
+          <div class="actor-bubble">최종 판단 대기</div>
+          <div class="actor-sprite" aria-hidden="true"></div>
+          <div class="actor-name">
+            <strong>Chief</strong>
+            <span id="chiefMonitor">WAIT</span>
+          </div>
+        </article>
+      </div>
+      <p class="office-caption">각 직원은 실시간 지표 상태에 맞춰 움직입니다. 화면 연출은 분석 결과를 설명하기 위한 것이며 실제 주문은 실행하지 않습니다.</p>
+    </section>
+
+    <section class="panel agent-board">
+      <div class="chief-row">
+        <div>
+          <p class="eyebrow">COIN DEPARTMENT AGENTS</p>
+          <h2>코인 수석 트레이더</h2>
+          <p id="chiefReason">분석 결과를 준비하고 있습니다.</p>
+        </div>
+        <div class="chief-decision">
+          <span>최종 판단</span>
+          <strong id="chiefDecision">WAIT</strong>
+          <small id="paperOnlyBadge">PAPER ONLY</small>
+        </div>
+      </div>
+      <div id="coinAgents" class="agent-grid"></div>
+    </section>
+
+    <nav class="market-tabs">
+      {% for market in markets %}
+      <button class="market-tab{% if loop.first %} active{% endif %}" data-market="{{ market }}">
+        {{ market.replace("KRW-", "") }}/KRW
+      </button>
+      {% endfor %}
+      <span id="updatedAt" class="updated-at">—</span>
+    </nav>
+
+    <section class="metrics">
+      <article class="metric">
+        <span>총 평가자산</span>
+        <strong id="equity">—</strong>
+      </article>
+      <article class="metric">
+        <span>가상 원화</span>
+        <strong id="cash">—</strong>
+      </article>
+      <article class="metric">
+        <span>총 손익</span>
+        <strong id="totalPnl">—</strong>
+      </article>
+      <article class="metric">
+        <span>실현 손익</span>
+        <strong id="realizedPnl">—</strong>
+      </article>
+    </section>
+
+    <section class="layout">
+      <div class="main-column">
+        <article class="panel chart-panel">
+          <div class="panel-title">
+            <div>
+              <span id="marketLabel">BTC/KRW · 15분봉</span>
+              <strong id="currentPrice">—</strong>
+            </div>
+            <div class="legend">
+              <span class="bb">볼린저밴드</span>
+              <span class="ema-fast">EMA 9</span>
+              <span class="ema-slow">EMA 21</span>
+            </div>
+          </div>
+          <canvas id="priceChart" height="420"></canvas>
+        </article>
+
+        <article class="panel rsi-panel">
+          <div class="panel-title">
+            <span>RSI 14</span>
+            <strong id="rsiValue">—</strong>
+          </div>
+          <canvas id="rsiChart" height="130"></canvas>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title">
+            <span>가상 보유자산</span>
+            <div class="button-row">
+              <button id="manualBuy" class="button buy">수동 모의매수</button>
+              <button id="manualSell" class="button sell">수동 모의매도</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>마켓</th><th>수량</th><th>평균가</th><th>현재가</th><th>평가손익</th></tr></thead>
+              <tbody id="positions"><tr><td colspan="5" class="empty">보유자산 없음</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <aside class="side-column">
+        <article class="panel signal-panel">
+          <div class="panel-title">
+            <span>5/6 국면전환 신호</span>
+            <strong id="signalScore">0 / 6</strong>
+          </div>
+          <div class="signal-mode">
+            <button id="buyMode" class="mode active">매수 조건</button>
+            <button id="sellMode" class="mode">매도 조건</button>
+          </div>
+          <div class="checks">
+            <div class="check" data-key="market_mode"><span>매매 가능 국면</span><b>대기</b></div>
+            <div class="check" data-key="entry_setup"><span>전략 진입 준비</span><b>대기</b></div>
+            <div class="check" data-key="confirmation"><span>가격 확인</span><b>대기</b></div>
+            <div class="check" data-key="volume"><span>거래량 확인</span><b>대기</b></div>
+            <div class="check" data-key="timeframes"><span>장기 시장 방향</span><b>대기</b></div>
+            <div class="check" data-key="market_guard"><span>손실 종목 안전장치</span><b>대기</b></div>
+          </div>
+          <p id="signalHelp" class="signal-help">상승 국면과 손실 안전장치는 필수이며 전체 6개 중 5개가 충족되면 모의매수합니다.</p>
+        </article>
+
+        <article class="panel settings">
+          <div class="panel-title"><span>전략 설정</span></div>
+          <dl>
+            <div><dt>진입 금액</dt><dd>가상 잔고의 10%</dd></div>
+            <div><dt>감시 종목</dt><dd>BTC·ETH 전용</dd></div>
+            <div><dt>최대 보유</dt><dd>동시 3종목</dd></div>
+            <div><dt>일일 손실 제한</dt><dd>-3%</dd></div>
+            <div><dt>시장 국면</dt><dd>EMA 50·ADX 18 이상</dd></div>
+            <div><dt>매수 기준</dt><dd>필수조건 포함 5/6</dd></div>
+            <div><dt>장기 방향</dt><dd>1시간·4시간·BTC 확인</dd></div>
+            <div><dt>상승장</dt><dd>눌림목·거래량 돌파</dd></div>
+            <div><dt>횡보장</dt><dd>볼린저 평균회귀</dd></div>
+            <div><dt>하락장</dt><dd>현금 대기</dd></div>
+            <div><dt>연속손실 정지</dt><dd>종목 3회·전체 5회</dd></div>
+            <div><dt>목표수익</dt><dd>진입가 + 2 ATR</dd></div>
+            <div><dt>손절</dt><dd>진입가 - 1.5 ATR</dd></div>
+            <div><dt>추적손절</dt><dd>+1 ATR 후 1.2 ATR</dd></div>
+            <div><dt>재매수 대기</dt><dd>60분</dd></div>
+            <div><dt>가정 수수료</dt><dd>0.05%</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title">
+            <span>운영 알림</span>
+            <button id="riskUnlock" class="text-button">위험정지 해제</button>
+          </div>
+          <div id="alerts" class="trades"><p class="empty">알림 없음</p></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title">
+            <span>최근 모의거래</span>
+            <button id="resetButton" class="text-button">초기화</button>
+          </div>
+          <div id="trades" class="trades"><p class="empty">거래 기록 없음</p></div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="panel backtest-panel">
+      <div class="panel-title">
+        <div>
+          <span>전략 백테스트 성적표</span>
+          <small>수수료·체결 미끄러짐 포함</small>
+        </div>
+        <div class="backtest-actions">
+          <select id="backtestDays" aria-label="백테스트 기간">
+            <option value="30">최근 30일</option>
+            <option value="90" selected>최근 90일</option>
+            <option value="180">최근 180일</option>
+          </select>
+          <button id="backtestStart" class="button primary">백테스트 실행</button>
+          <button id="backtestCompare" class="button">6개 전략·20개 검증</button>
+        </div>
+      </div>
+      <div id="backtestStatus" class="backtest-status">
+        <span>백테스트를 실행해주세요.</span>
+        <div class="progress-track"><div id="backtestProgress" class="progress-bar"></div></div>
+      </div>
+      <div id="backtestResult" class="backtest-result hidden">
+        <div class="backtest-metrics">
+          <div><span>총 수익률</span><strong id="btReturn">—</strong></div>
+          <div><span>승률</span><strong id="btWinRate">—</strong></div>
+          <div><span>최대낙폭</span><strong id="btDrawdown">—</strong></div>
+          <div><span>손익비율</span><strong id="btProfitFactor">—</strong></div>
+          <div><span>거래 횟수</span><strong id="btTrades">—</strong></div>
+          <div><span>가정 수수료</span><strong id="btFees">—</strong></div>
+        </div>
+        <canvas id="backtestChart" height="180"></canvas>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>마켓</th><th>거래</th><th>승리</th><th>승률</th><th>손익</th></tr></thead>
+            <tbody id="backtestMarkets"></tbody>
+          </table>
+        </div>
+        <p id="backtestCaption" class="backtest-caption"></p>
+        <div id="strategyComparison" class="strategy-comparison hidden">
+          <div class="comparison-heading">
+            <strong>30·90·180일 교차검증</strong>
+            <span id="comparisonVerdict"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>전략</th>
+                  <th>30일</th>
+                  <th>90일</th>
+                  <th>180일</th>
+                  <th>180일 거래</th>
+                  <th>판정</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonRows"></tbody>
+            </table>
+          </div>
+          <p class="backtest-caption">모든 기간에서 수익이고 손익비가 1 이상인 전략만 추천합니다.</p>
+          <div id="validationSummary" class="validation-summary hidden">
+            <div><span>데이터 검사</span><strong id="validationData">—</strong></div>
+            <div><span>워크포워드</span><strong id="validationFolds">—</strong></div>
+            <div><span>누적 검증수익</span><strong id="validationReturn">—</strong></div>
+            <div><span>체결 스트레스 10회</span><strong id="validationStress">—</strong></div>
+          </div>
+          <div id="walkForwardWrap" class="table-wrap hidden">
+            <table>
+              <thead><tr><th>구간</th><th>선택 전략</th><th>검증 수익</th><th>거래</th><th>낙폭</th></tr></thead>
+              <tbody id="walkForwardRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

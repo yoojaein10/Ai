@@ -1,0 +1,32 @@
+[general]
+; 프로파일 미지정 시 사용할 기본 프로파일
+default_profile = apworksdw
+
+; ===== 프로파일: apworksdw (사내 DW) =====
+; 키 구성은 기존 Y_BankAuto settings.ini의 [database] 와 동일합니다.
+[profile.apworksdw]
+server = 192.0.2.10
+port = 1433
+database = apworksdw
+username = dh
+password = REDACTED_CONFIGURE_LOCALLY
+driver = ODBC Driver 17 for SQL Server
+trust_server_certificate = true
+timeout = 10
+; 조회/작업 허용 테이블 (쉼표 구분).
+; ★ 비워두면 어떤 테이블도 조회·변경 불가(전부 거부). 필요한 테이블만 추가하세요.
+; 예) allow_tables = APW_TS_Master, APW_RegHist
+allow_tables =
+
+; ===== 다른 서버/DB 추가 예시 =====
+; 섹션만 복사해 추가하면 코드 수정 없이 늘어납니다.
+;[profile.sample]
+;server = 192.0.2.10
+;port = 1433
+;database = otherdb
+;username =
+;password =
+;driver = ODBC Driver 17 for SQL Server
+;trust_server_certificate = true
+;timeout = 10
+;allow_tables =

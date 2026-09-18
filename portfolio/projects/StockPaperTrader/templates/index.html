@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>국내주식 모의투자</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <small>NAVER KRX PUBLIC MARKET DATA</small>
+        <h1>국내주식 Paper Trader</h1>
+      </div>
+      <div class="status"><span id="connection">연결 중</span>
+        <label>자동 모의매매 <input id="auto" type="checkbox"></label>
+      </div>
+    </header>
+    <div class="notice"><b>모의투자 전용</b> 증권사 계좌·API 키·실제 주문 기능을 사용하지 않습니다.</div>
+
+    <section class="ticker">
+      <div><span id="name">삼성전자</span> <small>005930</small></div>
+      <strong id="price">-</strong>
+      <span id="change">-</span>
+      <span id="marketStatus">-</span>
+    </section>
+
+    <section class="cards">
+      <article><span>총 평가자산</span><b id="equity">-</b></article>
+      <article><span>가상 현금</span><b id="cash">-</b></article>
+      <article><span>총 손익</span><b id="totalPnl">-</b></article>
+      <article><span>실현 손익</span><b id="realizedPnl">-</b></article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>15분봉 전략 상태 <span id="score">-/5</span></h2>
+        <div class="metrics">
+          <div>RSI <b id="rsi">-</b></div>
+          <div>VWAP <b id="vwap">-</b></div>
+          <div>EMA 9/21 <b id="ema">-</b></div>
+          <div>볼린저 중단 <b id="bb">-</b></div>
+        </div>
+        <div id="checks" class="checks"></div>
+        <div class="buttons">
+          <button id="buy" class="buy">수동 모의매수</button>
+          <button id="sell" class="sell">수동 모의매도</button>
+          <button id="reset" class="muted">가상계좌 초기화</button>
+        </div>
+      </article>
+      <article class="panel">
+        <h2>보유 종목</h2>
+        <div id="positions" class="empty">보유 종목 없음</div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>최근 모의거래</h2>
+      <div class="table-wrap">
+        <table><thead><tr><th>시간</th><th>구분</th><th>가격</th><th>수량</th><th>비용/세금</th><th>손익</th><th>사유</th></tr></thead>
+        <tbody id="trades"><tr><td colspan="7">거래 없음</td></tr></tbody></table>
+      </div>
+    </section>
+    <footer>공개 시세는 제공처 사정으로 지연·중단될 수 있으며, 수익을 보장하지 않습니다.</footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

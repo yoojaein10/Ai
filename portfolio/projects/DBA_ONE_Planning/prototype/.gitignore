@@ -1,0 +1,7 @@
+config.json
+audit.log
+knowledge.json
+history.db
+history_backup_*.db
+history_migtest.db
+__pycache__/

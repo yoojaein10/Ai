@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 입금 현황</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/receivables.css?v=20260910-1">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 인쇄 개선 (2026-08-04 재무팀 요청) — desktop.css 공용 인쇄 규칙을 이 화면만 덮어쓴다.
+       여백을 0으로 두면 브라우저가 여백에 찍던 머리말·바닥글(주소·제목·쪽번호)이
+       사라진다. 종이 가장자리 여백은 .print-area 안쪽 패딩으로 대신 준다. */
+    @media print{
+      /* 가로(A4 landscape) + 넉넉한 여백(2026-08-06 사용자 결정) —
+         pdfFactory에서 가장자리가 잘리지 않게 안쪽 패딩을 크게 준다.
+         @page 여백은 0을 유지해야 브라우저 머리말·바닥글이 안 생긴다.
+         표가 인쇄폭보다 넓으면 fitPrintZoom()이 zoom으로 폭을 맞춘다. */
+      @page{ size: A4 landscape; margin: 0; }
+      .print-area{ padding: 12mm 15mm; }
+    }
+    /* 표 치수(글꼴·패딩·테두리·줄바꿈 금지)는 화면 매체에서도 인쇄와 똑같이 둔다 —
+       fitPrintZoom()이 화면 상태에서 자연폭을 재므로 값이 같아야 배율이 정확하다.
+       (테두리가 인쇄에만 있으면 그만큼 폭이 어긋나 오른쪽으로 넘친다)
+       표는 가운데 정렬 — 축소된 표가 왼쪽에 붙지 않게 한다(2026-08-06). */
+    .print-area table{ border-collapse: collapse; table-layout: auto; margin: 0 auto;
+      border: 0.5pt solid #9a9a9a; }
+    .print-area th, .print-area td{ padding: 3px 5px; font-size: 9.5px; white-space: nowrap;
+      border: 0.5pt solid #9a9a9a; }
+    /* 인쇄 정렬 (2026-08-27 사용자 요청): 소재지만 왼쪽, 나머지는 머리글·숫자까지 전부 가운데 */
+    .print-area th, .print-area td{ text-align: center; }
+    .print-area td.number, .print-area th.number{ text-align: center; }
+    .print-area th.left, .print-area td.left{ text-align: left; }
+    /* 국민 약식수수료 묶음 행 — 매출실적과 같은 작은 글씨. 감정서가 아니라 상세도 없다 */
+    tr.kb-simple td:first-child{ font-size: 11px; letter-spacing: -.35px; }
+    /* 실비 종결 배지 (2026-09-01) — 우클릭 '실비 처리'로 수금액이 최종 매출로 확정된 건 */
+    .expense-closed{ display: inline-block; margin-left: 6px; padding: 1px 6px;
+      border-radius: 8px; background: #fff2cf; color: #805d18; font-size: 11px; font-weight: 700; }
+    .context-menu button:disabled{ color: #9aa7ad; background: transparent; cursor: not-allowed; }
+    @media print{ .expense-closed{ display: none; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1 id="pageTitle">입금 현황</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="receivable-toolbar">
+      <label><span>본·지사</span><select id="officeCode" aria-label="본·지사 선택"></select></label>
+      <label><span>감정서번호</span><input id="docId" type="search" placeholder="감정서번호"></label>
+      <label><span>거래처명</span><input id="customerName" type="search" placeholder="거래처명"></label>
+      <label><span>유치자</span><input id="manager" type="search" placeholder="유치자"></label>
+      <label><span>상태</span>
+        <div class="multi-select">
+          <button type="button" id="payStatusButton" aria-haspopup="true" aria-expanded="false">전체</button>
+          <div class="multi-menu hidden" id="payStatusMenu" role="group" aria-label="입금 상태 선택">
+            <label><input type="checkbox" value="완납">완납</label>
+            <label><input type="checkbox" value="부분입금">부분입금</label>
+            <label><input type="checkbox" value="미입금">미입금</label>
+            <label><input type="checkbox" value="과입금">과입금</label>
+            <label><input type="checkbox" value="선수금">선수금</label>
+            <button type="button" class="multi-clear" id="payStatusClear">전체 해제</button>
+          </div>
+        </div>
+      </label>
+      <label><span>기간 기준</span>
+        <select id="dateBasis" aria-label="기간 기준 선택" title="입금일(전표) 또는 발송일(원장 SendDate) 중 어느 날짜로 기간을 거를지">
+          <option value="received">입금일</option>
+          <option value="send">발송일</option>
+        </select>
+      </label>
+      <label><span id="dateFromLabel">입금 시작일</span><input id="dateFrom" type="date"></label>
+      <label><span id="dateToLabel">입금 종료일</span><input id="dateTo" type="date"></label>
+      <label class="amount-range">
+        <span>청구액(원)</span>
+        <div>
+          <input id="billFrom" type="number" min="0" step="1" placeholder="최소" aria-label="청구액 최소">
+          <em>~</em>
+          <input id="billTo" type="number" min="0" step="1" placeholder="최대" aria-label="청구액 최대">
+        </div>
+      </label>
+      <label class="amount-range">
+        <span>미수금(원)</span>
+        <div>
+          <input id="outstandingFrom" type="number" min="0" step="1" placeholder="최소" aria-label="미수금 최소">
+          <em>~</em>
+          <input id="outstandingTo" type="number" min="0" step="1" placeholder="최대" aria-label="미수금 최대">
+        </div>
+      </label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+    <section class="workspace receivable-workspace">
+      <article class="list-panel">
+        <div class="panel-heading"><div><h2 id="listTitle">입금된 목록</h2><p id="resultSummary">조회 중...</p></div>
+          <div class="heading-actions">
+            <button id="printButton" class="export-button print-button" type="button" title="현재 검색 조건의 전체 목록을 인쇄합니다">인쇄</button>
+            <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="receivableTable" class="receivable-table">
+            <colgroup id="tableColumns"></colgroup>
+            <thead><tr id="tableHeaders"></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조건에 맞는 내역이 없습니다.</div>
+        </div>
+        <div id="sumBar" class="sum-bar"></div>
+        <div class="pagination"><button id="prevPage">이전</button><span id="pageLabel"></span><button id="nextPage">다음</button></div>
+      </article>
+      <aside class="detail-panel">
+        <div id="detailPlaceholder" class="detail-placeholder"><div class="document-mark">₩</div><h2>감정서를 선택하세요</h2><p>입금 및 매출 전표의 상세 내용을 확인할 수 있습니다.</p></div>
+        <div id="detailContent" class="hidden">
+          <div class="detail-heading"><div><p>관리번호</p><h2 id="selectedDocId"></h2><button id="copyDocId" class="doc-copy" type="button" title="감정서번호 복사">복사</button></div><span id="matchBadge" class="badge"></span></div>
+          <h3 class="detail-section-title">전표 내용</h3>
+          <div id="voucherList"></div>
+          <h3 class="detail-section-title">세금계산서 / 현금영수증</h3>
+          <div id="taxEmpty" class="empty-card hidden">
+            <strong>세금계산서 / 현금영수증 내역이 없습니다</strong>
+            <p>이 감정서번호로 발행된 세금계산서 또는 현금영수증이 아직 없습니다.</p>
+          </div>
+          <div id="taxList"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
+  <div id="rowContextMenu" class="context-menu hidden" role="menu" aria-label="감정서 작업 메뉴">
+    <button id="issueTaxMenu" type="button" role="menuitem">세금계산서 발급</button>
+    <button id="expenseCloseMenu" type="button" role="menuitem">실비 처리 (수금액으로 종결)</button>
+    <button id="expenseReleaseMenu" type="button" role="menuitem" class="hidden">실비 처리 해제</button>
+  </div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/panel-resize.js"></script>
+  <script src="/ui/column-resize.js?v=20260802-1"></script>
+  <script src="/ui/taxinvoice-dialog.js?v=20260910-3"></script>
+  <script src="/ui/receivables.js?v=20260910-4"></script>
+</body>
+</html>

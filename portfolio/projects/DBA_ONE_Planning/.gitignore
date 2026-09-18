@@ -1,0 +1,13 @@
+# 비밀·로컬 데이터 — 절대 커밋 금지
+prototype/config.json
+prototype/history.db
+prototype/history_backup_*.db
+prototype/history_migtest.db
+prototype/audit.log
+prototype/knowledge.json
+prototype/metrics.jsonl*
+prototype/search.db
+prototype/eval/results/
+
+__pycache__/
+*.pyc

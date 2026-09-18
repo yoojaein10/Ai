@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 개인별 매출실적</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <link rel="stylesheet" href="/ui/my-sales.css?v=20260812-1">
+</head>
+<body class="ms-mesh">
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>개인별 매출실적</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <header class="ms-head">
+      <div class="ms-title">
+        <h1 id="empTitle">개인별 매출실적</h1>
+        <p class="ms-sub" id="empSub">본인 실적을 불러오는 중입니다.</p>
+      </div>
+      <div class="ms-toolbar">
+        <label><span>지사</span>
+          <select id="officeCode"><option value="10">본사</option></select>
+        </label>
+        <!-- '평가사' 였다 → '대상' (2026-08-10). 목록 맨 앞에 사람이 아닌 항목
+             ('회사 전체')이 서므로 '평가사: 회사 전체' 라는 조합이 안 생기게. -->
+        <label><span>대상</span>
+          <select id="empName"><option value="">불러오는 중…</option></select>
+        </label>
+        <!-- 기간은 **연도 하나**로 움직인다 (2026-08-10 요청). 달력으로 월·일까지
+             고르게 하니 실제로는 늘 한 해를 보는데 손이 두 번 갔다.
+             dateFrom·dateTo 는 숨겨 두고 연도가 바뀔 때 채운다 — 조회·AI 분석·
+             상여·가변비가 모두 이 두 값을 쓴다. -->
+        <label><span>연도</span>
+          <select id="yearPick"></select>
+        </label>
+        <input id="dateFrom" type="hidden">
+        <input id="dateTo" type="hidden">
+        <button type="button" id="searchButton">조회</button>
+      </div>
+    </header>
+
+    <!-- 인쇄 전용 머리글 — 화면에서는 숨고, Ctrl+P 때만 나온다 -->
+    <p class="print-header" id="printHeader"></p>
+
+    <!-- 1행: 히어로 — 화면당 큰 숫자는 하나 -->
+    <section class="hero" id="hero" aria-label="요약"></section>
+
+    <!-- AI 분석 — 버튼을 눌렀을 때만 돈다. 숫자는 서버 사실표, 모델은 서술만. -->
+    <section class="ai-panel" id="aiPanel">
+      <div class="ai-head">
+        <button type="button" id="aiButton">✨ AI 분석</button>
+        <span class="ai-note">버튼을 한 번 누르시면 올해 실적 흐름과 거래처 소식을 알기 쉽게 정리해 드립니다</span>
+      </div>
+      <div class="ai-result hidden" id="aiResult" aria-live="polite"></div>
+      <!-- 결과가 있을 때만 보인다. 어르신 사용자 기준 복사·접기 둘이면 충분하다. -->
+      <div class="ai-actions hidden" id="aiActions">
+        <button type="button" id="aiCopy">📋 내용 복사</button>
+        <button type="button" id="aiFold">접기</button>
+      </div>
+    </section>
+
+    <!-- 2행: 시간축은 이 카드 하나 — 좌 월별, 우 연도별(탭 없음) -->
+    <section class="ms-row ms-row-trend">
+      <article class="card">
+        <div class="card-head">
+          <h2>전체 추이 <small>월별 · 매출(올해 vs 전년)</small></h2>
+        </div>
+        <div class="card-body trend-body">
+          <!-- 범례는 카드 머리가 아니라 **월별 차트 위**에 둔다 (2026-08-10 요청).
+               머리에 두면 카드 오른쪽 끝, 즉 연도별 차트 위에 붙어 정작 설명하는
+               그림에서 멀어진다. -->
+          <div class="trend-monthly">
+            <p class="legend" id="trendLegend"></p>
+            <div id="monthlyChart"></div>
+          </div>
+          <div class="trend-yearly">
+            <p class="mini-title" id="yearlyTitle">연도별 매출 <small>최근 5년</small></p>
+            <div id="yearlyChart"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 3행: 매출 구성·발주처를 한 카드로 합치고 탭으로 가른다 (2026-08-10 요청).
+         매출·미수·거래처는 좌측 표 + 우측 그래프, 상여·가변비는 월별 표다.
+         상여·가변비는 탭을 누를 때 불러온다 — 상여가 월당 3.7초라 첫 화면이
+         이걸 기다리면 안 된다. -->
+    <section class="ms-row ms-row-tabs">
+      <article class="card">
+        <div class="card-head">
+          <nav class="ms-tabs" id="mixTabs" role="tablist" aria-label="구성 보기">
+            <!-- 미수 탭은 뺐다 (2026-08-13 요청) — 미수는 거래처별현황의
+                 하위 탭(미수 TOP)과 하단 '미수 내역' 표에서 본다. -->
+            <button type="button" role="tab" data-tab="sales" class="on">매출</button>
+            <button type="button" role="tab" data-tab="clients">거래처별현황</button>
+            <button type="button" role="tab" data-tab="bonus">상여</button>
+            <button type="button" role="tab" data-tab="variable">가변비</button>
+          </nav>
+          <span class="card-hint" id="tabHint"></span>
+        </div>
+        <div class="card-body" id="tabBody"></div>
+      </article>
+    </section>
+
+    <!-- 4행: 당기 전건 — 위 모든 차트의 증빙(table-view twin) -->
+    <section class="ms-row ms-row-table">
+      <article class="card">
+        <div class="card-head">
+          <!-- 두 갈래 (2026-08-10 요청) — 같은 행에서 미수만 걸러 낸다. 새 조회 없음. -->
+          <nav class="ms-tabs" id="detailTabs" role="tablist" aria-label="내역 보기">
+            <button type="button" role="tab" data-dtab="sales" class="on">매출 내역</button>
+            <button type="button" role="tab" data-dtab="receivable">미수 내역</button>
+          </nav>
+          <small id="tableCount" class="card-hint"></small>
+          <div class="tabs" id="tableSort" role="tablist">
+            <button type="button" class="tab active" data-sort="date" role="tab">최근순</button>
+            <button type="button" class="tab" data-sort="amount" role="tab">금액순</button>
+          </div>
+        </div>
+        <div class="card-body table-body"><table class="ms-table" id="detailTable"></table></div>
+        <button type="button" class="table-more hidden" id="tableMore">더 보기</button>
+      </article>
+    </section>
+
+  </main>
+  </div>
+  <div class="ms-tip" id="msTip" role="status"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/my-sales.js?v=20260818-1"></script>
+</body>
+</html>

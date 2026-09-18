@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업무일지 통계</title>
+<style>
+  :root {
+    --line:#dbe4e6; --head:#f2f7f5; --accent:#267aa2; --accent-strong:#215d78;
+    --accent-bg:#dff1f8; --text:#1e2929; --sub:#697879;
+    --surface:#fff; --page:#edf8fc; --green:#147451;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Malgun Gothic','Segoe UI',sans-serif; color:var(--text); background:var(--page); font-size:14px; }
+  .topbar { height:68px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 32px 0 38px; border-bottom:1px solid var(--line); background:var(--surface); }
+  .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+  .brand-mark { width:26px; height:26px; display:flex; align-items:flex-end; justify-content:center; gap:2px; padding:5px; border-radius:6px; background:#28566a; }
+  .brand-mark i { display:block; width:3px; border-radius:2px; background:#bfe0eb; }
+  .brand-mark i:nth-child(1) { height:7px; }
+  .brand-mark i:nth-child(2) { height:13px; }
+  .brand-mark i:nth-child(3) { height:10px; }
+  .brand-name { color:#264e61; font-size:19px; font-weight:700; letter-spacing:.06em; }
+  .brand-divider { width:1px; height:28px; background:var(--line); }
+  .topbar h1 { margin:0; font-size:22px; letter-spacing:-.04em; white-space:nowrap; }
+  .top-actions { display:flex; align-items:center; gap:14px; color:var(--sub); }
+  .who { font-size:12.5px; }
+  .settings { font-size:18px; line-height:1; }
+
+  .app-shell { display:grid; grid-template-columns:182px minmax(0,1fr); height:calc(100vh - 68px); }
+  .sidebar { padding:23px 16px; border-right:1px solid var(--line); background:linear-gradient(180deg,#f7fcfe 0%,#eaf7fc 100%); }
+  .branch-badge { padding:9px 11px; border:1px solid #cfe1e6; border-radius:10px; background:#f0f8f9; color:#24566b; font-size:12px; font-weight:700; }
+  .nav-label { margin:17px 10px 8px; color:#708080; font-size:11px; font-weight:700; }
+  .nav-list { display:flex; flex-direction:column; gap:3px; }
+  .nav-item { padding:11px 12px; border-radius:9px; color:#506264; font-size:13px; font-weight:600; }
+  .nav-item.active { border:1px solid #b9deed; background:var(--accent-bg); color:#226c8e; box-shadow:0 8px 20px rgba(56,126,151,.08); }
+
+  .main-content { overflow:auto; padding:32px 34px 22px; background:radial-gradient(circle at 62% 3%,#f9fdfe 0%,#eef9fc 45%,#e9f6fb 100%); }
+  .filter-card { padding:16px; border-radius:18px; background:var(--surface); box-shadow:0 14px 34px rgba(56,89,101,.08); }
+  .filter-grid { display:grid; grid-template-columns:repeat(2,minmax(120px,1fr)) minmax(180px,1.4fr) minmax(150px,1fr); gap:12px 10px; align-items:end; }
+  .filter-field { display:flex; flex-direction:column; gap:6px; min-width:0; color:var(--sub); font-size:12px; font-weight:700; }
+  select, button, input { width:100%; min-width:0; height:42px; font:inherit; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--text); }
+  select:focus, button:focus, input:focus { outline:2px solid #9fd0e3; outline-offset:1px; }
+  button.primary { border-color:#acd9ea; background:#def2fb; color:#245c75; font-weight:700; cursor:pointer; }
+  button.primary:hover { background:#ccebf7; }
+  .msg { padding:32px 6px; color:var(--sub); }
+  .msg.error { color:#a03030; }
+
+  .summary-area { padding:16px 0 14px; }
+  .month-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .card { border:1px solid #e1e9eb; border-radius:13px; padding:11px 14px; background:rgba(255,255,255,.88); min-width:0; box-shadow:0 8px 24px rgba(66,100,112,.05); }
+  .card .t { font-size:12px; color:var(--sub); }
+  .card .v { font-size:18px; font-weight:700; margin-top:3px; text-align:right; font-variant-numeric:tabular-nums; }
+  .card.total { border-color:#b8deec; background:#eaf7fc; }
+
+  .workspace { display:grid; grid-template-columns:minmax(0,1.75fr) minmax(330px,.75fr); gap:18px; align-items:stretch; }
+  .list-panel { min-width:0; border:1px solid #e2eaec; border-radius:18px; background:var(--surface); overflow:hidden; box-shadow:0 14px 34px rgba(56,89,101,.08); }
+  .list-head { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:70px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .list-head strong { font-size:16px; }
+  .list-head span { color:var(--sub); font-size:12px; }
+  .tblwrap { overflow:auto; max-height:calc(100vh - 390px); min-height:300px; }
+  table { border-collapse:collapse; width:100%; white-space:nowrap; }
+  th, td { border-bottom:1px solid #e6ecec; padding:9px 11px; text-align:right; font-variant-numeric:tabular-nums; }
+  th { background:var(--head); color:#526263; font-size:12px; font-weight:700; position:sticky; top:0; z-index:1; }
+  th.grp { text-align:center; border-left:1px solid var(--line); }
+  td:first-child, th:first-child { text-align:left; position:sticky; left:0; background:var(--surface); border-right:1px solid var(--line); z-index:1; }
+  th:first-child { background:var(--head); z-index:2; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover td { background:#f0f8fb; }
+  tbody tr.sel td { background:var(--accent-bg); color:#1e566c; font-weight:700; }
+  tbody tr:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+  tfoot td { font-weight:700; background:var(--head); }
+  tfoot td:first-child { background:var(--head); }
+
+  .detail { min-height:430px; border:1px solid #e2eaec; border-radius:18px; background:var(--surface); position:sticky; top:0; max-height:calc(100vh - 230px); overflow:auto; box-shadow:0 14px 34px rgba(56,89,101,.08); }
+  .detail-empty { min-height:250px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:24px; color:var(--sub); text-align:center; }
+  .detail-empty b { color:var(--text); font-size:15px; }
+  .detail-empty::before { content:"₩"; width:58px; height:64px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; border:1px solid #cddadb; border-radius:15px; color:#708083; font-family:Georgia,serif; font-size:18px; background:#f9fcfb; }
+  .detail h2 { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:15px; margin:0; padding:14px 16px; background:#f0f8f6; border-radius:18px 18px 0 0; position:sticky; top:0; z-index:1; }
+  .detail-back { display:none; padding:5px 9px; cursor:pointer; }
+  .detail .grid { display:grid; grid-template-columns:1fr; gap:0; padding:8px 16px 18px; }
+  .detail h3 { font-size:13px; color:var(--green); margin:14px 0 5px; grid-column:1/-1; border-bottom:1px solid var(--line); padding-bottom:5px; }
+  .drow { display:flex; justify-content:space-between; gap:14px; padding:4px 0; font-size:13px; }
+  .drow .n { color:var(--sub); }
+  .note { padding:14px 2px 0; color:var(--sub); font-size:11.5px; }
+
+  @media (max-width:1050px) {
+    .filter-grid { grid-template-columns:repeat(3,minmax(140px,1fr)); }
+    .workspace { grid-template-columns:1fr; }
+    .detail { position:static; order:-1; max-height:none; }
+    .detail-empty { min-height:100px; }
+    .tblwrap { max-height:none; }
+  }
+  @media (max-width:760px) {
+    .topbar { height:60px; padding:0 15px; }
+    .brand-name, .brand-divider, .settings { display:none; }
+    .topbar h1 { font-size:18px; }
+    .app-shell { display:block; height:calc(100vh - 60px); }
+    .sidebar { display:none; }
+    .main-content { height:100%; padding:16px 14px; }
+    .filter-card { padding:13px; border-radius:14px; }
+    .filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 8px; }
+    .filter-field.search-field, button.primary { grid-column:1/-1; }
+    body { font-size:13px; }
+    .summary-area { padding:12px 0; }
+    .month-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .card.total { grid-column:1/-1; }
+    .desktop-only { display:none; }
+    .list-panel, .detail { border-radius:14px; }
+    .list-head { min-height:56px; padding:10px 12px; }
+    th, td { padding:6px 8px; }
+    .detail-back { display:inline-block; }
+    .detail .grid { grid-template-columns:1fr; }
+    .note { padding:12px 2px 4px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="brand-name">MOA</span>
+    <span class="brand-divider" aria-hidden="true"></span>
+    <h1>업무일지 통계</h1>
+  </div>
+  <div class="top-actions">
+    <span class="who" id="who"></span>
+    <span class="settings" role="img" aria-label="설정">⚙</span>
+  </div>
+</header>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="branch-badge">업무 통계 · 본사</div>
+    <div class="nav-label">업무 메뉴</div>
+    <nav class="nav-list" aria-label="업무 메뉴">
+      <span class="nav-item">감정서 LIST</span>
+      <span class="nav-item">입금 현황</span>
+      <span class="nav-item">미수금 현황</span>
+      <span class="nav-item">매출 입력</span>
+      <span class="nav-item">기간별 매출실적</span>
+      <span class="nav-item">상여</span>
+      <span class="nav-item active" aria-current="page">업무일지 통계</span>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <section class="filter-card" aria-label="조회 조건">
+      <div class="filter-grid">
+        <label class="filter-field">기준연도<select id="year"></select></label>
+        <label class="filter-field">조회월<select id="month"></select></label>
+        <label class="filter-field search-field">담당자<input type="search" id="managerSearch" placeholder="담당자 검색" aria-label="담당자 검색"></label>
+        <button class="primary" id="load">조회</button>
+      </div>
+    </section>
+
+    <div class="summary-area" id="summaryArea" style="display:none">
+      <div class="month-summary" id="cards"></div>
+    </div>
+
+    <div class="workspace" id="workspace" style="display:none">
+      <section class="list-panel" aria-label="담당자별 통계">
+        <div class="list-head">
+          <strong id="listTitle">담당자별 요약</strong>
+          <span id="rowInfo"></span>
+        </div>
+        <div class="tblwrap" id="tblwrap"><table id="tbl"></table></div>
+      </section>
+
+      <aside class="detail" id="detail" aria-live="polite">
+        <div class="detail-empty" id="detailEmpty">
+          <b>담당자를 선택하세요</b>
+          <span>시간·건수·금액 전체 항목을 여기에서 확인할 수 있습니다.</span>
+        </div>
+        <div id="detailContent" style="display:none">
+          <h2><span id="dTitle"></span><button type="button" class="detail-back" id="backToList">목록</button></h2>
+          <div class="grid" id="dGrid"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="msg" id="msg">연도·월을 선택하고 조회를 누르세요.</div>
+
+    <div class="note">검산 항목은 현재 산정 로직이 중지되어 항상 0으로 표시됩니다.
+    시간은 시:분, 금액은 원 단위입니다.</div>
+  </main>
+</div>
+
+<script>
+"use strict";
+let DATA = null, selManager = null;
+
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString("ko-KR");
+const fmtMin = m => Math.floor(m/60) + ":" + String(m%60).padStart(2,"0");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function initControls() {
+  const now = new Date(), y = now.getFullYear();
+  for (let i = y; i >= y-5; i--) $("year").add(new Option(i+"년", i));
+  for (let m = 1; m <= 12; m++) $("month").add(new Option(m+"월", String(m).padStart(2,"0")));
+  const prev = new Date(y, now.getMonth()-1, 1);           // 기본값: 전월
+  $("year").value = prev.getFullYear();
+  $("month").value = String(prev.getMonth()+1).padStart(2,"0");
+}
+
+async function load() {
+  const ym = $("year").value + "-" + $("month").value;
+  $("msg").textContent = "조회 중…"; $("msg").className = "msg";
+  $("msg").style.display = "block"; $("workspace").style.display = "none";
+  $("summaryArea").style.display = "none"; $("cards").innerHTML = ""; selManager = null;
+  clearDetail();
+  try {
+    const res = await fetch("/api/stats?ym=" + encodeURIComponent(ym));
+    if (!res.ok) throw new Error((await res.json()).detail || res.status);
+    DATA = await res.json();
+    $("who").textContent = DATA.user + " (" + (DATA.scope === "all" ? "전체 열람" : "본인만") + ")";
+    render();
+  } catch (e) {
+    $("msg").textContent = "조회 실패: " + e.message; $("msg").className = "msg error";
+  }
+}
+
+function visibleRows() {
+  // 실적 없는 담당자는 항상 숨긴다.
+  let rows = DATA.rows.filter(r => r._summary.time_min || r._summary.count || r._summary.total_price);
+  const query = $("managerSearch").value.trim().toLocaleLowerCase("ko-KR");
+  if (query)
+    rows = rows.filter(r => String(r.Manager).toLocaleLowerCase("ko-KR").includes(query));
+  return rows;
+}
+
+function render() {
+  const rows = visibleRows();
+  renderCards(rows);
+  if (!rows.length) {
+    $("msg").textContent = "표시할 데이터가 없습니다."; $("msg").className = "msg";
+    $("msg").style.display = "block"; $("workspace").style.display = "none";
+    selManager = null; clearDetail();
+    return;
+  }
+  $("msg").style.display = "none"; $("workspace").style.display = "";
+  $("rowInfo").textContent = rows.length + "명";
+  renderSummaryTable(rows);
+  if (selManager) {
+    const r = rows.find(r => r.Manager === selManager);
+    if (r) renderDetail(r);
+    else { selManager = null; clearDetail(); }
+  } else clearDetail();
+}
+
+function renderCards(rows) {
+  const t = rows.reduce((a, r) => {
+    a.min += r._summary.time_min; a.tp += r._summary.time_price;
+    a.c += r._summary.count; a.cp += r._summary.count_price; return a;
+  }, {min:0, tp:0, c:0, cp:0});
+  $("summaryArea").style.display = "";
+  $("cards").innerHTML = [
+    ["총 투입시간", fmtMin(t.min), ""],
+    ["총 처리건수", fmt(t.c) + "건", ""],
+    ["총 산정금액", fmt(t.tp + t.cp) + "원", " total"],
+  ].map(([k,v,c]) => `<div class="card${c}"><div class="t">${k}</div><div class="v">${v}</div></div>`).join("");
+}
+
+function td(formatted, extraClass = "") {
+  return `<td${extraClass ? ` class="${extraClass}"` : ""}>${formatted}</td>`;
+}
+
+function renderSummaryTable(rows) {
+  let h = "<thead><tr><th>담당자</th><th>총 투입시간</th><th class='desktop-only'>투입금액</th><th>처리건수</th><th class='desktop-only'>처리금액</th><th>총 산정금액</th></tr></thead><tbody>";
+  for (const r of rows) {
+    const s = r._summary;
+    h += `<tr data-m="${esc(r.Manager)}"><td>${esc(r.Manager)}</td>`
+      + td(fmtMin(s.time_min)) + td(fmt(s.time_price), "desktop-only")
+      + td(fmt(s.count)) + td(fmt(s.count_price), "desktop-only")
+      + td(fmt(s.total_price)) + "</tr>";
+  }
+  h += "</tbody>" + summaryFoot(rows);
+  $("tbl").innerHTML = h; bindRows();
+}
+
+function summaryFoot(rows) {
+  const t = rows.reduce((a,r) => { const s = r._summary;
+    a[0]+=s.time_min; a[1]+=s.time_price; a[2]+=s.count; a[3]+=s.count_price; a[4]+=s.total_price; return a;
+  }, [0,0,0,0,0]);
+  return `<tfoot><tr><td>합계</td><td>${fmtMin(t[0])}</td><td class="desktop-only">${fmt(t[1])}</td><td>${fmt(t[2])}</td><td class="desktop-only">${fmt(t[3])}</td><td>${fmt(t[4])}</td></tr></tfoot>`;
+}
+
+function bindRows() {
+  document.querySelectorAll("#tbl tbody tr").forEach(tr => {
+    const selectRow = () => {
+      selManager = tr.dataset.m;
+      document.querySelectorAll("#tbl tbody tr").forEach(x => {
+        const selected = x === tr;
+        x.classList.toggle("sel", selected);
+        x.setAttribute("aria-selected", String(selected));
+      });
+      renderDetail(DATA.rows.find(r => r.Manager === selManager));
+      if (window.matchMedia("(max-width: 900px)").matches)
+        $("detail").scrollIntoView({behavior:"smooth", block:"start"});
+    };
+    const selected = tr.dataset.m === selManager;
+    tr.classList.toggle("sel", selected);
+    tr.setAttribute("aria-selected", String(selected));
+    tr.tabIndex = 0;
+    tr.onclick = selectRow;
+    tr.onkeydown = e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault(); selectRow();
+      }
+    };
+  });
+}
+
+function renderDetail(r) {
+  $("detailEmpty").style.display = "none";
+  $("detailContent").style.display = "block";
+  $("dTitle").textContent = r.Manager + " — " + DATA.ym + " 상세";
+  let h = "";
+  for (const g of DATA.groups) {
+    for (const it of g.items) {
+      const q = r[it.qty], p = r[it.price];
+      h += `<div class="drow"><span class="n">${esc(it.label)}</span>`
+        + `<span>${g.kind === "time" ? esc(q) : fmt(q) + "건"} / ${fmt(p)}원</span></div>`;
+    }
+  }
+  const s = r._summary;
+  h += `<h3>산정 요약</h3>
+    <div class="drow"><span class="n">총 투입시간</span><span>${fmtMin(s.time_min)}</span></div>
+    <div class="drow"><span class="n">투입금액</span><span>${fmt(s.time_price)}원</span></div>
+    <div class="drow"><span class="n">처리건수</span><span>${fmt(s.count)}건</span></div>
+    <div class="drow"><span class="n">처리금액</span><span>${fmt(s.count_price)}원</span></div>
+    <div class="drow"><span class="n">총 산정금액</span><span><b>${fmt(s.total_price)}원</b></span></div>`;
+  $("dGrid").innerHTML = h;
+}
+
+function clearDetail() {
+  $("detailContent").style.display = "none";
+  $("detailEmpty").style.display = "";
+  $("dGrid").innerHTML = "";
+}
+
+$("load").onclick = load;
+$("managerSearch").oninput = () => DATA && render();
+$("backToList").onclick = () => $("listTitle").scrollIntoView({behavior:"smooth", block:"start"});
+initControls();
+</script>
+</body>
+</html>

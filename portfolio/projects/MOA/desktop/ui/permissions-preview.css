@@ -1,0 +1,610 @@
+/* 회색 설명 글자가 흐려 잘 안 읽힌다는 지적(2026-08-18) — 이 화면에서만
+   --muted 를 진하게 덮는다. 다른 화면(dashboard.css #68736e)은 그대로. */
+.permission-topbar, .permission-page { --muted: #3e463f; }
+
+.permission-topbar{position:relative;padding:18px 28px;min-height:78px}
+.permission-topbar .brand-block{display:flex;align-items:center;gap:16px}
+.permission-topbar .brand-block>div{display:grid;gap:4px}
+.permission-topbar h1{font-size:22px}
+.permission-topbar p{margin:0;color:var(--muted);font-size:12px}
+.preview-state{display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #d9e7ee;border-radius:999px;background:#f4fafc;color:#52788b;font-size:11px;font-weight:750}
+.preview-state span{width:7px;height:7px;border-radius:50%;background:#69a9c6;box-shadow:0 0 0 4px rgba(105,169,198,.13)}
+
+.permission-page{max-width:1660px;margin:0 auto;padding:22px 26px 32px}
+.permission-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.permission-tabs button{position:relative;height:42px;padding:0 17px;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-size:13px;box-shadow:none}
+.permission-tabs button:hover{background:#f4f9fb}
+.permission-tabs button.active{color:#244f68}
+.permission-tabs button.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:#69a9c6}
+
+.permission-guide{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;padding:13px 16px;border:1px solid #cfe3ed;border-radius:12px;background:#f3f9fc}
+.permission-guide strong{display:block;color:#315d75;font-size:13px}
+.permission-guide p{margin:3px 0 0;color:#648293;font-size:11px}
+.guide-badge{padding:5px 9px;border-radius:6px;background:#fff;color:#52788b;font-size:10px;font-weight:750;white-space:nowrap}
+
+.permission-layout{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:16px;align-items:start}
+.organization-panel,.permission-detail{border:1px solid rgba(255,255,255,.88);border-radius:16px;background:#fff;box-shadow:var(--shadow)}
+.organization-panel{position:sticky;top:18px;overflow:hidden}
+.panel-title{min-height:66px;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.panel-title h2{font-size:15px}
+.panel-title p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.organization-filter{display:grid;gap:10px;padding:14px;border-bottom:1px solid var(--line);background:#fbfcfc}
+.organization-filter label{display:grid;gap:5px}
+.organization-filter label>span{color:var(--muted);font-size:10px;font-weight:750}
+.organization-filter select,.organization-filter input{height:38px;font-size:12px}
+.search-field{position:relative}
+.search-field svg{position:absolute;left:11px;top:10px;width:17px;height:17px;fill:none;stroke:#84928c;stroke-linecap:round;stroke-width:1.8}
+.search-field input{padding-left:36px}
+
+.organization-tree{height:calc(100dvh - 330px);min-height:430px;overflow:auto;padding:10px 9px 16px;scrollbar-width:thin;scrollbar-color:#bdc9c4 transparent}
+.tree-office+.tree-office{margin-top:3px}
+.tree-node{position:relative}
+.tree-row{display:flex;align-items:center;min-height:35px;border-radius:8px;color:#38453f;font-size:12px;user-select:none}
+button.tree-row{width:100%;height:35px;border:0;background:transparent;padding:0 7px;text-align:left;box-shadow:none}
+button.tree-row:hover{background:#edf6fa}
+.tree-row.office{font-weight:800}
+.tree-row.department{font-weight:700;color:#4c5953}
+.tree-node.missing-department>.tree-row.department{background:#fff8e7;color:#865f0d}
+.tree-node.missing-department>.tree-row.department:hover{background:#fff2cf}
+.tree-node.missing-department>.tree-row.department .tree-icon{background:#ffebba;color:#865f0d}
+.missing-department-badge{margin-left:7px;padding:2px 6px;border-radius:999px;background:#fff0c8;color:#8a6514;font-size:9px;font-weight:800;white-space:nowrap}
+.tree-caret{width:18px;color:#708079;font-size:11px;text-align:center;transition:transform .15s}
+.tree-node.collapsed>.tree-row .tree-caret{transform:rotate(-90deg)}
+.tree-node.collapsed>.tree-children{display:none}
+.tree-icon{width:22px;height:22px;display:grid;place-items:center;margin-right:5px;border-radius:7px;background:#edf3f0;color:#5d7469;font-size:11px;font-weight:800}
+.tree-row.office .tree-icon{background:#e4f2f8;color:#39708a}
+.tree-count{margin-left:auto;padding-right:5px;color:#414a43;font-size:10px;font-weight:600}
+.tree-children{position:relative;margin-left:17px;padding-left:10px}
+.tree-children::before{content:"";position:absolute;left:0;top:0;bottom:5px;width:1px;background:#dfe6e2}
+.employee-row{position:relative;width:100%;height:auto;min-height:39px;padding:4px 7px 4px 12px;border:0;background:transparent;text-align:left;box-shadow:none}
+.employee-row::before{content:"";position:absolute;left:-10px;top:19px;width:10px;height:1px;background:#dfe6e2}
+.employee-row:hover{background:#f2f8fa}
+.employee-row.selected{background:#e4f2f8;box-shadow:inset 3px 0 #69a9c6}
+.employee-dot{width:24px;height:24px;display:grid;place-items:center;margin-right:7px;border-radius:50%;background:#e8eef0;color:#60747c;font-size:10px;font-weight:800;flex:0 0 auto}
+.employee-row.selected .employee-dot{background:#69a9c6;color:#fff}
+.employee-copy{display:grid;min-width:0}
+.employee-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#394741;font-size:12px}
+.employee-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#414a43;font-size:10px}
+.tree-empty{padding:34px 12px;color:var(--muted);font-size:12px;text-align:center}
+
+.permission-detail{overflow:hidden}
+.selected-user{display:flex;align-items:center;gap:13px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.avatar{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#d9edf6,#edf7fb);color:#315d75;font-size:18px;font-weight:800;box-shadow:inset 0 0 0 1px rgba(105,169,198,.18)}
+.selected-user-copy{min-width:0;flex:1}
+.user-name-line{display:flex;align-items:center;gap:7px}
+.user-name-line h2{font-size:19px}
+.selected-user-copy p{margin:4px 0 1px;color:#52615a;font-size:12px}
+.selected-user-copy>span{color:#3c433d;font-family:ui-monospace,Consolas,monospace;font-size:10px}
+.status-chip{padding:3px 7px;border-radius:999px;background:#e8f5ed;color:#337451;font-size:10px;font-weight:750}
+.subtle-button{height:34px;padding:0 12px;border-color:#dfe6e2;color:#65716b;background:#fff;font-size:11px}
+
+.permission-summary{display:grid;grid-template-columns:1.05fr .8fr .8fr .65fr .7fr;margin:0 20px;border-bottom:1px solid var(--line)}
+.permission-summary.appraiser-scope-hidden{grid-template-columns:1.05fr .8fr .8fr .65fr}
+.permission-summary div{padding:14px 15px}
+.permission-summary div+div{border-left:1px solid var(--line)}
+.permission-summary span{display:block;color:#3c433d;font-size:10px;font-weight:700}
+.permission-summary strong{display:block;margin-top:4px;color:#315d75;font-size:13px}
+
+.setting-section{padding:18px 20px;border-bottom:1px solid var(--line)}
+.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.section-heading h3{margin:0;font-size:14px}
+.section-heading p{margin:3px 0 0;color:var(--muted);font-size:10px}
+.required-label{padding:3px 7px;border-radius:5px;background:#f2f4f3;color:#6c7771;font-size:9px;font-weight:750}
+.text-button{height:28px;padding:0 7px;border:0;background:transparent;color:#4f91b0;font-size:10px;box-shadow:none}
+
+.simple-setting-section{padding-top:22px;padding-bottom:22px}
+.scope-policy-card{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:78px;
+  padding:14px 16px;
+  border:1px solid #d7e3de;
+  border-radius:12px;
+  background:#fbfcfc;
+}
+.permission-card-icon{
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:10px;
+  background:#e4f2f8;
+  color:#39708a;
+  font-size:12px;
+  font-weight:800;
+}
+.scope-icon{background:#edf3f0;color:#5d7469}
+.permission-card-copy{display:grid;min-width:0;flex:1}
+.permission-card-copy strong{font-size:12px}
+.permission-card-copy small{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.45}
+.inline-switch input{position:absolute;width:1px;height:1px;opacity:0}
+.switch-control{
+  position:relative;
+  width:38px;
+  height:21px;
+  flex:0 0 auto;
+  border-radius:999px;
+  background:#cbd3cf;
+  transition:background .15s,opacity .15s;
+}
+.switch-control::after{
+  content:"";
+  position:absolute;
+  left:3px;
+  top:3px;
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.17);
+  transition:transform .15s;
+}
+.inline-switch input:checked+.switch-control{background:#69a9c6}
+.inline-switch input:checked+.switch-control::after{transform:translateX(17px)}
+.inline-switch{position:relative;display:flex;align-items:center;cursor:pointer}
+.scope-policy-card.locked{border-color:#e2e6e4;background:#f5f6f5}
+.scope-policy-card.locked .permission-card-icon{background:#e8ebea;color:#3c433d}
+.scope-policy-card.locked .permission-card-copy strong{color:#5f6b65}
+.scope-policy-card.locked .switch-control{opacity:.45}
+.scope-policy-card.locked .inline-switch{cursor:not-allowed}
+
+/* 지사 조회 정책 안내(.branch-policy-*)는 제거했다 — 지사가 자기 지사만 보는 것은
+   당연한 전제라 화면에 알리지 않는다. */
+.people-scope-section{padding-top:18px;padding-bottom:20px}
+.people-scope-card{background:linear-gradient(135deg,#fbfcfc,#f7faf9)}
+.people-scope-card.enabled{border-color:#bdd9e5;background:linear-gradient(135deg,#f8fcfd,#f1f8fb)}
+.people-icon{background:#edf1f6;color:#5b6e82}
+.people-scope-card.enabled .people-icon{background:#e2f1f7;color:#39708a}
+
+.menu-access-section{padding-top:22px;background:#fcfdfd}
+.menu-section-heading{align-items:center;margin-bottom:11px}
+.menu-permission-summary{display:flex;align-items:center;gap:9px;white-space:nowrap}
+.menu-permission-summary>strong{color:#315d75;font-size:12px}
+.menu-source-badge{padding:4px 8px;border-radius:999px;background:#edf3f0;color:#5d7469;font-size:9px;font-weight:800}
+.menu-source-badge.custom{background:#e4f2f8;color:#39708a}
+
+.menu-bulk-actions{display:flex;align-items:center;gap:6px;margin-bottom:12px;padding:9px 10px;border:1px solid #e0e7e3;border-radius:10px;background:#f7f9f8}
+.menu-bulk-actions>span{margin-left:auto;color:#3c433d;font-size:9px}
+.menu-action-button{height:29px;padding:0 10px;border:1px solid #d8e0dc;border-radius:7px;background:#fff;color:#5f6c66;font-size:10px;font-weight:750;box-shadow:none}
+.menu-action-button:hover{border-color:#a9cbd9;background:#f5fafc}
+.menu-action-button.recommended{border-color:#b8d8e7;background:#edf7fb;color:#39708a}
+.menu-action-button.finance{border-color:#bcd9ca;background:#edf7f1;color:#3f765b}
+.menu-action-button.danger{color:#9a625d}
+
+.menu-permission-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.menu-permission-group{overflow:hidden;border:1px solid #dde5e1;border-radius:12px;background:#fff}
+.menu-group-heading{display:flex;align-items:center;justify-content:space-between;min-height:36px;padding:8px 11px;border-bottom:1px solid #e5ebe8;background:#f5f8f6}
+.menu-group-heading h4{margin:0;color:#4f5d56;font-size:11px}
+.menu-group-heading span{color:#829089;font-size:9px;font-weight:750}
+.menu-permission-row{position:relative;display:flex;align-items:center;gap:9px;min-height:44px;padding:8px 11px;cursor:pointer;transition:background .15s}
+.menu-permission-row+.menu-permission-row{border-top:1px solid rgba(32,55,45,.07)}
+.menu-permission-row:hover{background:#f8fbfc}
+.menu-permission-row.custom{background:#f4fafd}
+.menu-row-icon{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;border-radius:8px;background:#edf3f0;color:#5d7469;font-size:10px;font-weight:800}
+.menu-permission-row.allowed .menu-row-icon{background:#e4f2f8;color:#39708a}
+.menu-row-copy{display:grid;min-width:0;flex:1}
+.menu-row-title{display:flex;align-items:center;gap:5px}
+.menu-row-copy strong{color:#2a322c;font-size:12px;font-weight:700}
+.menu-row-copy small{margin-top:3px;overflow:hidden;color:#3c433d;font-size:9px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
+.menu-policy-badge{padding:2px 5px;border-radius:999px;background:#f0f3f2;color:#7b8882;font-size:8px;font-style:normal;font-weight:800;white-space:nowrap}
+.individual-badge{padding:2px 5px;border-radius:999px;background:#dceff7;color:#39708a;font-size:8px;font-style:normal;font-weight:800}
+.menu-state-text{width:24px;color:#414a43;font-size:9px;font-weight:800;text-align:right}
+.menu-permission-row.allowed .menu-state-text{color:#4f91b0}
+.menu-permission-row.locked{cursor:not-allowed;background:#f7f8f7}
+.menu-permission-row.locked .menu-row-icon{background:#eef0ef;color:#414a43}
+.menu-permission-row.locked .menu-row-copy strong,.menu-permission-row.locked .menu-row-copy small{color:#414a43}
+.menu-permission-row.locked .menu-policy-badge{background:#e8ebe9;color:#8b9690}
+.menu-permission-row.locked .switch-control{opacity:.42}
+.menu-state-text.locked{background:#e9ecea!important;color:#8c9791!important}
+
+.role-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.role-card{position:relative;display:flex;align-items:flex-start;gap:9px;min-height:66px;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.role-card:hover{border-color:#b8d8e7;background:#f7fbfd}
+.role-card.selected{border-color:#83b7cf;background:#edf7fb;box-shadow:inset 0 0 0 1px rgba(105,169,198,.12)}
+.role-card input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.role-radio{width:15px;height:15px;margin-top:1px;border:1px solid #b7c4be;border-radius:50%;background:#fff;flex:0 0 auto}
+.role-card.selected .role-radio{border:4px solid #5d9fbd}
+.role-card strong,.role-card small{display:block}
+.role-card strong{font-size:11px}
+.role-card small{margin-top:4px;color:var(--muted);font-size:9.5px;line-height:1.4}
+
+.scope-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.scope-options label{position:relative;display:flex;align-items:center;justify-content:center;min-height:55px;padding:9px;border:1px solid var(--line);border-radius:10px;text-align:center;cursor:pointer}
+.scope-options label:hover{border-color:#b8d8e7}
+.scope-options label.selected{border-color:#83b7cf;background:#edf7fb}
+.scope-options input{position:absolute;width:1px;height:1px;opacity:0}
+.scope-options strong,.scope-options small{display:block}
+.scope-options strong{color:#435049;font-size:11px}
+.scope-options small{margin-top:2px;color:#3c433d;font-size:9px}
+
+.capability-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.capability-group{overflow:hidden;border:1px solid var(--line);border-radius:11px}
+.capability-group h4{margin:0;padding:9px 11px;background:#f4f7f5;color:#59665f;font-size:10px;letter-spacing:.03em}
+.capability-group label{display:flex;align-items:center;gap:9px;min-height:54px;padding:9px 11px;cursor:pointer}
+.capability-group label+label{border-top:1px solid rgba(32,55,45,.075)}
+.capability-group label>span{min-width:0;flex:1}
+.capability-group strong,.capability-group small{display:block}
+.capability-group strong{font-size:10.5px}
+.capability-group small{margin-top:2px;color:#3c433d;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.capability-group input{position:absolute;width:1px;height:1px;opacity:0}
+.capability-group i{position:relative;width:30px;height:17px;border-radius:999px;background:#cbd3cf;transition:background .15s;flex:0 0 auto}
+.capability-group i::after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.16);transition:transform .15s}
+.capability-group input:checked+i{background:#69a9c6}
+.capability-group input:checked+i::after{transform:translateX(13px)}
+
+.permission-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:15px 20px;background:#fafbfa}
+.permission-actions>div{display:grid;margin-right:auto}
+.permission-actions>div strong{font-size:11px}
+.permission-actions>div span{margin-top:2px;color:var(--muted);font-size:9.5px}
+.permission-actions button{height:36px;padding:0 13px;font-size:11px}
+.secondary-button{background:#fff}
+.preview-run-button{min-width:152px;background:#244f68;color:#fff}
+.preview-run-button:disabled{cursor:not-allowed;opacity:.45}
+
+@media(max-width:1180px){
+  .permission-layout{grid-template-columns:285px minmax(0,1fr)}
+  .role-options{grid-template-columns:1fr 1fr}
+  .capability-groups,.menu-permission-groups{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .permission-topbar{align-items:flex-start;flex-direction:column}
+  .permission-page{padding:14px 10px 24px}
+  .permission-layout{grid-template-columns:1fr}
+  .organization-panel{position:static}
+  .organization-tree{height:420px;min-height:0}
+}
+@media(max-width:560px){
+  .permission-guide{align-items:flex-start;flex-direction:column}
+  .permission-summary{grid-template-columns:1fr}
+  .permission-summary.appraiser-scope-hidden{grid-template-columns:1fr}
+  .permission-summary div+div{border-left:0;border-top:1px solid var(--line)}
+  .role-options,.scope-options{grid-template-columns:1fr 1fr}
+  .menu-bulk-actions{align-items:stretch;flex-wrap:wrap}
+  .menu-bulk-actions>span{width:100%;margin:2px 0 0}
+  .permission-actions{flex-wrap:wrap}
+  .permission-actions>div{width:100%;margin:0 0 6px}
+}
+
+/* 관리자 권한 화면: 정보 밀도와 상태 구분을 높인 로컬 시안 */
+.permission-page{max-width:1500px;padding-top:18px}
+.permission-guide{border-color:#d6e8ef;background:linear-gradient(135deg,#f5fafc 0%,#f8fbfa 100%)}
+.permission-layout{grid-template-columns:minmax(280px,315px) minmax(0,1fr);gap:18px}
+.organization-panel,.permission-detail{border-color:#e4ece8;box-shadow:0 10px 30px rgba(39,69,57,.075)}
+.organization-panel{top:12px}
+.organization-tree{height:calc(100dvh - 318px);min-height:500px}
+.selected-user{padding:19px 22px;background:linear-gradient(135deg,#fff 55%,#f3f9fb)}
+.selected-user .subtle-button{border-color:#d9e3df;background:rgba(255,255,255,.9)}
+.permission-summary{
+  margin:14px 20px 4px;
+  overflow:hidden;
+  border:1px solid #e0e9e5;
+  border-radius:12px;
+  background:#f9fbfa;
+}
+.permission-summary div{padding:12px 15px}
+.permission-summary strong{font-size:13.5px}
+.simple-setting-section{padding-top:18px;padding-bottom:20px}
+.scope-policy-card{border-color:#d9e8e2;background:linear-gradient(135deg,#fbfdfc,#f7fbfc)}
+.scope-policy-card:has(input:checked){border-color:#bfdbe7;background:linear-gradient(135deg,#f8fcfd,#f2f9fc)}
+
+.menu-access-section{padding:21px 20px 24px;background:#fff}
+.menu-section-heading{margin-bottom:13px;padding-bottom:2px}
+.menu-section-heading h3{font-size:15px}
+.menu-permission-summary{gap:8px}
+.menu-permission-summary>strong{
+  min-width:86px;
+  padding:7px 10px;
+  border:1px solid #d7e7ee;
+  border-radius:9px;
+  background:#f5fafc;
+  color:#315d75;
+  font-size:11px;
+  text-align:center;
+}
+.menu-source-badge{padding:6px 9px;font-size:9.5px}
+
+.menu-bulk-actions{
+  gap:7px;
+  margin-bottom:14px;
+  padding:9px 11px;
+  border-color:#dce6e1;
+  background:#f8faf9;
+}
+.menu-bulk-title{margin-right:3px;color:#53625b;font-size:10px;white-space:nowrap}
+.menu-bulk-actions>span{color:#8b9791;font-size:9px}
+.menu-action-button{height:31px;padding:0 11px;border-radius:8px}
+.menu-action-button.recommended{box-shadow:inset 0 0 0 1px rgba(105,169,198,.05)}
+
+.menu-permission-groups{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.menu-permission-group{
+  border-color:#dce6e1;
+  border-radius:13px;
+  box-shadow:0 3px 12px rgba(39,69,57,.035);
+}
+.menu-group-heading{
+  min-height:40px;
+  padding:9px 12px;
+  border-bottom-color:#e1e9e5;
+  background:#f6f9f7;
+}
+.menu-group-heading h4{color:#405149;font-size:11.5px}
+.menu-group-heading span{
+  min-width:58px;
+  padding:3px 6px;
+  border-radius:999px;
+  background:#e9efec;
+  color:#718079;
+  text-align:center;
+}
+.menu-permission-row{
+  min-height:46px;
+  gap:10px;
+  padding:9px 12px;
+  outline:0;
+}
+.menu-permission-row:hover{background:#f5fafb}
+.menu-permission-row:focus-within{box-shadow:inset 0 0 0 2px rgba(105,169,198,.35)}
+.menu-permission-row.allowed{background:#fbfdfe}
+.menu-permission-row.custom{background:#f1f8fb}
+.menu-row-icon{width:30px;height:30px;border-radius:9px}
+.menu-row-copy strong{font-size:13px}
+.menu-row-copy small{max-width:250px;margin-top:4px;font-size:9.5px}
+.menu-row-title{flex-wrap:wrap}
+.menu-policy-badge{padding:2px 6px;font-size:8.5px}
+.menu-state-text{
+  width:auto;
+  min-width:36px;
+  padding:4px 6px;
+  border-radius:999px;
+  background:#eff2f1;
+  color:#3c433d;
+  text-align:center;
+}
+.menu-permission-row.allowed .menu-state-text{background:#e5f3f8;color:#39708a}
+.menu-permission-row .switch-control{width:36px;height:20px}
+.menu-permission-row .switch-control::after{width:14px;height:14px}
+.menu-permission-row .inline-switch input:checked+.switch-control::after{transform:translateX(16px)}
+.individual-badge{padding:2px 6px;font-size:8.5px}
+.menu-permission-row.locked,.menu-permission-row.locked:hover{background:#f7f8f7}
+.menu-permission-row.locked .menu-row-icon{background:#eef0ef;color:#414a43}
+.menu-permission-row.locked .menu-row-copy strong,.menu-permission-row.locked .menu-row-copy small{color:#414a43}
+.menu-permission-row.locked .switch-control{opacity:.42}
+
+.permission-actions{
+  padding:14px 20px;
+  border-top:1px solid #edf1ef;
+  background:#fafcfb;
+}
+.permission-actions>div{position:relative;padding-left:13px}
+.permission-actions>div::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:4px;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#e0a663;
+}
+
+@media(min-width:1021px){
+  .menu-permission-groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1020px){
+  .permission-layout{grid-template-columns:270px minmax(0,1fr)}
+  .menu-permission-groups{grid-template-columns:1fr}
+  .menu-bulk-actions{flex-wrap:wrap}
+  .menu-bulk-actions>span{width:100%;margin:2px 0 0}
+}
+@media(max-width:760px){
+  .permission-layout{grid-template-columns:1fr}
+  .organization-panel{position:static}
+  .organization-tree{height:410px;min-height:0}
+}
+
+/* 상단 '메인으로' 돌아가기 + 저장 사유 입력 (2026-07-28) */
+.permission-topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.permission-topbar .preview-state{margin-left:auto}
+.permission-topbar .back-to-main{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border:1px solid #d9e7ee;border-radius:999px;
+  background:#fff;color:#356573;font-size:13px;font-weight:750;
+  text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s;
+}
+.permission-topbar .back-to-main:hover{background:#f4fafc;border-color:#bcd7e3}
+.permission-topbar .back-to-main span{font-size:16px;line-height:1}
+.save-memo-input{
+  flex:1 1 180px;min-width:140px;max-width:280px;
+  padding:9px 12px;border:1px solid #d9e7ee;border-radius:8px;
+  font-size:13px;color:#2c3e46;background:#fff;
+}
+.save-memo-input:focus{outline:none;border-color:#69a9c6;box-shadow:0 0 0 3px rgba(105,169,198,.15)}
+
+/* 부서 줄의 묶음 선택칸 (2026-08-13).
+   부서를 눌러 접기/펴기 하는 버튼 옆에 붙는다 — 그 부서 사람 전부에게 한 번에
+   적용하는 자리라, 개인 편집칸과 눈에 띄게 구분되도록 들여쓰기를 맞춘다. */
+.dept-role {
+  display: flex; align-items: center; gap: 6px;
+  margin: 2px 0 4px 46px; font-size: 12.5px; color: #5d6b7a;
+}
+.dept-role select {
+  padding: 3px 7px; border: 1px solid #d7e2ee; border-radius: 6px;
+  background: #fff; font: inherit; font-size: 12.5px; max-width: 190px;
+}
+.dept-role select:disabled { opacity: .55; }
+
+/* ── 부서 권한 (2026-08-16 요청) ──────────────────────────────────────────
+   부서명을 누르면 **사람 이름을 누른 것과 같은 화면**이 열린다. 그래서 패널
+   안쪽은 사람 화면의 클래스를 그대로 쓴다(.selected-user · .permission-summary
+   · .menu-permission-group · .permission-actions) — 여기 새로 정의할 것은
+   트리 줄과 세 갈래 버튼뿐이다. */
+.dept-row-wrap { display: flex; align-items: stretch; gap: 2px; }
+.dept-row-wrap > .tree-row { flex: 1 1 auto; min-width: 0; }
+
+/* 캐럿만 접기/펴기를 맡는다. 부서명이 권한 화면을 열기 때문에, 한 버튼이 둘 다
+   하면 권한을 열려다 부서가 접힌다. */
+.tree-caret-button {
+  flex: 0 0 auto; width: 22px; padding: 0; border: 0; background: none;
+  color: var(--subtle, #8b948f); cursor: pointer; border-radius: 6px;
+}
+.tree-caret-button:hover { background: #eaf2f0; color: var(--ink, #17211d); }
+.tree-caret-button .tree-caret { transition: transform .15s; }
+.tree-node.collapsed > .dept-row-wrap .tree-caret { transform: rotate(-90deg); }
+
+/* 부서명 줄은 사람 줄과 같은 방식으로 '고른 상태'를 보여 준다. */
+.tree-row.department.selected {
+  background: var(--paper, #edf7fb);
+  box-shadow: inset 3px 0 #39708a;
+  font-weight: 700;
+}
+
+.department-panel[hidden] { display: none; }
+.department-panel .dept-avatar { background: #e4f2f8; color: #315d75; }
+
+/* 조회 범위 세 갈래. 체크박스로는 '끔'을 만들 수 없어서(체크를 풀면 '정하지
+   않음'이 된다) 세 갈래로 둔다 — 2026-08-13 검수에서 그 때문에 화면에서 끈
+   것이 실제로는 안 꺼졌다. 되돌리지 말 것. */
+.dept-scope-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 11px 14px; border-radius: 10px;
+  border: 1px solid var(--line, rgba(32,55,45,.12)); background: #fbfcfc;
+}
+.dept-scope-field + .dept-scope-field { margin-top: 8px; }
+.dept-scope-label { font-size: 14px; font-weight: 700; }
+.tri { display: inline-flex; gap: 0; border-radius: 999px; overflow: hidden;
+  border: 1px solid var(--line, rgba(32,55,45,.16)); background: #fff; }
+.tri button {
+  height: 30px; padding: 0 13px; border: 0; background: none; cursor: pointer;
+  color: var(--muted, #68736e); font-size: 13px; font-weight: 700;
+  border-right: 1px solid var(--line, rgba(32,55,45,.1));
+}
+.tri button:last-child { border-right: 0; }
+.tri button:hover { background: #f2f7f9; }
+.tri button.on { background: #39708a; color: #fff; }
+.tri button:focus-visible { outline: 2px solid rgba(105,169,198,.55); outline-offset: -2px; }
+
+.department-panel .permission-actions .msg { font-size: 13px; color: var(--muted, #68736e); }
+.department-panel .permission-actions .msg.good { color: #176b4d; }
+.department-panel .permission-actions .msg.bad { color: #a54131; }
+.department-panel button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 이름 붙인 권한 세트 프리셋 (2026-08-16). 누르면 확인창(무엇이 열리는지 요약)
+   한 번을 거쳐 **바로 적용**된다 — 묶음의 존재 이유가 '클릭 한 번'이다.
+   옛 트리 셀렉트의 실패(못 본 채 부서 전원이 바뀜)는 확인창이 막는다. */
+/* 세트 드롭다운 (2026-08-17). 세트가 몇 개든 한 줄을 유지한다 — 칩으로 늘어놓던
+   때는 시드 5개만으로 544px 라 줄이 접혔다.
+   <select> 를 안 쓴 이유: 포커스가 있으면 휠·화살표만으로 선택이 바뀌고 그대로
+   실행된다. 열고→고르고→확인, 세 걸음이 모두 의도적이어야 한다. */
+/* 이 파일은 permission-roles.html 도 함께 읽는다 — 옛 규칙처럼 바 안으로
+   스코프를 준다. */
+.menu-bulk-actions .preset-menu { position: relative; }
+/* <details> 를 모르는 엔진(구형 WebView)에서 팝오버가 '항상 열린' 채 아래를
+   덮지 않게 명시한다 — 칩은 흐름 안에 있어 이런 일이 없었다. */
+.preset-menu:not([open]) .preset-list { display: none; }
+.preset-menu[hidden] { display: none; }
+.preset-menu > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid #83b7cf; border-radius: 999px;
+  background: #f2f8fb; color: #315d75; font-size: 13px; font-weight: 700;
+}
+.preset-menu > summary::-webkit-details-marker { display: none; }
+.preset-menu > summary::after { content: '▾'; font-size: 11px; opacity: .7; }
+.preset-menu > summary:hover { background: #e4f2f8; }
+.preset-menu > summary:focus-visible { outline: 2px solid rgba(105,169,198,.6); outline-offset: 2px; }
+/* 고른 세트 이름을 요약에 띄운다(2026-08-18) — '권한일괄적용 · 본사 전체메뉴'.
+   드롭다운을 닫아도 무엇을 채웠는지 보인다. 안 고르면 비어 숨는다. */
+.preset-menu > summary > .preset-pick { font-weight: 700; }
+.preset-menu > summary > .preset-pick:not(:empty)::before {
+  content: '· '; font-weight: 400; opacity: .65;
+}
+.preset-menu > summary > .preset-pick:empty { display: none; }
+
+.preset-list {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  /* 좁은 창에서 카드(.permission-detail{overflow:hidden}) 밖으로 나가면
+     스크롤로도 못 본다 — 뷰포트에 묶는다. */
+  min-width: min(280px, calc(100vw - 48px)); max-width: calc(100vw - 32px);
+  max-height: min(320px, 50vh); overflow: auto;
+  display: grid; gap: 2px; padding: 6px;
+  border: 1px solid var(--line, rgba(32,55,45,.14)); border-radius: 12px;
+  background: #fff; box-shadow: 0 16px 40px rgba(25,50,39,.16);
+}
+/* 전역 button 규칙(dashboard.css)이 여기까지 내려온다 — height:42px 만 막고
+   hover·font-weight 을 놓쳐서, button:hover:not(:disabled)(0,2,1)이
+   .preset-row:hover(0,2,0)를 이겨 **호버 표시가 아예 없었다**. 흰 팝오버 위의
+   흰 호버라 '지금 이 줄을 누르면 부서 전원이 바뀐다'를 알려 줄 것이 사라진다.
+   칩 시절 .menu-action-button.preset:hover 는 (0,3,0)이라 멀쩡했던 부분이다.
+   그래서 여기부터는 .preset-list 를 앞에 붙여 특정도를 올린다. */
+.preset-list .preset-row {
+  display: grid; gap: 2px; width: 100%; text-align: left;
+  padding: 8px 11px; border: 0; border-radius: 8px; background: none;
+  cursor: pointer; font: inherit; font-weight: 400; height: auto; box-shadow: none;
+}
+.preset-list .preset-row:hover:not(:disabled) {
+  background: #f2f8fb; box-shadow: none; border-color: transparent;
+}
+.preset-list .preset-row:active:not(:disabled) { transform: none; }
+.preset-list .preset-row:focus-visible {
+  outline: 2px solid rgba(105,169,198,.55); outline-offset: -2px;
+}
+.preset-list .preset-row > b { font-size: 14px; font-weight: 700; color: var(--ink, #17211d); }
+.preset-list .preset-row > span { font-size: 12px; font-weight: 400; color: var(--muted, #68736e); }
+/* 메뉴 0개 세트 — 붙이면 로그인이 거절된다. 고르기 전에 색으로 먼저 말한다.
+   개수는 '이 대상에게 실제로 열릴 것'으로 세므로, 지사 대상에게 본사 전용
+   세트를 걸면 여기서 붉게 뜬다. */
+.preset-list .preset-row.danger > span { color: var(--red, #a54131); }
+
+/* JS 가 채우는 세트 버튼들(#deptPresets·#personPresets). 팝오버(.preset-list) 안에서
+   아래 '관리' 푸터와 나뉜다. 세트가 없으면 안내 문구만 든다. */
+.preset-rows { display: grid; gap: 2px; }
+.preset-empty { margin: 6px 8px 8px; color: var(--muted, #68736e); font-size: 12.5px; }
+
+/* '묶음 만들기·관리' — 권한 묶음 화면으로 가는 **유일한 문**(2026-08-16). 2026-08-18
+   부터 세트 목록과 같은 드롭다운 안, 구분선 아래 푸터로 둔다('적용'과 '관리'는 둘 다
+   세트 관련이라 한 곳에 묶는다). 세트가 0개여도 드롭다운은 열리므로(paintPresetMenu 가
+   menu 를 안 숨긴다), 세트를 다 지운 담당자도 여기서 새로 만들 수 있다. */
+.preset-list .preset-manage {
+  margin-top: 4px; padding: 9px 11px;
+  border-top: 1px solid var(--line, rgba(32,55,45,.12));
+  color: #39708a; font-size: 13px; font-weight: 700; text-decoration: none;
+  white-space: nowrap; border-radius: 0 0 8px 8px;
+}
+.preset-list .preset-manage:hover { background: #f2f8fb; text-decoration: underline; }
+
+/* 하단으로 내린 전표 카드. 접힌 채 시작한다 — 권한 화면의 본업이 아니다. */
+.cache-sync-details { margin-top: 16px; }
+.cache-sync-details.hidden { display: none; }
+.cache-sync-details > summary {
+  cursor: pointer; padding: 10px 14px; border-radius: 10px;
+  border: 1px dashed rgba(32, 55, 45, .22); background: #fbfcfc;
+  color: var(--muted, #68736e); font-size: 13.5px; font-weight: 700;
+  list-style-position: inside;
+}
+.cache-sync-details > summary:hover { background: #f2f7f9; color: var(--ink, #17211d); }
+.cache-sync-details[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.cache-sync-details > .cache-sync-card { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+
+@media (max-width: 560px) {
+  /* 좁은 창에서는 바 폭에 맞춰 편다 — 오른쪽이 잘리는 것을 막는다. */
+  .preset-list { left: 0; right: 0; min-width: 0; }
+}
+
+/* 부서 권한을 따라가지 않는 사람 표.
+   눈에 띄되 경고는 아니다 — 잘못된 상태가 아니라 '여기는 따로 정해져 있다'는
+   사실 하나다. 붉게 하면 담당자가 지우려 든다. */
+.personal-mark {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: #7c5a00;
+  background: #fff3d0;
+  border: 1px solid #f0dca0;
+}

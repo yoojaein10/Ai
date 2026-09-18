@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 상여 설정</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .bs-back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #d9e7ee;border-radius:999px;background:#fff;color:#356573;font-size:13px;font-weight:750;text-decoration:none;white-space:nowrap}
+    .bs-back:hover{background:#f4fafc;border-color:#bcd7e3}
+    .bs-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:64px;z-index:5;background:var(--bg,#fff);padding:12px 0}
+    .bs-summary{font-size:13px;color:var(--muted)}
+    .bs-summary b{color:var(--ink);font-weight:800}
+    .bs-note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin:0 0 12px}
+    .bs-tabs{display:flex;gap:6px;margin:0 0 12px}
+    .bs-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer;color:#56625c}
+    .bs-tabs button.active{background:#244f68;border-color:#244f68;color:#fff}
+    .bs-panel.hidden{display:none}
+    .bs-filter{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .bs-filter input{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:13px;width:220px}
+    .bs-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:#fff}
+    .bs-card.dirty{border-color:var(--brand,#1b7a43);box-shadow:0 0 0 2px rgba(27,122,67,.08)}
+    .bs-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .bs-head h3{margin:0;font-size:13px}
+    .bs-head .state{font-size:11px;color:var(--muted)}
+    .bs-head .state.warn{color:#b4232a;font-weight:700}
+    .bs-head .add{margin-left:auto;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;cursor:pointer}
+    .bs-rows{width:100%;border-collapse:collapse;font-size:12px}
+    .bs-rows th{background:#f7f9f8;color:var(--muted);font-size:11px;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+    .bs-rows td{padding:4px 8px;border-bottom:1px solid var(--line)}
+    .bs-rows input,.bs-rows select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;padding:0 8px;background:#fff;font-size:12px;box-sizing:border-box}
+    .bs-rows input.num{text-align:right}
+    .bs-rows .del{width:32px;height:30px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer}
+    .bs-rows .src{font-size:11px;color:var(--muted)}
+    .bs-empty{color:var(--muted);font-size:12px;padding:6px 2px}
+    .topbar .bs-back{display:inline-flex;align-items:center;gap:4px;margin-right:14px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#244f68;font-weight:750;font-size:13px;text-decoration:none}
+    .topbar .bs-back:hover{background:#eef4f2}
+    .bs-lookup{font-size:12px;color:#56625c;background:#f4f6f5;border-radius:8px;padding:6px 10px;margin:0 0 10px;white-space:normal}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <a class="bs-back" href="/desktop/bonus" title="상여로 돌아가기"><span aria-hidden="true">←</span> 상여 화면</a>
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>상여 설정</h1></div>
+    <div></div>
+  </header>
+  <main id="main-content">
+    <p class="bs-note">여기 값이 상여 계산의 규칙입니다. <b>요율</b>은 사람별 감정서 접수일 구간(양끝 포함), <b>지분</b>은 감정서별 사람 몫(합이 100이 아니어도 저장되지만 경고), <b>사람</b>은 주주/소속과 소속평가사의 지급률·소득세율입니다. 초기값은 재무팀 엑셀에서 읽어 넣었습니다.</p>
+    <div class="bs-bar">
+      <button id="saveAll" class="primary-button" type="button">변경 저장</button>
+      <p id="summary" class="bs-summary">불러오는 중...</p>
+    </div>
+    <div class="bs-tabs" role="tablist">
+      <button data-tab="persons" class="active" type="button">사람</button>
+      <button data-tab="rates" type="button">요율</button>
+      <button data-tab="shares" type="button">지분</button>
+    </div>
+    <section id="panel-persons" class="bs-panel"></section>
+    <section id="panel-rates" class="bs-panel hidden"></section>
+    <section id="panel-shares" class="bs-panel hidden">
+      <div class="bs-filter">
+        <input id="shareFilter" placeholder="감정서번호로 찾기 (예: 01-2603)" maxlength="50">
+        <button id="shareAdd" type="button" class="small-button">이 번호로 지분 추가</button>
+        <span id="shareCount" class="bs-summary"></span>
+      </div>
+      <p id="shareLookup" class="bs-lookup hidden"></p>
+      <div id="shareList"></div>
+    </section>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/bonus-settings.js?v=20260826-2"></script>
+</body>
+</html>

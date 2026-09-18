@@ -1,0 +1,13 @@
+[auth]
+; dev | token(데스크톱 EXE) | session(모바일 웹) — token/session은 방식 확정 후 구현
+mode = dev
+; dev 모드에서 사용할 로그인 사용자 이름(담당자 이름과 동일 체계)
+dev_user = 개발자
+
+[policy]
+; 통계 열람 범위: all(전체 담당자) | self(본인만) — ★임시 결정: all, 업무 확정 필요
+view_scope = all
+
+[db]
+; 비우면 Y_SqlMcp settings.ini 의 default_profile 사용
+profile =

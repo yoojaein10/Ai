@@ -1,0 +1,15 @@
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+sqlalchemy>=2.0,<3.0
+pyodbc>=5.2,<6.0
+pydantic-settings>=2.7,<3.0
+requests>=2.32,<3.0
+pytest>=8.3,<9.0
+httpx>=0.28,<1.0
+openpyxl
+xlrd>=2.0,<3.0  # 카드사 엑셀(.xls, BIFF) 읽기
+pypxlib  # TAMS 부가세.DB(Paradox) 읽기>=3.1,<4.0
+pymssql>=2.3,<3.0  # 감정서 파싱DB(app/vendor/gamjun_search.py) 접속 — 없으면 감정서 조회 메뉴가 죽는다
+
+popbill
+python-multipart

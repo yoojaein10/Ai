@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 계정별원장</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .al-toolbar{display:block}
+    .al-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .al-row .grp{display:flex;gap:6px;align-items:center}
+    .al-row .grp>strong{white-space:nowrap;flex:none;font-size:12px;color:var(--muted)}
+    .al-row input[type=date],.al-row input[type=email]{width:auto;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:#fff}
+    .al-row input[type=email]{width:220px}
+    .al-workspace{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:16px;align-items:start}
+    .al-accounts{border:1px solid var(--line);border-radius:14px;padding:12px;position:sticky;top:12px}
+    .al-accounts h3{margin:0 0 8px;font-size:13px}
+    .al-accounts label{display:flex;align-items:center;gap:8px;min-height:30px;padding:0 4px;border-radius:7px;font-size:12px;cursor:pointer}
+    .al-accounts label:hover{background:#f2f7f4}
+    .al-accounts label.on{background:#eef5f1;font-weight:700}
+    .al-accounts input[type=checkbox]{width:15px;height:15px;margin:0;flex:none;accent-color:var(--brand,#1b7a43)}
+    .al-accounts .code{color:var(--subtle);font-variant-numeric:tabular-nums}
+    .al-accounts .who{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+    .al-accounts .who.none{color:#b4232a}
+    .al-preview{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff;overflow-x:auto}
+    /* dashboard.css 의 표 규칙(th sticky·backdrop-filter, td:first-child 고정폭)이 원장 안까지 스며들어
+       머리글 선이 흐려지고 날짜가 굵은 초록으로 보였다 — 미리보기는 메일과 같은 모양이어야 한다. */
+    .al-preview th,.al-preview td{position:static;backdrop-filter:none;border:0;max-width:none;overflow:visible;font:inherit;color:inherit;letter-spacing:normal}
+    .al-preview tbody tr{cursor:default}
+    .al-preview tbody tr:hover{background:transparent;box-shadow:none}
+    .al-manage{margin-left:auto;height:32px;padding:0 14px;border:1px solid #d9e7ee;border-radius:8px;background:#fff;color:#356573;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}
+    .al-manage:hover{background:#f4fafc;border-color:#bcd7e3}
+    .al-tabs{display:flex;gap:4px}
+    .al-tabs button{height:32px;padding:0 12px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:12px;cursor:pointer}
+    .al-tabs button.on{background:var(--brand,#1b7a43);border-color:var(--brand,#1b7a43);color:#fff;font-weight:700}
+    .al-pane h3{margin:0 0 12px;font-size:14px}
+    .al-table{width:100%;border-collapse:collapse;font-size:12px}
+    .al-table th,.al-table td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
+    .al-table th{background:#f7f9f8;font-size:11px;color:var(--muted)}
+    .al-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .al-table .ok{color:#1b7a43;font-weight:700}
+    .al-table .bad{color:#b4232a;font-weight:700}
+    .al-table .test{color:#8a6d1a;font-weight:700}
+    .al-hint{color:var(--muted);font-size:12px;margin:8px 0 0}
+    .al-warn{color:#b4232a;background:#fdecec;border:1px solid #f3c2c2;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;margin:0 0 12px}
+    .al-preview .ph{color:var(--muted);font-size:13px;padding:36px 0;text-align:center}
+    .al-note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin:12px 0}
+    .al-summary{font-size:13px;color:var(--muted);margin:12px 0}
+    .al-summary b{color:var(--ink);font-weight:800}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>계정별원장</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar al-toolbar" aria-label="검색 조건">
+      <div class="al-row">
+        <div class="grp"><strong>기간</strong><input id="dateFrom" type="date"> ~ <input id="dateTo" type="date"></div>
+        <button id="searchButton" class="primary-button" type="button">조회</button>
+        <div class="grp al-tabs" role="group" aria-label="보기 전환">
+          <button id="viewLogs" type="button">발송 로그</button>
+        </div>
+        <div class="grp"><strong>직접 지정</strong><input id="mailTo" type="email" placeholder="비우면 담당자에게" autocomplete="off"></div>
+        <button id="sendButton" class="export-button" type="button">선택 계정 메일 발송</button>
+        <button id="manageButton" class="al-manage" type="button" title="지사 메일 주소를 고치거나 추가합니다">관리</button>
+      </div>
+    </section>
+    <p class="al-note" id="mailNote">받는 사람은 <b>지사 메일 주소</b>에 등록된 주소입니다 — 오른쪽 끝 <b>관리</b> 버튼에서 고치거나 추가합니다. 위의 <b>직접 지정</b>에 주소를 적으면 그 주소로만 갑니다. 서버 설정(LEDGER_MAIL_TEST_TO)이 있으면 무엇을 적어도 <b>테스트 수신자</b>로만 갑니다.</p>
+    <p id="summary" class="al-summary">기간을 고르고 조회하세요.</p>
+    <div class="al-workspace">
+      <aside class="al-accounts">
+        <h3>계정 <label style="float:right;font-weight:600"><input id="checkAll" type="checkbox"> 전체</label></h3>
+        <div id="accountList"></div>
+      </aside>
+      <div class="al-preview">
+        <div id="paneLedger" class="al-pane">
+          <div id="preview" class="ph">왼쪽에서 계정을 고르면 원장이 여기 나옵니다.</div>
+        </div>
+        <div id="paneLogs" class="al-pane hidden">
+          <h3>발송 로그 <span id="logScope" style="font-weight:500;color:var(--muted);font-size:12px"></span></h3>
+          <table class="al-table">
+            <thead><tr><th>보낸 때</th><th>계정</th><th>원장 기간</th><th>받는사람</th><th>참조</th><th class="num">건</th><th>결과</th></tr></thead>
+            <tbody id="logRows"></tbody>
+          </table>
+          <p class="al-hint">최근 200건입니다. 테스트 수신자로 돌아간 건은 <b>테스트</b>로 표시됩니다 — 지사는 받지 못한 것입니다.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/account-ledger.js?v=20260824-5"></script>
+</body>
+</html>

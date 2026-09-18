@@ -1,0 +1,8 @@
+{
+  "_설명": "이 파일을 config.json으로 복사해 사용하세요. config.json은 gitignore되어 커밋되지 않습니다. 환경변수(GEMINI_API_KEY, DBAONE_MSSQL_CONN)가 있으면 그 값이 우선합니다.",
+  "gemini_api_key": "",
+  "gemini_model": "gemini-2.5-flash",
+  "mssql_conn": "",
+  "_mssql_conn_예시": "DRIVER={ODBC Driver 17 for SQL Server};SERVER=localhost;DATABASE=ERP_MAIN;UID=dbaone_reader;PWD=REDACTED_CONFIGURE_LOCALLY;Encrypt=yes;TrustServerCertificate=no",
+  "env_label": "개발"
+}

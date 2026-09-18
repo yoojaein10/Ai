@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DBA ONE — 검증형 목업 v0.1</title>
+<style>
+  :root{
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#222221; --border:rgba(255,255,255,.10);
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --baseline:#383835;
+    --series:#3987e5; --series-dim:#1c5cab;
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--page); color:var(--ink-2);
+    font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+    font-size:13.5px; line-height:1.55; display:flex; min-height:100vh;
+  }
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  input,select,textarea{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--series);outline-offset:1px}
+  code,pre{font-family:ui-monospace,Consolas,"D2Coding",monospace}
+  h1{font-size:19px;color:var(--ink);font-weight:650}
+  h2{font-size:15px;color:var(--ink);font-weight:650}
+  h3{font-size:13.5px;color:var(--ink);font-weight:600}
+  small{color:var(--muted)}
+
+  /* ── 좌측 내비게이션 ─────────────────────────── */
+  .sidenav{width:212px;flex:0 0 212px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 10px;gap:2px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--series),var(--series-dim));display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}
+  .brand b{color:var(--ink);font-size:15px;letter-spacing:.3px}
+  .brand small{display:block;font-size:10px;letter-spacing:.8px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink-2);text-align:left;width:100%}
+  .nav-item:hover{background:var(--surface-2)}
+  .nav-item.active{background:var(--surface-2);color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--series)}
+  .nav-item .ico{width:18px;text-align:center;opacity:.85}
+  .nav-item .cnt{margin-left:auto;font-size:11px;background:var(--critical);color:#fff;border-radius:9px;padding:0 6px;line-height:17px}
+  .nav-item .cnt.amber{background:var(--warn);color:#1a1a19}
+  .nav-sep{height:1px;background:var(--border);margin:8px 6px}
+  .nav-foot{margin-top:auto;padding:8px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)}
+  .avatar{width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;color:var(--ink);font-size:11px;font-weight:700}
+
+  /* ── 상단바 ─────────────────────────────────── */
+  .app{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:20}
+  .server-pill{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:5px 12px}
+  .server-pill b{color:var(--ink);font-size:12.5px}
+  .env-badge{background:var(--critical);color:#fff;font-weight:700;font-size:11px;letter-spacing:1.2px;border-radius:5px;padding:3px 9px;display:inline-flex;align-items:center;gap:5px}
+  .env-badge::before{content:"⚠"}
+  .top-spacer{flex:1}
+  .btn{border:1px solid var(--border);background:var(--surface-2);border-radius:8px;padding:7px 13px;color:var(--ink)}
+  .btn:hover{border-color:var(--series)}
+  .btn.primary{background:var(--series);border-color:var(--series);color:#fff;font-weight:600}
+  .btn.primary:disabled{opacity:.45;cursor:default}
+  .btn.danger{background:var(--critical);border-color:var(--critical);color:#fff;font-weight:600}
+  .btn.ghost{border-color:transparent;background:none;color:var(--ink-2)}
+  .btn.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+
+  /* ── 공용 ──────────────────────────────────── */
+  .screen{display:none;padding:20px;overflow:auto;flex:1}
+  .screen.active{display:block}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .card+.card{margin-top:14px}
+  .card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+  .card-h .sub{color:var(--muted);font-size:12px}
+  .card-h .right{margin-left:auto}
+  .grid{display:grid;gap:14px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:1px}
+  .dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.serious{background:var(--serious)} .dot.critical{background:var(--critical)} .dot.off{background:var(--muted)}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border:1px solid var(--border);border-radius:20px;padding:2px 9px;color:var(--ink-2)}
+  .chip.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+  .chip.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+  .chip.serious{color:var(--serious);border-color:color-mix(in srgb,var(--serious) 40%,transparent)}
+  .chip.critical{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 40%,transparent)}
+  .chip.blue{color:var(--series);border-color:color-mix(in srgb,var(--series) 40%,transparent)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--muted);font-weight:600;text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:8px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+  tr.clickable:hover td{background:var(--surface-2);cursor:pointer}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .tabs button{padding:8px 14px;color:var(--muted);border-bottom:2px solid transparent}
+  .tabs button.active{color:var(--ink);border-bottom-color:var(--series);font-weight:600}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 18px;color:var(--ink);box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;z-index:99}
+  .toast.show{display:flex;gap:8px;align-items:center}
+  .conf{font-size:11.5px;color:var(--muted)}
+  .conf b{color:var(--series)}
+
+  /* ── 차트 ──────────────────────────────────── */
+  .chart-wrap{position:relative}
+  .chart-legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-bottom:6px}
+  .chart-legend i{display:inline-block;width:14px;height:0;border-top:2px solid var(--series);vertical-align:3px;margin-right:5px}
+  .chart-legend i.base{border-top:2px dashed var(--muted)}
+  .chart-legend i.bar{height:9px;width:9px;background:var(--series);border-radius:2px;border:none}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:4px;border-bottom:1px solid var(--baseline)}
+  .bars i{flex:1;background:var(--series);border-radius:4px 4px 0 0;min-height:3px;max-width:22px;transition:opacity .1s}
+  .bars i.hot{background:var(--serious)}
+  .bars i:hover{opacity:.75}
+  .axis-x{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding-top:4px}
+  .tooltip{position:fixed;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);pointer-events:none;display:none;z-index:98;box-shadow:0 6px 20px rgba(0,0,0,.45);white-space:nowrap}
+
+  /* ── 홈 ───────────────────────────────────── */
+  .kpi-row{grid-template-columns:repeat(auto-fit,minmax(158px,1fr))}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;cursor:pointer}
+  .kpi:hover{border-color:var(--series)}
+  .kpi .k-label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .kpi .k-value{font-size:26px;font-weight:700;color:var(--ink);margin:2px 0}
+  .kpi .k-note{font-size:11.5px;color:var(--muted)}
+  .kpi.risk .k-value{color:var(--critical)} .kpi.warn .k-value{color:var(--warn)}
+  .prio{display:flex;gap:12px;padding:12px;border:1px solid var(--grid);border-radius:10px;margin-bottom:10px;align-items:flex-start}
+  .prio:hover{border-color:var(--series);cursor:pointer}
+  .prio .p-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex:0 0 34px}
+  .prio .p-ico.critical{background:color-mix(in srgb,var(--critical) 18%,transparent);color:var(--critical)}
+  .prio .p-ico.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+  .prio .p-ico.blue{background:color-mix(in srgb,var(--series) 18%,transparent);color:var(--series)}
+  .prio p{font-size:12.5px;color:var(--ink-2)}
+
+  /* ── 모니터링 ─────────────────────────────── */
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{padding:6px 12px;font-size:12px;color:var(--muted)}
+  .seg button.active{background:var(--surface-2);color:var(--ink);font-weight:600}
+  .mon-grid{grid-template-columns:1fr 1fr}
+  @media(max-width:1100px){.mon-grid{grid-template-columns:1fr}}
+  .blk-tree{font-size:12.5px}
+  .blk-node{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--grid);border-radius:8px;margin-bottom:6px;background:var(--surface-2)}
+  .blk-node.blocker{border-color:color-mix(in srgb,var(--critical) 50%,transparent)}
+  .blk-node .sid{font-weight:700;color:var(--ink)}
+  .blk-indent{margin-left:26px;position:relative}
+  .blk-indent::before{content:"";position:absolute;left:-14px;top:-4px;bottom:14px;border-left:1px solid var(--baseline)}
+  .blk-indent .blk-node::before{content:"└";color:var(--muted);margin-right:2px}
+
+  /* ── 작업실 ───────────────────────────────── */
+  .ws{display:grid;grid-template-columns:230px 1fr 300px;gap:14px;height:calc(100vh - 118px);min-height:520px}
+  @media(max-width:1200px){.ws{grid-template-columns:200px 1fr;height:auto}.ws .ai-panel{grid-column:1/-1}}
+  .ws .col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .ws .col-h{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .obj-tree{overflow-y:auto;overflow-x:hidden;padding:8px;flex:1}
+  .tree-row{display:flex;align-items:center;gap:7px;width:100%;padding:5px 8px;border-radius:7px;text-align:left;color:var(--ink-2);font-size:12px;min-width:0}
+  .tree-row>span:not(.dot),.tree-row>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tree-row small{white-space:nowrap;font-size:10.5px;flex:0 0 auto}
+  .tree-row:hover{background:var(--surface-2)}
+  .tree-row.sel{background:var(--surface-2);color:var(--ink);font-weight:600}
+  .tree-row small{margin-left:auto}
+  .tree-kids{margin-left:14px;border-left:1px solid var(--grid);padding-left:6px}
+  .code{overflow:auto;flex:1;padding:10px 0;font-size:12.5px;line-height:1.7;background:var(--page)}
+  .cl{display:flex;gap:0;padding:0 12px}
+  .cl:hover{background:var(--surface)}
+  .cl .ln{width:34px;flex:0 0 34px;text-align:right;color:var(--muted);padding-right:14px;user-select:none}
+  .cl.hot{background:color-mix(in srgb,var(--serious) 12%,transparent);border-left:2px solid var(--serious)}
+  .cl.hot .ln{color:var(--serious)}
+  .cl .fix-tag{margin-left:auto;font-size:11px;color:var(--serious);border:1px solid color-mix(in srgb,var(--serious) 45%,transparent);border-radius:12px;padding:0 8px;align-self:center}
+  .ai-banner{display:flex;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--border);background:var(--surface-2)}
+  .ai-orb{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--series),var(--series-dim));color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 32px}
+  .ai-panel .chat{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:92%;padding:9px 12px;border-radius:11px;font-size:12.5px}
+  .msg.ai{background:var(--surface-2);border:1px solid var(--border);align-self:flex-start;color:var(--ink-2)}
+  .msg.me{background:var(--series-dim);color:#fff;align-self:flex-end}
+  .msg .conf{display:block;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+  .quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 10px}
+  .quick button{font-size:11.5px;border:1px solid var(--border);border-radius:14px;padding:4px 10px;color:var(--ink-2)}
+  .quick button:hover{border-color:var(--series);color:var(--ink)}
+  .chat-in{border-top:1px solid var(--border);padding:10px 12px}
+  .chat-in textarea{resize:none;background:var(--surface-2)}
+  .chat-in .hint{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:var(--muted)}
+  .metric3{grid-template-columns:repeat(3,1fr)}
+  .plan-cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px}
+  .plan-box{border:1px solid var(--grid);border-radius:9px;padding:12px}
+  .plan-box.bad{border-color:color-mix(in srgb,var(--serious) 45%,transparent)}
+  .plan-box.goodb{border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+  .plan-op{padding:5px 8px;border-radius:6px;background:var(--surface-2);margin-top:6px;display:flex;justify-content:space-between}
+  .dep-map{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 0}
+  .dep-node{border:1px solid var(--border);background:var(--surface-2);border-radius:9px;padding:8px 16px;color:var(--ink)}
+  .dep-node.center{border-color:var(--series);box-shadow:0 0 0 3px color-mix(in srgb,var(--series) 20%,transparent)}
+  .dep-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+  /* ── 인시던트 ─────────────────────────────── */
+  .inc-layout{display:grid;grid-template-columns:340px 1fr;gap:14px}
+  @media(max-width:1100px){.inc-layout{grid-template-columns:1fr}}
+  .inc-item{border:1px solid var(--grid);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer}
+  .inc-item:hover,.inc-item.sel{border-color:var(--series)}
+  .tl{list-style:none;position:relative;padding-left:22px}
+  .tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;border-left:2px solid var(--baseline)}
+  .tl li{position:relative;padding:0 0 16px 8px}
+  .tl li::before{content:"";position:absolute;left:-19px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--muted);border:2px solid var(--surface)}
+  .tl li.critical::before{background:var(--critical)} .tl li.warn::before{background:var(--warn)} .tl li.blue::before{background:var(--series)} .tl li.good::before{background:var(--good)}
+  .tl time{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .ai-summary{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12.5px}
+  .ai-summary dt{color:var(--muted);font-size:11.5px;margin-top:8px}
+  .ai-summary dd{color:var(--ink-2)}
+  .ai-summary dd.head{color:var(--ink);font-weight:600}
+
+  /* ── 승인 센터 ────────────────────────────── */
+  .flow{display:flex;gap:0;align-items:center;flex-wrap:wrap;font-size:11.5px;margin:6px 0 14px}
+  .flow span{border:1px solid var(--border);border-radius:14px;padding:3px 10px;color:var(--muted)}
+  .flow span.done{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+  .flow span.now{color:var(--ink);border-color:var(--series);background:color-mix(in srgb,var(--series) 15%,transparent);font-weight:600}
+  .flow i{width:14px;border-top:1px solid var(--baseline);margin:0 2px}
+  .diff{font-size:12.5px;border:1px solid var(--grid);border-radius:9px;overflow:hidden}
+  .diff .dl{display:flex;padding:2px 10px;gap:12px}
+  .diff .dl .ln{width:26px;color:var(--muted);text-align:right;flex:0 0 26px;user-select:none}
+  .diff .dl.del{background:color-mix(in srgb,var(--critical) 14%,transparent);color:#f0b9b9}
+  .diff .dl.add{background:color-mix(in srgb,var(--good) 13%,transparent);color:#b9e6b9}
+  .check-list{list-style:none;font-size:12.5px}
+  .check-list li{display:flex;gap:8px;padding:5px 0;align-items:baseline}
+  .check-list li::before{content:"✓";color:var(--good);font-weight:700}
+  .check-list li.pending::before{content:"◌";color:var(--muted)}
+  .hash{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--muted);background:var(--page);border:1px solid var(--grid);border-radius:6px;padding:2px 8px}
+
+  /* ── 모달 ─────────────────────────────────── */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:50}
+  .backdrop.show{display:grid}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(560px,92vw);max-height:88vh;overflow:auto;padding:22px}
+  .modal h2{margin-bottom:4px}
+  .steps{display:flex;gap:6px;margin:14px 0 18px}
+  .steps span{flex:1;height:4px;border-radius:2px;background:var(--grid)}
+  .steps span.on{background:var(--series)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .radio-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .radio-cards button{border:1px solid var(--border);border-radius:9px;padding:10px;text-align:left;font-size:12.5px}
+  .radio-cards button.sel{border-color:var(--series);background:color-mix(in srgb,var(--series) 10%,transparent);color:var(--ink)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+  .perm-check{font-size:12.5px;border:1px solid var(--grid);border-radius:9px;padding:10px 12px;margin-top:10px}
+</style>
+</head>
+<body data-palette="#3987e5,#008300,#d55181,#c98500">
+
+<!-- ═══ 좌측 내비게이션 ═══ -->
+<nav class="sidenav">
+  <div class="brand"><div class="logo">D1</div><div><b>DBA ONE</b><small>AI DATABASE OPERATOR</small></div></div>
+  <button class="nav-item active" data-screen="home"><span class="ico">⌂</span>홈</button>
+  <button class="nav-item" data-screen="monitor"><span class="ico">📈</span>모니터링<span class="cnt amber">2</span></button>
+  <button class="nav-item" data-screen="db"><span class="ico">🗄</span>데이터베이스</button>
+  <button class="nav-item" data-screen="incident"><span class="ico">🔥</span>인시던트<span class="cnt">1</span></button>
+  <button class="nav-item" data-screen="approval"><span class="ico">✅</span>변경 승인<span class="cnt amber">3</span></button>
+  <button class="nav-item" data-screen="ai"><span class="ico">✦</span>AI DBA</button>
+  <div class="nav-sep"></div>
+  <button class="nav-item" data-screen="alerts"><span class="ico">🔔</span>알림 센터</button>
+  <button class="nav-item" data-screen="audit"><span class="ico">📜</span>감사 로그</button>
+  <button class="nav-item" data-screen="settings"><span class="ico">⚙</span>설정</button>
+  <div class="nav-foot"><div class="avatar">YJ</div><div style="font-size:12px"><b style="color:var(--ink)">이유진</b><br><small>DBA · 승인 권한</small></div></div>
+</nav>
+
+<div class="app">
+  <!-- ═══ 상단바 ═══ -->
+  <header class="topbar">
+    <div class="server-pill"><span class="dot good"></span><b>ERP-PROD-01</b><small>SQL Server 2022</small><button title="서버 전환" onclick="openOnboard()">⌄</button></div>
+    <span class="env-badge">운영 PRODUCTION</span>
+    <span class="chip"><span class="dot good"></span>수집 정상 · 지연 12초</span>
+    <div class="top-spacer"></div>
+    <button class="btn sm" onclick="openOnboard()">＋ 새 연결</button>
+    <button class="btn sm ghost" title="도움말">?</button>
+  </header>
+
+  <!-- ═══ 홈 대시보드 ═══ -->
+  <section class="screen active" id="screen-home">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+      <h1>전체 상태</h1><small>2026-07-20 (월) 11:24 기준 · 서버 6대 · 마지막 수집 12초 전</small>
+    </div>
+    <div class="grid kpi-row" style="margin-bottom:14px">
+      <div class="kpi" data-goto="monitor"><div class="k-label"><span class="dot good"></span>정상 서버</div><div class="k-value">4</div><div class="k-note">/ 전체 6대</div></div>
+      <div class="kpi risk" data-goto="incident"><div class="k-label"><span class="dot critical"></span>위험</div><div class="k-value">1</div><div class="k-note">ERP-PROD-01 · 주문 조회 지연</div></div>
+      <div class="kpi warn" data-goto="monitor"><div class="k-label"><span class="dot warn"></span>주의</div><div class="k-value">1</div><div class="k-note">WMS-PROD-02 · 로그 공간 78%</div></div>
+      <div class="kpi" data-goto="monitor"><div class="k-label">성능 회귀 쿼리</div><div class="k-value" style="color:var(--serious)">3</div><div class="k-note">24시간 · 기준선 대비</div></div>
+      <div class="kpi" data-goto="approval"><div class="k-label">승인 대기</div><div class="k-value" style="color:var(--warn)">3</div><div class="k-note">고위험 1건 포함</div></div>
+      <div class="kpi" data-goto="monitor"><div class="k-label">Blocking · Deadlock</div><div class="k-value">1 · 0</div><div class="k-note">최장 4분 12초 지속</div></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1.4fr 1fr">
+      <div class="card">
+        <div class="card-h"><h2>지금 조치가 필요한 문제</h2><span class="sub">업무 영향 순</span></div>
+        <div class="prio" data-goto="incident">
+          <div class="p-ico critical">!</div>
+          <div style="flex:1">
+            <h3>주문 조회 API 지연 — usp_GetOrderSummary <span class="chip critical">위험</span></h3>
+            <p>P95 620ms → <b style="color:var(--critical)">4.2초</b> (10:42부터). 실행 계획 변경 후 Orders 테이블 스캔이 원인으로 추정됩니다.</p>
+            <span class="conf">근거: plan_hash 변경 · 논리 읽기 12배 ↑ · 신뢰도 <b>86%</b></span>
+          </div><button class="btn sm">분석 열기 →</button>
+        </div>
+        <div class="prio" data-goto="monitor">
+          <div class="p-ico critical">⛓</div>
+          <div style="flex:1">
+            <h3>Blocking 체인 지속 — 세션 74 <span class="chip serious">4분 12초</span></h3>
+            <p>usp_SyncPaymentStatus의 열린 트랜잭션이 5개 세션을 대기시키고 있습니다.</p>
+            <span class="conf">영향: 결제 배치 · 대기 세션 5 · 신뢰도 <b>94%</b></span>
+          </div><button class="btn sm">Lock 보기 →</button>
+        </div>
+        <div class="prio" data-goto="monitor">
+          <div class="p-ico warn">▤</div>
+          <div style="flex:1">
+            <h3>WMS-PROD-02 로그 파일 78% <span class="chip warn">주의</span></h3>
+            <p>현재 증가 추세면 약 3일 후 임계치(90%)에 도달합니다. 로그 백업 주기 점검이 필요합니다.</p>
+          </div><button class="btn sm">상태 보기 →</button>
+        </div>
+        <div class="prio" data-goto="db">
+          <div class="p-ico blue">✦</div>
+          <div style="flex:1">
+            <h3>AI 오늘의 점검 제안</h3>
+            <p>usp_CloseDailySales — 최근 <b>94일</b> 관찰 기간 중 사용 흔적 없음 (신뢰도 82%). 월말 배치 여부 확인 후 사용 중단 표시를 권장합니다.</p>
+          </div><button class="btn sm">검토 →</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h"><h2>최근 배포 이후 성능 회귀</h2><span class="sub right">72시간</span></div>
+          <table>
+            <thead><tr><th>객체</th><th class="num">P95 변화</th><th>배포</th></tr></thead>
+            <tbody>
+              <tr class="clickable" data-goto="db"><td><span class="dot critical"></span> usp_GetOrderSummary</td><td class="num" style="color:var(--critical)">+371%</td><td><small>7/20 10:40 통계 갱신</small></td></tr>
+              <tr class="clickable" data-goto="db"><td><span class="dot warn"></span> usp_GetStockLevel</td><td class="num" style="color:var(--warn)">+82%</td><td><small>7/19 배포 v2.4.1</small></td></tr>
+              <tr class="clickable" data-goto="db"><td><span class="dot warn"></span> rpt_DailySettlement</td><td class="num" style="color:var(--warn)">+45%</td><td><small>변경 없음</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>승인 대기</h2><button class="btn sm right" data-goto="approval">전체 보기</button></div>
+          <table>
+            <tbody>
+              <tr class="clickable" data-goto="approval"><td>usp_GetOrderSummary 수정</td><td><span class="chip warn">보통</span></td><td><small>테스트 통과</small></td></tr>
+              <tr class="clickable" data-goto="approval"><td>IX_Orders_Customer_Date 재생성</td><td><span class="chip warn">보통</span></td><td><small>테스트 대기</small></td></tr>
+              <tr class="clickable" data-goto="approval"><td>usp_LegacyExport 삭제</td><td><span class="chip critical">높음 · 2인</span></td><td><small>관찰 90일 완료</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 실시간 모니터링 ═══ -->
+  <section class="screen" id="screen-monitor">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px"><h1>실시간 모니터링</h1><small>ERP-PROD-01 · 지표 지연 12초</small></div>
+    <div class="filterbar">
+      <select style="width:auto"><option>전체 서버 그룹</option><option>ERP</option><option>WMS</option></select>
+      <select style="width:auto"><option>ERP-PROD-01</option><option>ERP-PROD-02</option><option>WMS-PROD-02</option></select>
+      <div class="seg" id="timeSeg">
+        <button>실시간</button><button class="active">1시간</button><button>24시간</button><button>7일</button>
+      </div>
+      <div class="seg"><button class="active">기준선: 전주 동일 시간</button><button>전일</button></div>
+      <span class="chip warn"><span class="dot warn"></span>주의 이상만</span>
+    </div>
+
+    <div class="grid mon-grid">
+      <div class="card">
+        <div class="card-h"><h2>CPU 사용률</h2><span class="sub">10:42 급증 구간</span><span class="sub right">드래그로 인시던트 시간 범위 생성</span></div>
+        <div class="chart-legend"><span><i></i>현재</span><span><i class="base"></i>기준선(전주)</span></div>
+        <div class="chart-wrap"><svg id="cpuChart" width="100%" height="150" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="CPU 사용률 최근 1시간 추이"></svg></div>
+        <div class="axis-x"><span>10:25</span><span>10:40</span><span>10:55</span><span>11:10</span><span>11:24</span></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>usp_GetOrderSummary 실행시간</h2><span class="sub">P95 · 5분 단위</span></div>
+        <div class="chart-legend"><span><i class="bar"></i>P95 실행시간(초)</span><span style="color:var(--serious)">■ 기준선 4배 초과</span></div>
+        <div class="bars" id="execBars"></div>
+        <div class="axis-x"><span>10:25</span><span>10:55</span><span>11:24</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>성능 이상 쿼리</h2><span class="sub">기준선 대비 이상 점수 순</span></div>
+        <table>
+          <thead><tr><th>객체</th><th class="num">P95</th><th class="num">기준선</th><th class="num">호출/분</th><th>주요 병목</th><th></th></tr></thead>
+          <tbody>
+            <tr class="clickable" data-goto="db"><td><span class="dot critical"></span> usp_GetOrderSummary</td><td class="num" style="color:var(--critical)">4.21s</td><td class="num">0.62s</td><td class="num">12.8</td><td><span class="chip serious">논리 읽기 12×</span></td><td><button class="btn sm">작업실</button></td></tr>
+            <tr class="clickable" data-goto="db"><td><span class="dot warn"></span> usp_GetStockLevel</td><td class="num" style="color:var(--warn)">1.34s</td><td class="num">0.73s</td><td class="num">44.1</td><td><span class="chip warn">CPU</span></td><td><button class="btn sm">작업실</button></td></tr>
+            <tr class="clickable" data-goto="db"><td><span class="dot warn"></span> rpt_DailySettlement</td><td class="num" style="color:var(--warn)">8.9s</td><td class="num">6.1s</td><td class="num">0.2</td><td><span class="chip warn">tempdb spill</span></td><td><button class="btn sm">작업실</button></td></tr>
+            <tr><td><span class="dot good"></span> usp_CreateShipment</td><td class="num">0.18s</td><td class="num">0.19s</td><td class="num">31.5</td><td><small>정상</small></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Blocking Tree</h2><span class="chip serious">지속 4분 12초</span><span class="sub right">영향 세션 5</span></div>
+        <div class="blk-tree">
+          <div class="blk-node blocker"><span class="dot critical"></span><span class="sid">세션 74</span><span>usp_SyncPaymentStatus</span><small>열린 트랜잭션 · PaymentBatch.exe · 192.0.2.10</small><button class="btn sm danger" style="margin-left:auto" onclick="toast('세션 74 종료 요청 — 롤백 예상 2분, DBA 승인 대기로 등록되었습니다.')">종료 요청</button></div>
+          <div class="blk-indent">
+            <div class="blk-node"><span class="dot warn"></span><span class="sid">세션 81</span><span>usp_GetOrderSummary</span><small>대기 3분 55초 · LCK_M_S</small></div>
+            <div class="blk-node"><span class="dot warn"></span><span class="sid">세션 85</span><span>usp_UpdateInventory</span><small>대기 2분 41초</small></div>
+            <div class="blk-node"><span class="dot warn"></span><span class="sid">세션 88 외 2</span><span>Order API</span><small>대기 1분 미만</small></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">대안: 트랜잭션 완료 대기(예상 6분) · 결제 배치 일시 중단. 세션 종료는 <b style="color:var(--ink-2)">영향 분석 + DBA 승인</b> 후 실행됩니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 데이터베이스 / 프로시저 작업실 ═══ -->
+  <section class="screen" id="screen-db">
+    <div class="ws">
+      <div class="col">
+        <div class="col-h"><h3>ERP_MAIN</h3><small style="margin-left:auto">객체 137</small></div>
+        <div style="padding:8px 10px 0"><input placeholder="⌕ 이름·컬럼·SQL 본문 검색" style="font-size:12px"></div>
+        <div class="obj-tree">
+          <button class="tree-row"><span>⌄</span><b>sales</b><small>48</small></button>
+          <div class="tree-kids">
+            <button class="tree-row"><span>›</span>테이블<small>18</small></button>
+            <button class="tree-row"><span>⌄</span>프로시저<small>14</small></button>
+            <div class="tree-kids" id="procList"></div>
+            <button class="tree-row"><span>›</span>뷰<small>7</small></button>
+          </div>
+          <button class="tree-row"><span>›</span><b>common</b><small>23</small></button>
+          <button class="tree-row"><span>›</span><b>finance</b><small>31</small></button>
+        </div>
+        <div style="padding:10px;border-top:1px solid var(--border)"><button class="btn" style="width:100%" onclick="toast('새 프로시저: 빈 코드 / 템플릿 / 복제 / 자연어 초안 중 선택하는 흐름입니다 (목업).')">＋ 새 프로시저</button></div>
+      </div>
+
+      <div class="col">
+        <div class="col-h">
+          <div>
+            <small>ERP_MAIN / sales / 프로시저</small>
+            <h2 id="wsTitle">usp_GetOrderSummary <span class="chip serious">성능 회귀</span></h2>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn sm" onclick="toast('테스트 DB(마스킹 데이터)에서 실행을 시작했습니다.')">▷ 테스트 실행</button>
+            <button class="btn sm" style="color:var(--critical)" onclick="show('deleteModal')">삭제</button>
+          </div>
+        </div>
+        <div style="padding:12px 14px 0">
+          <div class="tabs" id="wsTabs">
+            <button class="active" data-tab="overview">개요</button>
+            <button data-tab="code">코드</button>
+            <button data-tab="perf">성능</button>
+            <button data-tab="plan">실행 계획</button>
+            <button data-tab="dep">의존성</button>
+            <button data-tab="hist">변경 이력</button>
+          </div>
+        </div>
+
+        <div class="tabpane" id="tab-overview" style="padding:0 14px 14px;overflow:auto">
+          <div class="grid metric3" style="margin-bottom:12px">
+            <div class="kpi"><div class="k-label">P95 실행시간</div><div class="k-value" style="color:var(--critical)">4.21s</div><div class="k-note">기준선 0.62s · +371%</div></div>
+            <div class="kpi"><div class="k-label">24시간 호출</div><div class="k-value">18,420</div><div class="k-note">분당 12.8회 · 실패 0.4%</div></div>
+            <div class="kpi"><div class="k-label">마지막 관찰 실행</div><div class="k-value" style="font-size:18px">2분 전</div><div class="k-note">Order API · Backoffice</div></div>
+          </div>
+          <div class="ai-banner" style="border:1px solid var(--border);border-radius:10px">
+            <div class="ai-orb">AI</div>
+            <div style="flex:1">
+              <h3>17행의 날짜 컬럼 변환이 인덱스를 무효화합니다</h3>
+              <p style="font-size:12.5px">CONVERT(VARCHAR, o.OrderDate)로 인해 IX_Orders_Customer_Date를 사용하지 못하고 테이블 스캔이 발생합니다. 10:40 통계 갱신 후 계획이 변경되었습니다.</p>
+              <span class="conf">근거: plan_hash 변경 · 논리 읽기 128,340(기준 2,140) · Query Store 30일 · 신뢰도 <b>86%</b></span>
+            </div>
+            <div style="text-align:center"><small>예상 개선</small><div style="font-size:22px;font-weight:800;color:var(--good)">6.4×</div></div>
+            <button class="btn primary" onclick="switchTab('code')">수정안 보기</button>
+          </div>
+        </div>
+
+        <div class="tabpane" id="tab-code" style="display:none;flex:1;min-height:0;flex-direction:column">
+          <div class="code" id="codeView"></div>
+          <div class="ai-banner">
+            <div class="ai-orb">AI</div>
+            <div style="flex:1"><b style="color:var(--ink)">수정안 준비됨</b> — CONVERT 제거, 날짜 범위 조건으로 대체. 결과 계약 변경 없음(컬럼·정렬 동일).</div>
+            <button class="btn primary" onclick="go('approval')">diff 확인 후 승인 요청</button>
+          </div>
+        </div>
+
+        <div class="tabpane" id="tab-perf" style="display:none;padding:0 14px 14px;overflow:auto">
+          <div class="chart-legend" style="margin-top:4px"><span><i class="bar"></i>P95 실행시간(초) · 24시간</span></div>
+          <div class="bars" id="perfBars"></div>
+          <div class="axis-x"><span>어제 11시</span><span>20시</span><span>04시</span><span>지금</span></div>
+          <table style="margin-top:12px">
+            <thead><tr><th>파라미터 그룹</th><th class="num">호출</th><th class="num">P95</th><th>비고</th></tr></thead>
+            <tbody>
+              <tr><td>@CustomerId 대형 고객(상위 1%)</td><td class="num">312</td><td class="num" style="color:var(--critical)">9.8s</td><td><small>편차 주범 — 파라미터 스니핑 의심</small></td></tr>
+              <tr><td>일반 고객</td><td class="num">18,108</td><td class="num">1.9s</td><td><small>계획 변경 영향</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tabpane" id="tab-plan" style="display:none;padding:0 14px 14px;overflow:auto">
+          <div class="plan-cmp">
+            <div class="plan-box bad">
+              <b style="color:var(--serious)">현재 계획</b> <span class="hash">plan 0x8A21…D4</span>
+              <div class="plan-op"><span>Clustered Index <b style="color:var(--serious)">Scan</b> — Orders</span><span class="num">실제 1,204,000행</span></div>
+              <div class="plan-op"><span>Hash Match (Aggregate)</span><span class="num">메모리 512MB</span></div>
+              <small>예상 3,200행 vs 실제 1.2M행 — 추정 오차 375×</small>
+            </div>
+            <div class="plan-box goodb">
+              <b style="color:var(--good)">이전 정상 계획 (7/13)</b> <span class="hash">plan 0x3F77…9C</span>
+              <div class="plan-op"><span>Index <b style="color:var(--good)">Seek</b> — IX_Orders_Customer_Date</span><span class="num">실제 3,180행</span></div>
+              <div class="plan-op"><span>Stream Aggregate</span><span class="num">메모리 4MB</span></div>
+              <small>논리 읽기 2,140 · P95 0.62s</small>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:10px">계획 강제(임시 조치)보다 17행 코드 수정(근본 개선)을 권장합니다. 두 조치의 차이가 승인 요청에 함께 표시됩니다.</p>
+        </div>
+
+        <div class="tabpane" id="tab-dep" style="display:none;padding:0 14px 14px;overflow:auto">
+          <div class="dep-map">
+            <div class="dep-row"><small style="align-self:center">호출됨 ↑</small></div>
+            <div class="dep-row"><div class="dep-node">Order API (REST)</div><div class="dep-node">Backoffice 주문화면</div><div class="dep-node">SQL Agent: 야간 정산</div></div>
+            <div class="dep-node center">usp_GetOrderSummary</div>
+            <div class="dep-row"><div class="dep-node">sales.Orders</div><div class="dep-node">sales.OrderItems</div><div class="dep-node">common.OrderStatus</div></div>
+            <div class="dep-row"><small>참조 ↓</small></div>
+          </div>
+          <p style="font-size:12.5px">수정 시 영향 예상: <b style="color:var(--ink)">API 1개 · 화면 1개 · 배치 1개</b>. 결과 컬럼 계약이 유지되면 호출부 수정은 불필요합니다.</p>
+        </div>
+
+        <div class="tabpane" id="tab-hist" style="display:none;padding:0 14px 14px;overflow:auto">
+          <table>
+            <thead><tr><th>버전</th><th>내용</th><th>작성</th><th>승인</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>v18</td><td>인덱스 힌트 제거</td><td><small>김DBA · 7/12</small></td><td><span class="chip good">승인·배포</span></td><td><button class="btn sm">비교</button></td></tr>
+              <tr><td>v17</td><td>주문 상태 컬럼 추가</td><td><small>박개발 · 6/28</small></td><td><span class="chip good">승인·배포</span></td><td><button class="btn sm">비교</button></td></tr>
+              <tr><td>v16</td><td>AI 제안 — 커서 제거</td><td><small>AI 초안 · 6/02</small></td><td><span class="chip good">2인 승인</span></td><td><button class="btn sm">복원</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col ai-panel">
+        <div class="col-h"><div class="ai-orb">AI</div><div><h3>AI DBA</h3><small><span class="dot good"></span> 분석 대상: usp_GetOrderSummary · 읽기 전용</small></div></div>
+        <div class="chat" id="wsChat">
+          <div class="msg ai">지연 원인을 찾았습니다. <b>17행의 CONVERT</b>가 인덱스를 무효화하고, 10:40 통계 갱신 이후 실행 계획이 스캔으로 바뀌었습니다.<span class="conf">근거: Query Store 30일 · plan_hash 변경 · 신뢰도 <b>86%</b></span></div>
+        </div>
+        <div class="quick">
+          <button onclick="wsAsk('왜 느려졌어?')">왜 느려졌어?</button>
+          <button onclick="wsAsk('수정안 만들어줘')">수정안 만들어줘</button>
+          <button onclick="wsAsk('영향 범위는?')">영향 범위는?</button>
+        </div>
+        <div style="padding:0 12px 10px">
+          <div class="perm-check">
+            <b style="color:var(--ink)">안전 검증 단계</b>
+            <ul class="check-list">
+              <li>문법·표준 검사 통과</li>
+              <li>영향 객체 5개 확인</li>
+              <li class="pending">테스트 DB 결과 동일성 비교</li>
+              <li class="pending">DBA 승인</li>
+            </ul>
+            <button class="btn primary" style="width:100%" onclick="go('approval')">테스트 후 승인 요청</button>
+          </div>
+        </div>
+        <div class="chat-in">
+          <textarea id="wsInput" rows="2" placeholder="AI DBA에게 요청하세요…"></textarea>
+          <div class="hint"><span>운영 변경은 승인 후에만 실행됩니다</span><button class="btn sm primary" onclick="wsSend()">↑</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 인시던트 ═══ -->
+  <section class="screen" id="screen-incident">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>인시던트</h1><small>미해결 1 · 이번 주 3</small></div>
+    <div class="inc-layout">
+      <div>
+        <div class="inc-item sel">
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip critical">진행 중</span><b style="color:var(--ink)">INC-2607</b><small style="margin-left:auto">10:42 ~</small></div>
+          <h3 style="margin-top:6px">주문 조회 API 지연</h3>
+          <small>ERP-PROD-01 · usp_GetOrderSummary · 영향 18%</small>
+        </div>
+        <div class="inc-item">
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip good">해결</span><b style="color:var(--ink)">INC-2606</b><small style="margin-left:auto">7/18</small></div>
+          <h3 style="margin-top:6px">결제 배치 Deadlock 2회</h3>
+          <small>ERP-PROD-01 · 재발 방지 진행 중</small>
+        </div>
+        <div class="inc-item">
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip good">해결</span><b style="color:var(--ink)">INC-2605</b><small style="margin-left:auto">7/16</small></div>
+          <h3 style="margin-top:6px">WMS 로그 공간 급증</h3>
+          <small>WMS-PROD-02</small>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h"><h2>INC-2607 · 주문 조회 API 지연</h2><span class="chip critical">진행 중</span>
+            <div class="right" style="display:flex;gap:6px"><button class="btn sm" onclick="go('db')">프로시저 작업실</button><button class="btn sm" onclick="toast('현재 모니터링 상태를 인시던트에 첨부했습니다.')">현재 상태 첨부</button></div>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1.1fr">
+            <div>
+              <h3 style="margin-bottom:8px">타임라인</h3>
+              <ul class="tl">
+                <li class="blue"><time>10:40</time><div><b style="color:var(--ink)">통계 갱신</b> — sales.Orders 자동 통계 업데이트</div></li>
+                <li class="warn"><time>10:41</time><div><b style="color:var(--ink)">실행 계획 변경</b> — plan 0x3F77→0x8A21 (Seek→Scan)</div></li>
+                <li class="critical"><time>10:42</time><div><b style="color:var(--ink)">경보 발생</b> — P95 기준선 4배 초과, 인시던트 자동 생성</div></li>
+                <li class="warn"><time>10:47</time><div><b style="color:var(--ink)">Blocking 파급</b> — 세션 74 체인에 합류, 대기 증가</div></li>
+                <li class="blue"><time>10:52</time><div><b style="color:var(--ink)">AI 분석 완료</b> — 원인 후보 3건, 수정안 생성</div></li>
+                <li class="blue"><time>11:08</time><div><b style="color:var(--ink)">테스트 검증</b> — 테스트 DB 결과 동일성 100%, P95 0.66s</div></li>
+                <li class="good"><time>11:15</time><div><b style="color:var(--ink)">승인 요청 등록</b> — CHG-1042 (DBA 승인 대기)</div></li>
+              </ul>
+            </div>
+            <div>
+              <h3 style="margin-bottom:8px">AI 인시던트 요약</h3>
+              <dl class="ai-summary">
+                <dt>현상</dt><dd class="head">주문 조회 API P95 620ms → 4.2초</dd>
+                <dt>영향</dt><dd>전체 요청의 18% · 오류율 3.1% · Order API, Backoffice</dd>
+                <dt>가장 유력한 원인</dt><dd class="head">통계 갱신 → 실행 계획 변경 → Orders 테이블 스캔</dd>
+                <dt>근거</dt><dd>plan_hash 변경(10:41) · 논리 읽기 12배 증가 · 동일 시점 배포 없음</dd>
+                <dt>대안 원인</dt><dd>① 파라미터 편향(대형 고객 그룹) ② 데이터 급증 — 관측상 가능성 낮음</dd>
+                <dt>권장 조치</dt><dd>17행 CONVERT 제거 수정안 배포(테스트 통과). 임시 조치로 이전 계획 강제 가능</dd>
+                <dt>신뢰도</dt><dd><b style="color:var(--series)">86%</b> — 추정과 확인된 사실을 구분해 표시함</dd>
+              </dl>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn primary" onclick="go('approval')">승인 요청 보기</button>
+                <button class="btn" onclick="toast('종료하려면 원인·조치·정상화 지표·재발 방지 담당자가 기록되어야 합니다.')">인시던트 종료 조건</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 변경 승인 센터 ═══ -->
+  <section class="screen" id="screen-approval">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>변경 승인 센터</h1><small>대기 3 · 이번 주 완료 7</small></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>변경</th><th>유형</th><th>환경</th><th>위험도</th><th>테스트</th><th>상태</th><th>AI 신뢰도</th></tr></thead>
+        <tbody>
+          <tr class="clickable" style="background:var(--surface-2)"><td><b style="color:var(--ink)">CHG-1042</b> usp_GetOrderSummary 수정</td><td>ALTER PROC</td><td><span class="chip critical">운영</span></td><td><span class="chip warn">보통 · DBA 1인</span></td><td><span class="chip good">통과</span></td><td><span class="chip blue">승인 대기</span></td><td class="num">86%</td></tr>
+          <tr class="clickable"><td><b style="color:var(--ink)">CHG-1043</b> IX_Orders_Customer_Date 재생성</td><td>INDEX</td><td><span class="chip critical">운영</span></td><td><span class="chip warn">보통</span></td><td><small>대기</small></td><td><small>테스트 대기</small></td><td class="num">78%</td></tr>
+          <tr class="clickable"><td><b style="color:var(--ink)">CHG-1039</b> usp_LegacyExport 삭제</td><td>DROP PROC</td><td><span class="chip critical">운영</span></td><td><span class="chip critical">높음 · 2인 승인</span></td><td><span class="chip good">통과</span></td><td><small>승인 1/2</small></td><td class="num">82%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>CHG-1042 · usp_GetOrderSummary 수정</h2><span class="sub">요청 이유진(DBA) · 11:15 · 근거 인시던트 INC-2607</span></div>
+      <div class="flow">
+        <span class="done">초안</span><i></i><span class="done">분석</span><i></i><span class="done">테스트 통과</span><i></i><span class="now">승인 대기</span><i></i><span>실행</span><i></i><span>사후 검증</span><i></i><span>완료</span>
+      </div>
+      <div class="grid" style="grid-template-columns:1.2fr 1fr">
+        <div>
+          <h3 style="margin-bottom:8px">변경 diff</h3>
+          <div class="diff">
+            <div class="dl"><span class="ln">16</span><code>WHERE o.CustomerId = @CustomerId</code></div>
+            <div class="dl del"><span class="ln">17</span><code>-  AND CONVERT(VARCHAR(10), o.OrderDate, 120) &gt;= @StartDate</code></div>
+            <div class="dl add"><span class="ln">17</span><code>+  AND o.OrderDate &gt;= @StartDate</code></div>
+            <div class="dl"><span class="ln">18</span><code>  AND o.OrderDate &lt; @EndDate</code></div>
+          </div>
+          <h3 style="margin:14px 0 8px">테스트 결과 <small>(테스트 DB · 마스킹 데이터 · 자동 파기 예약)</small></h3>
+          <ul class="check-list">
+            <li>결과 집합 동일성 100% — 대표 파라미터 12세트(정상·경계·NULL·빈 결과)</li>
+            <li>P95 4.21s → <b style="color:var(--good)">0.66s</b> · 논리 읽기 128,340 → 2,180</li>
+            <li>실행 계획 Seek 복원 · 메모리 512MB → 4MB</li>
+            <li>동시 실행 Lock 영향 없음 · 결과 컬럼 계약 동일</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:8px">실행 안전 장치</h3>
+          <ul class="check-list">
+            <li>승인 SQL 해시 고정 <span class="hash">sha256 4c19…e2a7</span></li>
+            <li>실행 직전 객체 버전(v18)·환경 재검증 — 불일치 시 차단</li>
+            <li>원본 DDL 백업·롤백 스크립트 준비됨</li>
+            <li>배포 창: 즉시 · 타임아웃 30초 · 실패 시 자동 롤백 제안</li>
+            <li>배포 후 30분 자동 관찰(오류율·P95·Lock)</li>
+          </ul>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn primary" id="approveBtn" onclick="approve()">승인 및 실행</button>
+            <button class="btn" onclick="toast('반려 의견 입력 화면(목업)')">반려</button>
+          </div>
+          <p id="approveNote" style="font-size:12px;color:var(--muted);margin-top:8px">승인자: 이유진(DBA) — 요청자와 동일 인물이지만 정책상 보통 위험도는 1인 승인 허용. 고위험이면 차단됩니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ AI DBA 챗봇 ═══ -->
+  <section class="screen" id="screen-ai">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>AI DBA</h1><small>대상 고정: ERP-PROD-01 · ERP_MAIN · <b style="color:var(--critical)">운영</b> · 최근 24시간</small></div>
+    <div class="grid" style="grid-template-columns:1.5fr 1fr">
+      <div class="card" style="display:flex;flex-direction:column;min-height:540px">
+        <div class="chat" id="mainChat" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px">
+          <div class="msg me">오늘 느려진 프로시저를 업무 영향 순으로 보여줘.</div>
+          <div class="msg ai">
+            <b style="color:var(--ink)">결론:</b> 오늘 기준선 대비 회귀한 프로시저는 3개이며, 업무 영향 1위는 usp_GetOrderSummary입니다.<br><br>
+            1. <b>usp_GetOrderSummary</b> — P95 +371% · 주문 API 요청 18% 영향 · <span class="chip critical">위험</span><br>
+            2. usp_GetStockLevel — P95 +82% · 재고 화면 지연<br>
+            3. rpt_DailySettlement — P95 +45% · 야간 배치 여유 있음
+            <span class="conf">데이터 출처: Query Store 24시간 + DMV · 기준선: 전주 동일 시간 · 신뢰도 <b>91%</b></span>
+          </div>
+          <div class="msg me">1번 원인 분석하고 수정안 만들어서 테스트까지 해줘.</div>
+          <div class="msg ai">
+            <b style="color:var(--ink)">작업 계획</b> (읽기·테스트는 자동, 운영 변경은 승인 필요)
+            <ul style="margin:6px 0 0 16px;font-size:12px">
+              <li>① 실행 이력·계획 비교 — <span style="color:var(--good)">완료</span></li>
+              <li>② 원인: 17행 CONVERT → 인덱스 무효화 — <span style="color:var(--good)">확인됨</span></li>
+              <li>③ 수정안 diff 생성 — <span style="color:var(--good)">완료</span></li>
+              <li>④ 테스트 DB 결과 동일성·성능 비교 — <span style="color:var(--good)">통과</span></li>
+              <li>⑤ 승인 요청 CHG-1042 등록 — <span style="color:var(--series)">DBA 승인 대기</span></li>
+            </ul>
+            <span class="conf">위험: 결과 계약 변경 없음 · 예상 효과 6.4× · 부작용 가능성 낮음 · 신뢰도 <b>86%</b></span>
+          </div>
+        </div>
+        <div class="quick" style="padding-top:10px">
+          <button onclick="mainAsk('현재 Lock의 최초 원인 세션 찾아줘')">Lock 원인 세션</button>
+          <button onclick="mainAsk('6개월간 사용 흔적 없는 객체 찾아줘')">미사용 객체</button>
+          <button onclick="mainAsk('수정하면 영향받는 화면 알려줘')">영향 범위</button>
+        </div>
+        <div class="chat-in">
+          <textarea id="mainInput" rows="2" placeholder="자연어로 요청하세요. 실행이 필요한 작업은 승인 절차가 자동으로 만들어집니다."></textarea>
+          <div class="hint"><span>자연어는 SQL로 직접 실행되지 않으며, 허용된 도구·승인된 명령만 수행됩니다</span><button class="btn sm primary" onclick="mainSend()">↑</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h"><h2>이번 대화의 도구 사용</h2><span class="sub">모두 감사 로그에 기록</span></div>
+          <table>
+            <tbody>
+              <tr><td>query_store.read</td><td><span class="chip good">허용 · 읽기</span></td><td class="num"><small>4회</small></td></tr>
+              <tr><td>plan.compare</td><td><span class="chip good">허용 · 읽기</span></td><td class="num"><small>2회</small></td></tr>
+              <tr><td>testdb.run</td><td><span class="chip blue">허용 · 격리 실행</span></td><td class="num"><small>1회</small></td></tr>
+              <tr><td>prod.alter_proc</td><td><span class="chip warn">승인 필요 → CHG-1042</span></td><td class="num"><small>대기</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>안전 정책</h2></div>
+          <ul class="check-list">
+            <li>생성 SQL 파싱 → 명령 종류·대상 객체 검증</li>
+            <li>DB 주석·데이터 속 문장은 지시로 해석하지 않음</li>
+            <li>승인 SQL과 실행 SQL 해시 불일치 시 차단</li>
+            <li>대화 중 대상 환경 변경 시 기존 승인 무효화</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 알림 센터 ═══ -->
+  <section class="screen" id="screen-alerts">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>알림 센터</h1><small>동일 원인은 인시던트로 묶여 표시됩니다</small></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>시각</th><th>알림</th><th>원인 후보 · 다음 행동</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td class="num"><small>10:42</small></td><td><span class="dot critical"></span> 주문 조회 지연에 영향을 주는 P95 급증</td><td><small>실행 계획 변경 → INC-2607로 묶임 · 분석 열기</small></td><td><span class="chip critical">진행</span></td></tr>
+          <tr><td class="num"><small>10:47</small></td><td><span class="dot serious"></span> Blocking 4분 초과 — 결제 배치 파급</td><td><small>세션 74 열린 트랜잭션 · 종료 요청 또는 완료 대기</small></td><td><span class="chip serious">진행</span></td></tr>
+          <tr><td class="num"><small>09:12</small></td><td><span class="dot warn"></span> WMS 로그 공간 78%</td><td><small>로그 백업 주기 점검 · 3일 내 임계치 예상</small></td><td><span class="chip warn">확인</span></td></tr>
+          <tr><td class="num"><small>07:00</small></td><td><span class="dot good"></span> 야간 백업 6대 전체 성공</td><td><small>—</small></td><td><span class="chip good">정상</span></td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">외부 채널(메일·메신저) 발송 시 SQL 본문·파라미터 값은 제외되고 콘솔 링크로 연결됩니다.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 감사 로그 ═══ -->
+  <section class="screen" id="screen-audit">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>감사 로그</h1><small>수정 불가 저장 · 보존 3년</small></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>시각</th><th>사용자</th><th>행위</th><th>대상</th><th>사유·결과</th></tr></thead>
+        <tbody>
+          <tr><td class="num"><small>11:15</small></td><td>이유진</td><td>승인 요청 생성</td><td>CHG-1042 · ALTER PROC</td><td><small>INC-2607 대응 · 대기</small></td></tr>
+          <tr><td class="num"><small>11:08</small></td><td>AI (승인 범위)</td><td>테스트 DB 실행</td><td>usp_GetOrderSummary</td><td><small>결과 동일성 100% · 테스트 DB 파기 예약</small></td></tr>
+          <tr><td class="num"><small>10:52</small></td><td>AI</td><td>분석 · 제안 생성</td><td>Query Store 30일 조회</td><td><small>모델 v3.1 · 규칙 v12 · 파라미터 값 마스킹</small></td></tr>
+          <tr><td class="num"><small>10:44</small></td><td>이유진</td><td>SQL 본문 조회</td><td>usp_GetOrderSummary v18</td><td><small>인시던트 조사</small></td></tr>
+          <tr><td class="num"><small>09:30</small></td><td>박개발</td><td>로그인</td><td>SSO + MFA</td><td><small>성공 · 192.0.2.10</small></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 설정 ═══ -->
+  <section class="screen" id="screen-settings">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><h1>설정</h1><small>Phase 0 목업 — 구조만 표시</small></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div class="card"><h3>연결·에이전트</h3><p style="font-size:12.5px;margin-top:6px">서버 연결, 수집 주기·부하 상한, 에이전트 상태와 코드 서명 검증</p></div>
+      <div class="card"><h3>권한·역할</h3><p style="font-size:12.5px;margin-top:6px">RBAC, 승인자/실행자 분리, 2인 승인 정책, 긴급 권한 유효시간</p></div>
+      <div class="card"><h3>AI 정책</h3><p style="font-size:12.5px;margin-top:6px">외부 LLM API 전송 범위(마스킹 미리보기), 도구 allowlist, 모델 버전</p></div>
+      <div class="card"><h3>데이터 보존·마스킹</h3><p style="font-size:12.5px;margin-top:6px">지표 보존 주기, SQL 파라미터 기본 미수집, 감사 로그 보존</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══ 온보딩 모달 ═══ -->
+<div class="backdrop" id="onboardModal">
+  <div class="modal">
+    <small>NEW CONNECTION</small>
+    <h2>새 DB 연결</h2>
+    <div class="steps"><span class="on" id="st1"></span><span id="st2"></span><span id="st3"></span></div>
+
+    <div id="ob-step1">
+      <div class="field"><label>DB 종류</label>
+        <div class="radio-cards">
+          <button class="sel">Microsoft SQL Server<br><small>1차 지원</small></button>
+          <button disabled style="opacity:.5">Oracle<br><small>Phase 3</small></button>
+          <button disabled style="opacity:.5">PostgreSQL<br><small>후속</small></button>
+          <button>연결 방식: 고객망 에이전트<br><small>권장 · 아웃바운드 전용</small></button>
+        </div>
+      </div>
+      <div class="field"><label>환경 구분 <small>(운영 선택 시 화면 전체에 고정 배지가 표시됩니다)</small></label>
+        <div class="radio-cards">
+          <button>개발</button><button>테스트</button><button>스테이징</button><button class="sel" style="border-color:var(--critical);color:var(--critical)">운영 PRODUCTION</button>
+        </div>
+      </div>
+      <div class="field"><label>서버 별칭 / 업무 서비스명</label><input placeholder="예: ERP-PROD-01 / 주문·결제"></div>
+    </div>
+
+    <div id="ob-step2" style="display:none">
+      <div class="field"><label>호스트 · 포트 · 인스턴스</label><input placeholder="192.0.2.10, 1433"></div>
+      <div class="field"><label>읽기 전용 진단 계정 <small>(비밀은 비밀 저장소에만 저장 · 로그/설정 파일 기록 금지)</small></label><input placeholder="dbaone_reader"></div>
+      <div class="field"><label>변경 실행 계정 <small>(별도 등록 · 짧은 유효시간 · Phase 2부터 사용)</small></label><input placeholder="dbaone_deploy (선택)"></div>
+      <div class="field"><label>TLS 인증서 검증</label>
+        <div class="radio-cards"><button class="sel">검증 사용 (권장)</button><button>해제 — 보안 관리자 승인 필요 ⚠</button></div>
+      </div>
+    </div>
+
+    <div id="ob-step3" style="display:none">
+      <div class="perm-check"><b style="color:var(--good)">✓ 연결 테스트 성공</b> — 쓰기 명령 없이 검증했습니다.
+        <ul class="check-list" style="margin-top:6px">
+          <li>VIEW SERVER STATE 권한 확인</li>
+          <li>Query Store 활성 (30일 보존)</li>
+          <li class="pending">VIEW ANY DEFINITION 누락 — 부여 스크립트 제공</li>
+        </ul>
+      </div>
+      <div class="perm-check"><b style="color:var(--ink)">수집 항목 · 예상 부하</b>
+        <p style="font-size:12px;margin-top:4px">핵심 지표 15초 주기 · 예상 CPU 부하 <b style="color:var(--good)">0.4%</b> (상한 1%) · SQL 파라미터 값은 수집하지 않음</p>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="hide('onboardModal')">취소</button>
+      <button class="btn" id="obPrev" style="display:none" onclick="obStep(-1)">이전</button>
+      <button class="btn primary" id="obNext" onclick="obStep(1)">다음</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 삭제 모달 ═══ -->
+<div class="backdrop" id="deleteModal">
+  <div class="modal">
+    <small style="color:var(--critical)">HIGH RISK · DROP PROCEDURE</small>
+    <h2>usp_GetOrderSummary 삭제</h2>
+    <p style="font-size:12.5px;margin:8px 0">즉시 삭제 대신 <b style="color:var(--ink)">단계적 폐기</b>가 기본값입니다.</p>
+    <div class="perm-check" style="border-color:color-mix(in srgb,var(--critical) 45%,transparent)">
+      <b style="color:var(--critical)">삭제 차단 사유</b>
+      <ul class="check-list" style="margin-top:4px">
+        <li class="pending">마지막 관찰 실행 <b>2분 전</b> — 활발히 사용 중</li>
+        <li class="pending">호출: API 1 · 화면 1 · 배치 1 (정적 확인)</li>
+        <li>원본 DDL·권한 백업은 준비 가능</li>
+      </ul>
+    </div>
+    <div class="field" style="margin-top:12px"><label>진행하려면 "사용 중단 표시"만 가능합니다 (관찰 90일 후 재평가)</label>
+      <input placeholder="확인을 위해 프로시저 이름 입력" disabled>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="hide('deleteModal')">취소</button>
+      <button class="btn" onclick="hide('deleteModal');toast('사용 중단 표시 — 90일 관찰이 시작되었습니다 (승인 기록됨).')">사용 중단 표시</button>
+      <button class="btn danger" disabled title="사용 중 객체는 즉시 삭제할 수 없습니다">삭제 (차단됨)</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span style="color:var(--good)">✓</span><span id="toastMsg"></span></div>
+<div class="tooltip" id="tip"></div>
+
+<script>
+/* ── 내비게이션 ── */
+const screens = document.querySelectorAll('.screen');
+const navBtns = document.querySelectorAll('.nav-item');
+function go(name){
+  screens.forEach(s=>s.classList.toggle('active', s.id==='screen-'+name));
+  navBtns.forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+  document.querySelector('.app').scrollTop = 0;
+}
+navBtns.forEach(b=>b.addEventListener('click',()=>{go(b.dataset.screen);history.replaceState(null,'','#'+b.dataset.screen)}));
+if(location.hash) go(location.hash.slice(1));
+document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.goto)));
+
+/* ── 토스트 ── */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+/* ── 모달 ── */
+function show(id){document.getElementById(id).classList.add('show')}
+function hide(id){document.getElementById(id).classList.remove('show')}
+function openOnboard(){obPos=1;renderOb();show('onboardModal')}
+let obPos=1;
+function obStep(d){
+  if(obPos===3&&d===1){hide('onboardModal');toast('연결이 등록되었습니다. 수집이 시작됩니다 (목업).');return}
+  obPos=Math.min(3,Math.max(1,obPos+d));renderOb();
+}
+function renderOb(){
+  for(let i=1;i<=3;i++){
+    document.getElementById('ob-step'+i).style.display=(i===obPos?'block':'none');
+    document.getElementById('st'+i).classList.toggle('on',i<=obPos);
+  }
+  document.getElementById('obPrev').style.display=obPos>1?'inline-block':'none';
+  document.getElementById('obNext').textContent=obPos===3?'연결 등록':'다음';
+}
+
+/* ── 작업실: 프로시저 목록 ── */
+const procs=[
+  ['usp_GetOrderSummary','critical','4.21s'],
+  ['usp_CreateShipment','good','184ms'],
+  ['usp_UpdateInventory','good','92ms'],
+  ['usp_SyncPaymentStatus','serious','LOCK'],
+  ['usp_GetCustomerGrade','good','41ms'],
+  ['usp_CloseDailySales','off','미사용 94일'],
+];
+document.getElementById('procList').innerHTML = procs.map(([n,s,t],i)=>
+  `<button class="tree-row ${i===0?'sel':''}" onclick="selProc(this,'${n}')"><span class="dot ${s}"></span>${n}<small>${t}</small></button>`).join('');
+function selProc(el,name){
+  document.querySelectorAll('#procList .tree-row').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('wsTitle').innerHTML = name+(name==='usp_GetOrderSummary'?' <span class="chip serious">성능 회귀</span>':name==='usp_CloseDailySales'?' <span class="chip">관찰 94일 · 사용 흔적 없음</span>':' <span class="chip good">정상</span>');
+}
+
+/* ── 작업실: 탭 ── */
+const tabBtns=document.querySelectorAll('#wsTabs button');
+function switchTab(id){
+  tabBtns.forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+  document.querySelectorAll('.tabpane').forEach(p=>{
+    const on = p.id==='tab-'+id;
+    p.style.display = on ? (p.id==='tab-code'?'flex':'block') : 'none';
+  });
+}
+tabBtns.forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+/* ── 작업실: 코드 ── */
+const sql=[
+  [1,'ALTER PROCEDURE [sales].[usp_GetOrderSummary]'],[2,'    @CustomerId INT,'],
+  [3,'    @StartDate DATETIME2,'],[4,'    @EndDate DATETIME2'],[5,'AS'],[6,'BEGIN'],
+  [7,'    SET NOCOUNT ON;'],[8,''],
+  [9,'    SELECT  o.OrderId, o.OrderDate,'],[10,'            SUM(oi.Quantity * oi.UnitPrice) AS TotalAmount,'],
+  [11,'            s.StatusName'],[12,'    FROM sales.Orders o'],
+  [13,'    INNER JOIN sales.OrderItems oi ON oi.OrderId = o.OrderId'],
+  [14,'    LEFT JOIN common.OrderStatus s ON s.StatusId = o.StatusId'],
+  [15,'    WHERE o.CustomerId = @CustomerId'],
+  [16,"      AND CONVERT(VARCHAR(10), o.OrderDate, 120) >= @StartDate",'hot'],
+  [17,'      AND o.OrderDate < @EndDate'],
+  [18,'    GROUP BY o.OrderId, o.OrderDate, s.StatusName'],
+  [19,'    ORDER BY o.OrderDate DESC;'],[20,'END'],
+];
+document.getElementById('codeView').innerHTML = sql.map(([n,t,hot])=>
+  `<div class="cl ${hot?'hot':''}"><span class="ln">${n}</span><code>${t||' '}</code>${hot?'<span class="fix-tag">AI: 인덱스 무효화</span>':''}</div>`).join('');
+
+/* ── 작업실 채팅 ── */
+const wsAnswers={
+ '왜 느려졌어?':'10:40 통계 갱신 이후 실행 계획이 Seek→Scan으로 바뀌었습니다. 호출량 변화는 +3%로 원인이 아니며, 논리 읽기 증가가 지연의 81%를 설명합니다.|Query Store 비교 · 신뢰도 88%',
+ '수정안 만들어줘':'17행 CONVERT를 제거하고 날짜 범위 조건으로 대체하는 수정안을 만들었습니다. 결과 컬럼·정렬 계약은 동일합니다. 예상 논리 읽기 128,340 → 2,180.|의미 변경 없음 검증 필요 → 테스트 단계로 · 신뢰도 86%',
+ '영향 범위는?':'호출부는 Order API 1개, Backoffice 화면 1개, 야간 정산 배치 1개입니다. 결과 계약이 유지되므로 호출부 수정은 불필요합니다.|의존성 그래프 + 최근 30일 호출 관찰 · 신뢰도 92%',
+};
+function wsAsk(q){
+  const chat=document.getElementById('wsChat');
+  const [body,conf]=(wsAnswers[q]||'해당 요청은 목업 범위 밖입니다. 실제 제품에서는 허용된 읽기 도구로 분석 후 근거와 함께 답변합니다.|—').split('|');
+  chat.insertAdjacentHTML('beforeend',`<div class="msg me">${q}</div><div class="msg ai">${body}<span class="conf">${conf}</span></div>`);
+  chat.scrollTop=chat.scrollHeight;
+}
+function wsSend(){
+  const i=document.getElementById('wsInput');
+  if(!i.value.trim())return; wsAsk(i.value.trim()); i.value='';
+}
+const mainAnswers={
+ '현재 Lock의 최초 원인 세션 찾아줘':'<b style="color:var(--ink)">결론:</b> 최초 Blocker는 세션 74(usp_SyncPaymentStatus)입니다. 10:38부터 트랜잭션이 열린 채 유지되어 5개 세션이 대기 중입니다.<br>권장: 결제 배치 완료 대기(예상 6분) 또는 영향 분석 후 세션 종료(DBA 승인).|근거: Blocking Tree + 세션 DMV · 신뢰도 94%',
+ '6개월간 사용 흔적 없는 객체 찾아줘':'<b style="color:var(--ink)">결론:</b> 관찰 기간(180일) 중 실행 흔적이 없는 객체는 4개입니다. 대표: usp_CloseDailySales(94일 관찰, 신뢰도 82%).<br>주의: 서버 재시작 2회, 연말 배치 가능성 미확인 — "사용 중단 표시 후 90일 추가 관찰"을 권장합니다. 근거 없는 즉시 삭제는 제안하지 않습니다.|Query Store 180일 + 의존성 그래프 · 수집 공백 2회 표시',
+ '수정하면 영향받는 화면 알려줘':'<b style="color:var(--ink)">결론:</b> usp_GetOrderSummary 수정 시 Order API 1개, Backoffice 주문화면 1개, 야간 정산 배치 1개가 영향 범위입니다. 결과 계약 유지 시 호출부 수정은 불필요합니다.|의존성 그래프 + 30일 호출 관찰 · 신뢰도 92%',
+};
+function mainAsk(q){
+  const chat=document.getElementById('mainChat');
+  const [body,conf]=(mainAnswers[q]||'목업 범위 밖 질문입니다. 실제 제품은 의도 구조화 → 대상 고정 → 읽기 분석 → 근거 제시 순서로 처리합니다.|—').split('|');
+  chat.insertAdjacentHTML('beforeend',`<div class="msg me">${q}</div><div class="msg ai">${body}<span class="conf">${conf}</span></div>`);
+  chat.scrollTop=chat.scrollHeight;
+}
+function mainSend(){
+  const i=document.getElementById('mainInput');
+  if(!i.value.trim())return; mainAsk(i.value.trim()); i.value='';
+}
+
+/* ── 승인 ── */
+function approve(){
+  const b=document.getElementById('approveBtn');
+  b.disabled=true; b.textContent='실행 중…';
+  toast('SQL 해시·객체 버전 재검증 통과 — 운영 반영을 실행합니다.');
+  setTimeout(()=>{
+    b.textContent='완료 · 사후 관찰 30분';
+    document.getElementById('approveNote').innerHTML='<span style="color:var(--good)">✓ 배포 완료 11:26.</span> P95·오류율·Lock을 30분간 자동 관찰 중입니다. 악화 시 롤백을 제안합니다.';
+    document.querySelectorAll('#screen-approval .flow span').forEach((s,i)=>{s.classList.remove('now');if(i<5)s.classList.add('done');if(i===5)s.classList.add('now')});
+    toast('배포 완료 — 사후 검증 30분이 시작되었습니다.');
+  },1600);
+}
+
+/* ── 차트: 막대 ── */
+const tip=document.getElementById('tip');
+function bindTip(el,text){
+  el.addEventListener('mousemove',e=>{tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';tip.textContent=text});
+  el.addEventListener('mouseleave',()=>tip.style.display='none');
+}
+function drawBars(id,data,unit,hotFrom){
+  const el=document.getElementById(id); if(!el)return;
+  const max=Math.max(...data);
+  el.innerHTML='';
+  data.forEach((v,i)=>{
+    const bar=document.createElement('i');
+    bar.style.height=Math.round(v/max*100)+'%';
+    if(hotFrom!=null && v>=hotFrom) bar.classList.add('hot');
+    el.appendChild(bar);
+    bindTip(bar,`${v}${unit}`);
+  });
+}
+drawBars('execBars',[0.6,0.62,0.58,0.61,0.65,0.6,3.2,4.1,4.4,4.2,4.3,4.1],'초',2.4);
+drawBars('perfBars',[0.6,0.7,0.6,0.8,0.9,1.1,0.7,0.6,0.5,0.6,0.7,0.6,0.8,0.7,0.9,1.0,0.8,0.7,0.6,0.9,3.4,4.2,4.4,4.2],'초',2.4);
+
+/* ── 차트: CPU 라인(SVG) ── */
+(function(){
+  const svg=document.getElementById('cpuChart'); if(!svg)return;
+  const W=600,H=150,P=6;
+  const cur=[36,38,35,39,37,40,38,41,44,72,81,78,74,70,66,63,61,58,56,54,52,50,49,48];
+  const base=[34,35,36,35,37,36,38,37,39,40,41,40,39,38,39,40,38,37,38,39,38,37,36,36];
+  const x=i=>P+i*(W-2*P)/(cur.length-1), y=v=>H-P-(v/100)*(H-2*P);
+  const pts=a=>a.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  let g='';
+  [25,50,75].forEach(v=>{g+=`<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="4" y="${y(v)-4}" fill="var(--muted)" font-size="10">${v}%</text>`});
+  g+=`<polyline points="${pts(base)}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 5" opacity=".8"/>`;
+  g+=`<polyline points="${pts(cur)}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round"/>`;
+  g+=`<circle cx="${x(10)}" cy="${y(81)}" r="4.5" fill="var(--critical)" stroke="var(--surface)" stroke-width="2"/>`;
+  svg.innerHTML=g;
+  bindTip(svg,'10:42 CPU 81% — 기준선(전주) 41% 대비 급증 · 클릭: 원인 쿼리로 이동');
+})();
+</script>
+</body>
+</html>

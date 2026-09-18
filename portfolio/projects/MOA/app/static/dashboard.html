@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>감정서 LIST</title>
+  <link rel="stylesheet" href="/static/dashboard.css?v=20260720-3">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block">
+      <h1>감정서 LIST</h1>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav">
+        <a class="active" aria-current="page" href="/dashboard">감정서 LIST</a>
+        <a href="/receivables?mode=received">입금 현황</a>
+        <a href="/receivables?mode=outstanding">미수금 현황</a>
+      </nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="검색 조건">
+      <label><span>본·지사</span><select id="officeCode" aria-label="본·지사 선택"><option value="all">전체</option><option value="10" selected>본사</option></select></label>
+      <label><span>감정서번호</span><input id="docId" type="search" placeholder="감정서번호"></label>
+      <label><span>소재지</span><input id="address" type="search" placeholder="소재지"></label>
+      <label><span>거래처명</span><input id="customerName" type="search" placeholder="거래처명"></label>
+      <label><span>유치자</span><input id="manager" type="search" placeholder="유치자"></label>
+      <label><span>조사자</span><input id="charge" type="search" placeholder="조사자"></label>
+      <label>
+        <span>접수 시작일</span>
+        <input id="dateFrom" type="date">
+      </label>
+      <label>
+        <span>접수 종료일</span>
+        <input id="dateTo" type="date">
+      </label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+
+    <section class="workspace">
+      <article class="list-panel">
+        <div class="panel-heading">
+          <div><h2>감정서 목록</h2><p id="resultSummary">최근 7일 조회 중...</p></div>
+          <div class="legend"><span class="dot linked"></span> 전표 연결</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-sort="doc_id">감정서번호</th><th data-sort="receipt_date">접수일</th><th>입금상태</th><th data-sort="address">소재지</th><th data-sort="customer_name">거래처명</th>
+                <th data-sort="manager">유치자</th><th data-sort="author">조사자</th><th data-sort="progress_status">진행상태</th><th data-sort="send_date">발송일</th>
+                <th class="number" data-sort="appraisal_amount">평가액</th><th class="number" data-sort="base_fee">기초수수료</th><th class="number" data-sort="travel_expense">여비</th>
+              </tr>
+            </thead>
+            <tbody id="appraisalRows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조건에 맞는 감정서가 없습니다.</div>
+        </div>
+        <div class="pagination">
+          <button id="prevPage" type="button">이전</button>
+          <span id="pageLabel">1 / 1</span>
+          <button id="nextPage" type="button">다음</button>
+        </div>
+      </article>
+
+      <aside class="detail-panel" aria-live="polite">
+        <div id="detailPlaceholder" class="detail-placeholder">
+          <div class="document-mark">文</div>
+          <h2>감정서를 선택하세요</h2>
+          <p>목록에서 한 건을 선택하면 감정서번호와 연결된 Amaranth 전표가 표시됩니다.</p>
+        </div>
+        <div id="detailContent" class="hidden">
+          <div class="detail-heading">
+            <div><p>관리번호</p><h2 id="selectedDocId"></h2></div>
+            <span id="matchBadge" class="badge"></span>
+          </div>
+          <div id="voucherEmpty" class="empty-card hidden">
+            <strong>연결된 전표가 없습니다</strong>
+            <p>Amaranth 전표의 관리번호(ctNb)에 같은 감정서번호가 있는지 확인해 주세요.</p>
+          </div>
+          <div id="voucherList"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  </div>
+  <div id="rowContextMenu" class="context-menu hidden" role="menu" aria-label="감정서 작업 메뉴">
+    <button id="createVoucherMenu" type="button" role="menuitem">전표 생성</button>
+  </div>
+  <dialog id="partnerDialog" class="partner-dialog">
+    <form method="dialog" class="partner-dialog-card">
+      <div class="partner-dialog-head">
+        <div><p>전표 생성 전 확인</p><h2>Amaranth 거래처 선택</h2></div>
+        <button class="dialog-close" value="cancel" aria-label="닫기">×</button>
+      </div>
+      <div id="partnerDialogLoading" class="partner-loading">APWorks 거래처와 Amaranth 거래처를 확인하고 있습니다.</div>
+      <div id="partnerDialogContent" class="hidden">
+        <section class="apworks-partner-card">
+          <span>APWorks 거래처</span><strong id="apwPartnerName"></strong>
+          <dl><div><dt>Production 검색명</dt><dd id="apwProduction">-</dd></div><div><dt>사업자번호</dt><dd id="apwBusinessNo">-</dd></div><div><dt>대표자</dt><dd id="apwRepresentative">-</dd></div><div><dt>주소</dt><dd id="apwAddress">-</dd></div></dl>
+        </section>
+        <label class="voucher-date-field"><span>전표일자</span><input id="voucherDate" type="date" required></label>
+        <div class="partner-search-row"><input id="partnerSearch" type="search" aria-label="Amaranth 거래처 검색"><button id="partnerSearchButton" type="button">검색</button></div>
+        <div class="partner-result-head"><strong>Amaranth 검색 결과</strong><button id="showPartnerCreate" type="button">+ 신규 거래처 추가</button></div>
+        <div id="partnerResults" class="partner-results"></div>
+        <section id="partnerCreatePanel" class="partner-create-panel hidden">
+          <h3>신규 거래처 정보</h3>
+          <div class="partner-form-grid">
+            <label><span>거래처명</span><input id="newPartnerName" required></label>
+            <label><span>사업자번호</span><input id="newBusinessNo" inputmode="numeric" placeholder="10자리"></label>
+            <label><span>대표자</span><input id="newRepresentative"></label>
+            <label><span>전화번호</span><input id="newTelephone"></label>
+            <label><span>업태</span><input id="newBusinessType"></label>
+            <label><span>종목</span><input id="newBusinessItem"></label>
+            <label class="wide"><span>주소</span><input id="newAddress1"></label>
+          </div>
+          <button id="registerPartnerButton" type="button">Amaranth에 거래처 등록</button>
+        </section>
+        <p id="partnerDialogError" class="dialog-error hidden"></p>
+      </div>
+      <div class="partner-dialog-actions"><button value="cancel">취소</button><button id="confirmVoucherButton" class="primary-button" type="button" disabled>선택한 거래처로 전표 생성</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/static/dashboard.js?v=20260810-1"></script>
+</body>
+</html>

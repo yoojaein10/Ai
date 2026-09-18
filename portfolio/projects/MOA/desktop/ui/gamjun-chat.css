@@ -1,0 +1,372 @@
+/* 감정서 조회 — 표 조회 화면 (2026-08-05 개편: 대화 UI 를 걷어내고 목록 화면으로).
+   다른 업무 화면들과 같은 결(흰 패널·공용 팔레트·.toolbar)로 맞춘다. */
+
+/* ── 조회 툴바 — 본·지사 | 시작일 | 종료일 | Memo 빈 것만 | 검색 | 조회 ────── */
+.toolbar{grid-template-columns:150px 150px 130px 1fr auto}
+.toolbar .term-label{position:relative;min-width:0}
+.toolbar #searchButton{padding:0 26px}
+/* 체크박스는 라벨 아래 칸 높이를 다른 입력과 맞춰 밑줄을 정렬한다 */
+.toolbar .check-inline{display:flex;align-items:center;gap:7px;height:42px;
+  padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.9)}
+.toolbar .check-inline input{width:16px;height:16px;flex:none;padding:0;cursor:pointer}
+.toolbar .check-inline em{font-style:normal;font-size:12px;font-weight:650;color:var(--ink);
+  white-space:nowrap;cursor:pointer}
+@media (max-width:1180px){.toolbar{grid-template-columns:repeat(3,1fr)}
+  .toolbar .term-label{grid-column:1/-1}}
+@media (max-width:760px){.toolbar{grid-template-columns:1fr}}
+
+/* 연결 상태 — 상단바 오른쪽, ⚙ 왼쪽. flex 항목이라 어떤 폭에서도 겹치지 않는다. */
+.chat-state{margin-left:auto;flex:none;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:99px;background:#eef2f0;color:#78837d;white-space:nowrap}
+.chat-state.ok{background:#e6f4ec;color:#1e7c4d}
+.chat-state.bad{background:#fbebee;color:#c62828}
+.topbar .gear-link{margin-left:0}
+
+/* ── 결과 패널 ─────────────────────────────────────────────────────────── */
+.list-head{display:flex;align-items:baseline;gap:12px;padding:14px 18px;
+  border-bottom:1px solid var(--line)}
+.list-head h2{flex:none}
+.list-count{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+.result-body{padding:14px 18px 18px;overflow:hidden;
+  display:flex;flex-direction:column;
+  max-height:calc(100dvh - 64px - 96px - 130px);min-height:280px;font-size:13px;
+  line-height:1.7;color:#26312c;word-break:keep-all;overflow-wrap:break-word}
+.result-body p{margin:4px 0}
+.result-body ul{margin:6px 0;padding-left:20px}
+.result-body code{background:#eef2f0;padding:1px 5px;border-radius:5px;font-size:11.5px}
+.result-body .empty,.result-body .loading{color:#78837d;font-size:12.5px;padding:26px 4px}
+.result-body .err{color:#b3253f;font-size:12.5px;padding:20px 4px}
+.result-body .note{margin:10px 0 0;padding:8px 12px;background:#fff8e6;
+  border-left:3px solid #e5b53f;border-radius:0 8px 8px 0;font-size:11.5px;color:#7a5b0e}
+.result-body blockquote{margin:10px 0 0;padding:8px 12px;border-left:3px solid #9fc3d6;
+  background:#f4f9fc;color:#4c6472;font-size:11.5px;border-radius:0 8px 8px 0}
+
+/* ── 표 ───────────────────────────────────────────────────────────────── */
+.result-body .tbl,.detail-body .tbl{position:relative;margin:6px 0 10px;
+  border:1px solid var(--line,#dfe5e2);border-radius:10px;overflow:auto;max-width:100%}
+/* 세로로 스크롤하는 상자를 표 상자 자신으로 만든다. 그래야 sticky 머리가
+   여기에 매여 줄과 함께 따라 내려온다 — 감정서 LIST 의 .table-wrap 과 같은
+   방식이다 (dashboard.css:107). 페이지 넘김 줄은 상자 밖에 남아 고정된다. */
+.result-body>.tbl,.match-body>.tbl{flex:1 1 auto;min-height:0}
+.result-body table,.detail-body table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+/* 타이포·정렬은 감정서 LIST 와 같은 값을 쓴다 (dashboard.css:109,117) —
+   머리는 10px·750·자간 .025em·가운데, 셀은 12px·여백 12px 10px (2026-08-06 요청). */
+.result-body th,.result-body td,.detail-body th,.detail-body td{
+  padding:12px 10px;text-align:left;vertical-align:middle;
+  border-bottom:1px solid rgba(32,55,45,.075);
+  white-space:nowrap;max-width:none;font-size:12px}
+.result-body thead th,.detail-body thead th{position:sticky;top:0;z-index:2;
+  padding:11px 10px;background:rgba(240,244,241,.94);backdrop-filter:blur(10px);
+  font-weight:750;color:#59645f;font-size:10px;letter-spacing:.025em;text-align:center;
+  cursor:pointer;user-select:none;border-bottom:1px solid var(--line,#dfe5e2)}
+.result-body tbody tr,.detail-body tbody tr{cursor:default}
+/* 입금 목록의 줄은 눌러서 감정서를 찾는다 — 누를 수 있다는 게 보여야 한다 */
+.result-body tbody tr[data-row]{cursor:pointer}
+.result-body tbody tr[data-row].resolved{cursor:default}
+.result-body td.found .dim{font-size:11.5px}
+
+/* 고른 줄 — 아래 표가 어느 거래의 것인지 눈으로 이어야 한다 */
+.result-body tbody tr.picked td{background:#e5f2f8}
+.result-body tbody tr.picked td:first-child{box-shadow:inset 3px 0 #69a9c6}
+
+/* 찾은 결과는 목록 표 **아래에 따로 선 표**다 (2026-08-05 요청).
+   줄 사이에 끼워 넣으면 목록이 밀려 위아래 줄을 견주기 어렵다. */
+.match-panel{margin-top:14px;border:1px solid var(--line,#dfe5e2);
+  border-radius:var(--radius-lg,14px);background:#fff;overflow:hidden;
+  box-shadow:0 8px 24px rgba(40,86,106,.055)}
+.match-head{display:flex;align-items:baseline;gap:12px;padding:12px 18px;
+  border-bottom:1px solid var(--line,#dfe5e2);background:#f6f9fb}
+.match-head h3{margin:0;font-size:14px;font-weight:750;color:#233d33;flex:none}
+.match-of{color:var(--muted,#78837d);font-size:11.5px;font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-head .detail-close{margin-left:auto;flex:none}
+.match-body{padding:12px 18px 16px;overflow:auto;font-size:13px}
+.match-body .tbl{margin:0}
+.match-body .empty,.match-body .loading{padding:8px 2px;font-size:12.5px;color:#78837d}
+.match-body .err{padding:8px 2px;font-size:12.5px;color:#b3253f}
+.match-body .cond-chips{margin-bottom:6px}
+.match-body .stages{margin:0 0 10px;font-size:11px;color:#8b958f}
+.match-body table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+.match-body th,.match-body td{padding:12px 10px;text-align:left;vertical-align:middle;
+  border-bottom:1px solid rgba(32,55,45,.075);white-space:nowrap;font-size:12px}
+.match-body thead th{position:sticky;top:0;z-index:2;padding:11px 10px;
+  background:rgba(240,244,241,.94);backdrop-filter:blur(10px);
+  font-weight:750;color:#59645f;font-size:10px;letter-spacing:.025em;text-align:center;
+  cursor:pointer;user-select:none;border-bottom:1px solid var(--line,#dfe5e2)}
+.match-body thead th.num{text-align:center}
+.match-body td.num{text-align:right;font-variant-numeric:tabular-nums}
+.match-body td.date{font-variant-numeric:tabular-nums}
+.match-body td.cust{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.match-body td.why{color:#78837d;font-size:11.5px}
+.match-body .dim{color:#b3bcb6}
+.match-body .hint{color:#9aa49e;font-size:11px}
+.match-body tbody tr:nth-child(even) td{background:#f6f8f9}
+.match-body tbody tr:hover td{background:rgba(229,242,248,.55)}
+.match-body .doc-link{color:#1f6f9b;cursor:pointer;text-decoration:underline dotted;
+  font-variant-numeric:tabular-nums}
+.match-body .doc-link:hover{text-decoration:underline}
+.match-body thead th.sort-asc::after{content:' ▲';font-size:9px;color:#3d6a84}
+.match-body thead th.sort-desc::after{content:' ▼';font-size:9px;color:#3d6a84}
+.result-body tbody tr:nth-child(even) td{background:#f6f8f9}
+.result-body tbody tr:hover td{background:rgba(229,242,248,.55)}
+.result-body tbody tr:last-child td{border-bottom:0}
+/* 목록 화면 공통 규칙(첫 칸 초록 모노스페이스)은 여기선 끈다 — 첫 칸이 날짜다 */
+.result-body td:first-child{color:inherit;font-family:inherit;font-weight:400}
+
+/* 셀 정렬 — 기존 MOA 관례(dashboard.css:126-127): 숫자는 오른쪽+tabular-nums,
+   날짜·텍스트는 왼쪽. 정렬은 셀이 아니라 **열**이 정한다. */
+.result-body td.num,.detail-body td.num{text-align:right;font-variant-numeric:tabular-nums}
+.result-body td.date,.detail-body td.date{font-variant-numeric:tabular-nums}
+.result-body td.dim,.detail-body td.dim,.result-body .dim{color:#b3bcb6}
+.result-body td.numsplit,.detail-body td.numsplit{text-align:left}
+.result-body td.numsplit .v,.detail-body td.numsplit .v{display:inline-block;text-align:right;
+  font-variant-numeric:tabular-nums}
+.result-body td.numsplit .bar,.detail-body td.numsplit .bar{margin-left:7px;color:#9fc3d6;
+  letter-spacing:-1.5px}
+.result-body td.numsplit .hint,.detail-body td.numsplit .hint{margin-left:6px;color:#9aa49e;
+  font-size:11px}
+.result-body thead th.num,.detail-body thead th.num{text-align:center}
+.result-body thead th.numsplit,.detail-body thead th.numsplit{text-align:left}
+.result-body thead th.sort-asc::after,.detail-body thead th.sort-asc::after{
+  content:' ▲';font-size:9px;color:#3d6a84}
+.result-body thead th.sort-desc::after,.detail-body thead th.sort-desc::after{
+  content:' ▼';font-size:9px;color:#3d6a84}
+
+/* 입금 대사 표 — 열두 칸이라 긴 글자 칸을 묶어 한 화면에 들인다. 잘린 값은
+   title 로 뜨고, 그래도 넘치면 .tbl 이 가로로 스크롤한다. */
+/* 여백도 감정서 LIST 와 같은 값 — 예전에 칸이 열두 개라 좁혀 뒀는데,
+   지금은 아홉 칸이고 두 화면을 나란히 쓰므로 LIST 값을 그대로 쓴다. */
+.result-body .tbl.wide td{padding:12px 10px}
+.result-body .tbl.wide th{padding:11px 10px}
+.result-body td.jeokyo{max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.result-body td.memo{max-width:120px;overflow:hidden;text-overflow:ellipsis;color:#4c5a53}
+.result-body td.cust{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+/* 칸 폭은 colgroup 이 못 박는다 — 적요만 남는 폭을 먹는다 (2026-08-06) */
+.result-body .tbl.wide table{width:100%;table-layout:fixed}
+.result-body .tbl.wide td{overflow:hidden;text-overflow:ellipsis}
+.match-body td.cust{max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.result-body td.why{color:#78837d;font-size:11.5px}
+.result-body .hint{color:#9aa49e;font-size:11px}
+.result-body .doc-link,.detail-body .doc-link{color:#1f6f9b;cursor:pointer;
+  text-decoration:underline dotted;font-variant-numeric:tabular-nums}
+.result-body .doc-link:hover,.detail-body .doc-link:hover{text-decoration:underline}
+
+/* 표 복사 — .tbl 위에 떠 있다가 마우스를 올리면 보인다 */
+.tbl-copy{position:absolute;top:5px;right:8px;z-index:3;height:auto;padding:2px 10px;
+  font-size:10.5px;font-weight:700;border:1px solid var(--line,#d8dfdb);border-radius:99px;
+  background:#fff;color:#4c5a53;cursor:pointer;opacity:0;transition:opacity .15s}
+.tbl:hover .tbl-copy{opacity:1}
+.tbl-copy:hover{background:#eef7fb;border-color:#b8d8e7;color:#244f68}
+
+/* 더보기 */
+.more-btn{display:block;margin:8px auto 2px;height:auto;padding:5px 18px;
+  border:1px solid #b8d8e7;border-radius:99px;background:#eef7fb;color:#244f68;
+  font-size:11.5px;font-weight:700;cursor:pointer}
+.more-btn:hover:not(:disabled){background:#d5ebf5;border-color:#8ebdd2}
+.more-btn:disabled{opacity:.5;cursor:default}
+
+/* 조건 칩 — ×로 하나 빼고 재조회 */
+.cond-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.cond-chips .chip{display:inline-flex;align-items:center;padding:2px 10px;border-radius:99px;
+  background:#eef7fb;border:1px solid #cfe5f0;color:#244f68;font-size:11px;font-weight:600}
+.cond-chips.edit .chip{gap:4px}
+.cond-chips .chip.lock{background:#f2f6f4;border-color:#dfe5e2;color:#78837d}
+.chip-x{border:0;background:none;height:auto;padding:0 0 0 2px;margin:0;font-size:13px;
+  line-height:1;color:#8ba4b3;cursor:pointer;font-weight:700}
+.chip-x:hover{color:#c62828}
+
+/* ── 감정서 상세 — 오른쪽에서 열리는 패널 (조회 결과는 그대로 둔다) ────────── */
+.detail-pane{position:fixed;top:0;right:0;bottom:0;width:min(560px,92vw);z-index:60;
+  display:flex;flex-direction:column;background:#fff;border-left:1px solid var(--line);
+  box-shadow:-14px 0 40px rgba(43,64,58,.16)}
+.detail-head{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;
+  border-bottom:1px solid var(--line);background:#f2f6f4}
+.detail-head b{font-size:13px;color:#233d33;font-variant-numeric:tabular-nums}
+.detail-close{margin-left:auto;height:28px;width:28px;padding:0;border-radius:8px;
+  border:1px solid var(--line);background:#fff;font-size:16px;line-height:1;color:#78837d;
+  cursor:pointer}
+.detail-close:hover{background:#eef7fb;color:#244f68}
+.detail-body{flex:1;overflow:auto;padding:12px 16px 20px;font-size:13px;line-height:1.7;
+  color:#26312c}
+.detail-body p{margin:4px 0}
+.detail-body ul{margin:6px 0;padding-left:20px}
+.detail-body .loading,.detail-body .empty{color:#78837d;font-size:12.5px;padding:20px 2px}
+.detail-body .err{color:#b3253f;font-size:12.5px;padding:20px 2px}
+.detail-body blockquote{margin:10px 0 0;padding:8px 12px;border-left:3px solid #9fc3d6;
+  background:#f4f9fc;color:#4c6472;font-size:11.5px;border-radius:0 8px 8px 0}
+
+/* 감정서 상세 카드 — 항목을 두 단으로 깔아 세로 길이를 줄인다 */
+.doc-card{margin:2px 0;border:1px solid var(--line,#dfe5e2);border-radius:12px;overflow:hidden}
+.doc-card-head{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:#f2f6f4;border-bottom:1px solid var(--line,#dfe5e2)}
+.doc-card-head b{font-size:12.5px;color:#233d33}
+.doc-card-body{padding:4px 14px 8px;display:grid;grid-template-columns:1fr 1fr;
+  column-gap:34px;align-items:start}
+.doc-card-body>*{grid-column:1/-1;min-width:0}
+.doc-card-body>.kv{grid-column:auto}
+@media (max-width:1100px){.doc-card-body{grid-template-columns:1fr}}
+.detail-pane .doc-card-body{grid-template-columns:1fr}
+.kv{display:flex;justify-content:space-between;gap:16px;padding:7px 0;
+  border-bottom:1px solid #f0f3f1;font-size:12px}
+.kv:last-child{border-bottom:0}
+.kv>span{flex:none;color:#78837d}
+.kv>b{font-weight:600;color:#26312c;text-align:right;overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700}
+.pill.green{background:#e6f4ec;color:#1e7c4d}
+.pill.red{background:#fbebee;color:#c62828}
+.pill.amber{background:#fdf3dc;color:#a5721b}
+.pill.violet{background:#f0ecfb;color:#6d4fc1}
+.pill.gray{background:#eef2f0;color:#5b665f}
+
+/* 자동완성 — 검색칸 바로 아래로 뜨는 제안 상자 */
+.suggest-box{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;
+  background:#fff;border:1px solid var(--line,#d8dfdb);border-radius:10px;
+  box-shadow:0 8px 22px rgba(43,64,58,.14);overflow:hidden}
+.suggest-box button{display:flex;align-items:center;gap:8px;width:100%;height:auto;
+  padding:7px 12px;border:0;border-radius:0;background:#fff;font-size:12px;color:#26312c;
+  cursor:pointer;text-align:left}
+.suggest-box button:hover,.suggest-box button.active{background:#eef7fb}
+.suggest-box .kind{flex:none;min-width:58px;font-size:10px;font-weight:700;color:#78837d;
+  background:#f2f6f4;border-radius:6px;padding:1px 6px;text-align:center}
+
+/* 감정서번호 클릭 = 복사 — 짧게 '복사됨' 을 띄운다 */
+.copied-tip{margin-left:6px;padding:1px 8px;border-radius:99px;background:#e6f4ec;
+  color:#1e7c4d;font-size:10.5px;font-weight:700;animation:fadeout 1.2s forwards}
+@keyframes fadeout{0%,70%{opacity:1}100%{opacity:0}}
+
+/* 지사명 — 일반 폰트, 눌러서 복사 (재무팀이 지사 건은 Memo 에 지사명을 적는다) */
+.office-copy{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.office-copy:hover{color:#1f6f9b}
+
+/* 목록 아래 안내 한 줄 */
+.pick-hint{margin:8px 2px 0;font-size:11.5px;color:#8b958f}
+
+/* 유형 배지(약식·카드·자사이체) — 회색 10.5px 로는 안 보인다는 지적(2026-08-06) */
+.kind-big{display:inline-block;padding:6px 18px;border-radius:99px;background:#e8edf0;
+  color:#3c4a44;font-size:14px;font-weight:750}
+
+/* 페이지 넘김 — 감정서 LIST 와 같은 모양 (dashboard.css .pagination) */
+.pagination{min-height:56px;padding:8px 14px;display:flex;align-items:center;
+  justify-content:flex-end;gap:10px;border-top:1px solid var(--line);
+  background:rgba(250,251,250,.72)}
+.pagination button{height:34px;padding:0 14px}
+.pagination span{min-width:52px;color:var(--muted);font-size:11px;text-align:center;
+  font-variant-numeric:tabular-nums}
+
+/* ── 감정서 LIST 와 같은 2단 골격 (2026-08-06 요청) ─────────────────────── */
+/* 목록은 왼쪽, 감정서 찾기는 오른쪽. 표가 좌우로 늘어지지 않고, 줄을 골라도
+   목록이 밀리지 않는다. 오른쪽 폭은 후보표가 들어갈 만큼 넉넉히 잡는다. */
+.workspace{display:grid;grid-template-columns:minmax(560px,1.15fr) minmax(430px,.85fr);
+  gap:16px;align-items:start}
+@media (max-width:1400px){.workspace{grid-template-columns:1fr}}
+.workspace>.list-panel,.workspace>.detail-panel{
+  border:1px solid rgba(255,255,255,.86);border-radius:var(--radius-lg,14px);
+  background:var(--surface,#fff);box-shadow:var(--shadow,0 8px 24px rgba(40,86,106,.055));
+  overflow:hidden}
+.detail-panel{padding:0;min-height:320px}
+.detail-panel .detail-placeholder{min-height:320px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;color:var(--muted,#78837d);
+  padding:24px}
+.detail-panel .detail-placeholder h2{margin:0 0 6px;font-size:15px;color:#233d33}
+.detail-panel .detail-placeholder p{max-width:260px;margin:0;line-height:1.6;font-size:12px}
+.document-mark{width:56px;height:62px;display:grid;place-items:center;margin-bottom:14px;
+  border:1px solid var(--line-strong,#cfd8d3);border-radius:14px;color:#728079;
+  background:linear-gradient(145deg,#fff,#edf3ef);font-family:ui-serif,Georgia,serif;
+  font-size:21px}
+/* 오른쪽 패널 안의 감정서 찾기 — 그림자·테두리는 패널이 이미 갖고 있다 */
+.detail-panel .match-panel{margin:0;border:0;border-radius:0;box-shadow:none}
+/* 우측 머리 — 거래일·입금액은 한 줄에 나란히, 적요는 아래 한 칸을 다 쓴다.
+   한 줄에 이어 붙이면 적요가 길어 뭉개진다 (2026-08-06 요청). */
+.detail-panel .match-of{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;
+  margin:0;padding:10px 16px 12px;border-bottom:1px solid var(--line,#dfe5e2);
+  background:#fbfcfd}
+.detail-panel .match-of>div{display:flex;align-items:baseline;gap:8px;min-width:0}
+.detail-panel .match-of>div.wide{grid-column:1/-1}
+.detail-panel .match-of dt{flex:none;width:42px;color:var(--muted,#8b958f);
+  font-size:11px;font-weight:650}
+.detail-panel .match-of dd{margin:0;min-width:0;color:#26312c;font-size:12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.detail-panel .match-of dd.amt{font-weight:700}
+.detail-panel .match-body{max-height:calc(100dvh - 330px);overflow:hidden;
+  display:flex;flex-direction:column}
+/* 좁은 칸이라 표가 가로로 스크롤한다 — 잘린 값은 hover 로 본다 */
+
+/* 칸 폭 드래그 조절 — 감정서 LIST 와 같은 공용 유틸(column-resize.js).
+   머리 경계를 끌면 폭이 바뀌고 더블클릭이면 기본값, 값은 브라우저에 남는다. */
+#depositTable,#candTable{table-layout:fixed}
+#depositTable td,#candTable td{overflow:hidden;text-overflow:ellipsis}
+
+/* ── 후보 카드 ─────────────────────────────────────────────────────────
+   표를 카드로 바꿨다 (2026-08-06 판단). 실측상 후보는 68.5%가 1건이라
+   견줄 줄이 없고, 좁은 오른쪽 패널에서 11칸 표는 근거 상세(중앙값 34자)를
+   여덟 글자쯤으로 잘라 버렸다. 감정서 LIST 상세와 같은 세로 카드로 간다. */
+.cand-cards{flex:1 1 auto;min-height:0;overflow:auto;display:flex;
+  flex-direction:column;gap:8px;padding-right:2px}
+.cand-card{border:1px solid var(--line,#dfe5e2);border-radius:10px;
+  background:#fff;overflow:hidden}
+.cand-card[open]{border-color:#c3d8e4;box-shadow:0 4px 14px rgba(40,86,106,.06)}
+.cand-card>summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:9px 12px;cursor:pointer;list-style:none;
+  font-size:12px;background:rgba(240,244,241,.6)}
+.cand-card>summary::-webkit-details-marker{display:none}
+.cand-card>summary::after{content:'⌄';margin-left:auto;flex:none;
+  color:#9aa49e;font-size:13px;transition:transform .15s}
+.cand-card[open]>summary::after{transform:rotate(180deg)}
+.cand-card[open]>summary{border-bottom:1px solid rgba(32,55,45,.075)}
+.cand-card>summary:hover{background:rgba(229,242,248,.55)}
+.cand-card .sum-tail{color:var(--muted,#8b958f);font-size:11px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand-card .sum-tail .ev{margin-right:4px}
+.cand-card .sum-tail .ev+.ev::before{content:'· ';color:#c3ccc7}
+
+/* 회계팀이 보는 값 — 라벨을 왼쪽에 세워 두 줄 격자로 (감정서 LIST 의 dl 과 같다) */
+.cand-fields{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;
+  margin:0;padding:10px 12px}
+.cand-fields>div{display:flex;align-items:baseline;gap:8px;min-width:0}
+.cand-fields dt{flex:none;width:46px;color:var(--muted,#8b958f);font-size:11px}
+.cand-fields dd{margin:0;min-width:0;color:#26312c;font-size:12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand-fields dd.amt{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* 근거 — 카드의 본론. 여기가 넓어지라고 표를 버린 것이다. */
+.cand-why{padding:9px 12px 11px;border-top:1px solid rgba(32,55,45,.075);
+  background:#fbfcfc}
+.cand-why .why-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  margin:0 0 5px;font-size:12px}
+.cand-why .why-head b{color:#233d33}
+.cand-why .where{color:var(--muted,#8b958f);font-size:11px}
+.cand-why .why-list{margin:0;padding:0;list-style:none;
+  display:flex;flex-direction:column;gap:3px}
+.cand-why .why-list li{position:relative;padding-left:11px;
+  font-size:11.5px;line-height:1.55;color:#4c5a53;white-space:normal}
+.cand-why .why-list li::before{content:'·';position:absolute;left:2px;color:#9fc3d6}
+
+/* ── 약식 — 감정서 대신 '어느 지사·어느 영업점' ─────────────────────────
+   약식에는 감정서번호가 없다. 재무팀이 필요한 것도 그 둘뿐이라 카드를
+   세우지 않고 두 줄로만 낸다 (2026-08-06 요청). */
+.yaksik{margin:2px 0 0;padding:11px 13px;border:1px solid var(--line,#dfe5e2);
+  border-radius:10px;background:#fbfcfc;display:flex;flex-direction:column;gap:6px}
+.yaksik>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+.yaksik dt{flex:none;width:52px;color:var(--muted,#8b958f);font-size:11px}
+.yaksik dd{margin:0;min-width:0;color:#26312c;font-size:13px;font-weight:650;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 목록이 상한에서 잘렸을 때 — 조용히 사라지면 안 된다 (2026-08-06). */
+.cut-note{margin:8px 0 0;padding:8px 12px;background:#fff8e6;
+  border-left:3px solid #e5b53f;border-radius:0 8px 8px 0;
+  font-size:11.5px;color:#7a5b0e}
+
+/* 목록에서 우리가 찾아 채운 감정서번호 (2026-08-08).
+   Memo(재무팀이 이미 적은 값)와 눈으로 구별돼야 한다 — 이건 아직 확정 전이고,
+   사이버브랜치에 옮겨 적어야 비로소 확정이다. */
+#resultBody td .finding{color:#9aa3ad;font-style:italic}
+#resultBody td .found,#resultBody td.memo .found{color:#1d4ed8;font-weight:600;
+  cursor:pointer;border-bottom:1px dashed #93c5fd}
+#resultBody td .found:hover{background:#eff6ff}
+/* 목록 안의 약식 영업점명 — 감정서번호와 같은 '복사할 값' 이지만 다른 종류라
+   색을 나눈다(번호는 파랑, 영업점은 청록). */
+#resultBody td .found.office-copy{color:#0f766e;border-bottom-color:#5eead4}
+#resultBody td .found.office-copy:hover{background:#f0fdfa}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 배분 수금 진행</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .cl-toolbar{display:block}
+    .cl-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .cl-row .grp{display:flex;gap:6px;align-items:center}
+    .cl-row .grp>strong{white-space:nowrap;flex:none}
+    .cl-row input[type=date]{width:auto;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px}
+    .cl-summary{font-size:13px;color:var(--muted);margin:12px 0;display:flex;gap:20px;flex-wrap:wrap}
+    .cl-summary b{color:var(--ink);font-weight:800}
+    .cl-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+    .cl-table col.c-doc{width:140px}.cl-table col.c-date{width:96px}.cl-table col.c-amt{width:120px}.cl-table col.c-rate{width:120px}
+    .cl-table th,.cl-table td{padding:7px 9px;border-bottom:1px solid #f0f3f1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cl-table th{text-align:center}
+    .cl-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .cl-table th.num{text-align:center}
+    .cl-table td.unpaid{color:#c62828;font-weight:700}
+    .cl-bar{position:relative;background:#eef2f0;border-radius:6px;height:16px;overflow:hidden}
+    .cl-bar>span{position:absolute;left:0;top:0;bottom:0;background:#4f91b0;border-radius:6px}
+    .cl-bar>em{position:relative;font-size:10px;color:#333;font-style:normal;display:block;text-align:center;line-height:16px}
+    .cl-hint{font-size:12px;color:var(--muted);margin:6px 0}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>배분 수금 진행</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar cl-toolbar" aria-label="검색 조건">
+      <div class="cl-row">
+        <div class="grp"><strong>발송일</strong><input id="dateFrom" type="date"> ~ <input id="dateTo" type="date"></div>
+        <div class="grp"><strong>감정서번호</strong><input id="docQuery" type="search" placeholder="감정서번호" maxlength="50" autocomplete="off"></div>
+        <div class="grp"><strong>유치자</strong><input id="managerQuery" type="search" placeholder="이름" maxlength="30" autocomplete="off"></div>
+        <button id="searchButton" class="primary-button" type="button">조회</button>
+        <button id="exportButton" class="export-button" type="button">엑셀 내보내기</button>
+      </div>
+      <p class="cl-hint">감정 산정액(청구금액) 대비 실제 입금이 부족한 건(부분수금)입니다. 공동감정 배분처럼 입금분만 계상돼 미수금 화면엔 완납으로 보이는 건을 여기서 잡습니다.</p>
+    </section>
+    <p id="summary" class="cl-summary">기간을 선택하고 조회하세요.</p>
+    <div class="table-wrap">
+      <table id="clTable" class="cl-table">
+        <colgroup><col class="c-doc"><col><col class="c-date"><col class="c-amt"><col class="c-amt"><col class="c-amt"><col class="c-rate"></colgroup>
+        <thead><tr><th>감정서번호</th><th>거래처</th><th>발송일</th><th class="num">산정액</th><th class="num">입금액</th><th class="num">미입금</th><th>진행률</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="emptyList" class="empty hidden">해당 기간 부분수금 건이 없습니다.</div>
+    </div>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/collection.js"></script>
+</body>
+</html>

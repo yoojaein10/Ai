@@ -1,0 +1,32 @@
+# Y_TSBankAuto 런타임 의존성 (버전 고정)
+# 설치: 프로젝트 내부 .venv 에서만. 전역 설치 금지.
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r requirements.txt
+#
+# 해시 고정(권장): pip-tools 로 requirements.lock 생성 후 --require-hashes 사용.
+#   pip install pip-tools && pip-compile --generate-hashes requirements.txt -o requirements.lock
+#   pip install --require-hashes -r requirements.lock
+# (이번 구현 작업에서는 전역/신규 설치를 하지 않으므로 lock 파일은 생성하지 않음.)
+
+# --- 핵심 런타임 ---
+PyMuPDF==1.28.0          # PDF 텍스트 추출 (보안 패치 버전 고정; S11)
+pyodbc==5.3.0            # SQL Server 연결 (이번 작업에서는 실제 연결 안 함)
+
+# --- GUI (운영형 PyQt6; 참조 Y_BankAuto 와 동일 계열) ---
+PyQt6==6.11.0            # 릴리스 빌드는 --require-hashes 로 해시 고정 설치 권장(공급망)
+
+# --- 시크릿 (S1: keyring 우선, 미설치 시 환경변수 fallback) ---
+keyring==25.5.0          # Windows 자격증명 관리자 연동 (선택; 미설치 시 env var only)
+
+# --- Bank24 자동화 (S10: 이번 작업에서는 실제 실행 안 함) ---
+pywinauto==0.6.9
+pyautogui==0.9.54
+pywin32==308             # PID/HWND/실행경로 검증용 (win32gui/win32process)
+psutil==6.1.0            # 프로세스 실행경로 확인 (선택)
+
+# --- 배포 ---
+# pyinstaller==6.11.1    # EXE 빌드 시에만. 시크릿/PDF/로그/테스트데이터 미포함, UPX 비활성.
+
+# --- 테스트 ---
+# 단위 테스트는 표준 라이브러리 unittest 로 작성되어 추가 의존성이 없다.
+# (pytest 미설치 환경에서도 `python -m unittest` 로 실행 가능.)

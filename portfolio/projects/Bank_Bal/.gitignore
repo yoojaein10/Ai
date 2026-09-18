@@ -1,0 +1,13 @@
+# 실데이터·산출물 (PII 보호)
+*.pdf
+*.xlsx
+*.csv
+*.log
+*.png
+reports/
+output/
+outputs/
+build/
+dist/
+__pycache__/
+settings.ini

@@ -1,0 +1,9 @@
+PyQt6>=6.6.0
+PyMuPDF>=1.23.0
+Pillow>=10.0.0
+pywin32>=306
+airun-hwp>=0.3.0
+
+# HTML→PDF 변환: 아래 중 하나 설치 (선택, 모두 미설치여도 다른 포맷은 정상 동작)
+# 1) wkhtmltopdf 외부 실행파일: https://wkhtmltopdf.org
+# 2) weasyprint (pip install weasyprint)

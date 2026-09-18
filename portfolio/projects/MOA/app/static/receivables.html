@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>입금 및 미수금 현황</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+  <link rel="stylesheet" href="/static/receivables.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><h1 id="pageTitle">입금 현황</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav">
+        <a href="/dashboard">감정서 LIST</a>
+        <a id="receivedNav" href="/receivables?mode=received">입금 현황</a>
+        <a id="outstandingNav" href="/receivables?mode=outstanding">미수금 현황</a>
+      </nav>
+    </aside>
+  <main id="main-content">
+    <section class="receivable-toolbar">
+      <label><span>감정서번호</span><input id="docId" type="search" placeholder="감정서번호"></label>
+      <label><span>거래처명</span><input id="customerName" type="search" placeholder="거래처명"></label>
+      <button id="searchButton" class="primary-button" type="button">조회</button>
+    </section>
+    <section class="workspace receivable-workspace">
+      <article class="list-panel">
+        <div class="panel-heading"><div><h2 id="listTitle">입금된 목록</h2><p id="resultSummary">조회 중...</p></div></div>
+        <div class="table-wrap">
+          <table id="receivableTable" class="receivable-table">
+            <thead><tr id="tableHeaders"></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div id="emptyList" class="empty hidden">조건에 맞는 내역이 없습니다.</div>
+        </div>
+        <div class="pagination"><button id="prevPage">이전</button><span id="pageLabel"></span><button id="nextPage">다음</button></div>
+      </article>
+      <aside class="detail-panel">
+        <div id="detailPlaceholder" class="detail-placeholder"><div class="document-mark">₩</div><h2>감정서를 선택하세요</h2><p>입금 및 매출 전표의 상세 내용을 확인할 수 있습니다.</p></div>
+        <div id="detailContent" class="hidden"><div class="detail-heading"><div><p>관리번호</p><h2 id="selectedDocId"></h2></div><span id="matchBadge" class="badge"></span></div><div id="voucherList"></div></div>
+      </aside>
+    </section>
+  </main>
+  </div>
+  <script src="/static/receivables.js"></script>
+</body>
+</html>

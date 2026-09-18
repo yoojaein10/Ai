@@ -1,0 +1,16 @@
+work/
+output/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*_raw.txt
+*.log
+*.png
+참고/
+delphi.zip
+
+dist/
+build/
+BankOn.exe
+gui_settings.ini

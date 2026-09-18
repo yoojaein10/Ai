@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 데이터 품질 점검</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .dq-toolbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .dq-toolbar .grp{display:flex;gap:6px;align-items:center}
+    .dq-toolbar .grp>strong{white-space:nowrap;flex:none}
+    .dq-toolbar input[type=date]{width:auto;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px}
+    .dq-summary{font-size:13px;color:var(--muted);margin:4px 0 14px}
+    .dq-summary b{color:#c62828;font-weight:800}
+    /* 좌: 점검 결과 / 우: 선택한 관리번호의 전표 */
+    .dq-workspace{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr);gap:16px;align-items:start}
+    .dq-check{border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+    .dq-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:#fafbfb}
+    .dq-head h2{margin:0;font-size:15px}
+    .dq-head .cnt{font-weight:800;font-size:15px}
+    .dq-head .cnt.zero{color:#1b7a43}.dq-head .cnt.some{color:#c62828}
+    .dq-desc{font-size:12px;color:var(--muted);margin:2px 0 0;font-weight:400}
+    .dq-body{padding:0 16px 12px;overflow-x:auto}
+    .dq-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+    .dq-table th,.dq-table td{padding:6px 8px;border-bottom:1px solid #f0f3f1;text-align:left}
+    .dq-table col.c-doc{width:150px}.dq-table col.c-amt{width:120px}.dq-table col.c-lines{width:52px}.dq-table col.c-rmk{width:170px}
+    .dq-table td.reason{font-size:12px;color:#59645f}
+    .dq-table td.doc{cursor:pointer;color:#2b6a8f;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dq-table td.doc:hover{text-decoration:underline}
+    .dq-table tr.sel td{background:#eef5f1}
+    .dq-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .dq-table th.num{text-align:center}
+    .dq-table td.remark{color:#8a949f;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dq-empty{color:#1b7a43;font-size:13px;padding:8px 0}
+    .dq-export{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 12px;font-weight:700;cursor:pointer}
+    /* 오른쪽 전표 패널 */
+    .dq-detail{border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:sticky;top:12px}
+    .dq-detail h3{margin:0 0 4px;font-size:14px}
+    .dq-detail .ph{color:var(--muted);font-size:13px;padding:24px 0;text-align:center}
+    .dq-vtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+    .dq-vtable th,.dq-vtable td{padding:5px 6px;border-bottom:1px solid #f0f3f1}
+    .dq-vtable td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .dq-vtable td.dr{color:#2b6a8f}.dq-vtable td.cr{color:#1b7a43}
+    /* 선수금·가수금을 받았다가 전액 반제해 잔액이 0이 된 줄 */
+    .dq-vtable tr.offset td{color:#b3392b;text-decoration:line-through;text-decoration-color:#d24a3a}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>데이터 품질 점검</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar dq-toolbar" aria-label="검색 조건">
+      <div class="grp"><strong>전표일자</strong><input id="dateFrom" type="date"> ~ <input id="dateTo" type="date"></div>
+      <button id="searchButton" class="primary-button" type="button">점검</button>
+    </section>
+    <p id="summary" class="dq-summary">기간을 선택하고 점검을 누르세요.</p>
+    <div class="dq-workspace">
+      <div>
+        <div id="checks"></div>
+        <div id="emptyList" class="empty hidden"></div>
+      </div>
+      <aside class="dq-detail">
+        <h3>전표 내용</h3>
+        <div id="detail" class="ph">왼쪽 목록에서 관리번호를 클릭하면 해당 전표가 여기 나옵니다.</div>
+      </aside>
+    </div>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/panel-resize.js"></script>
+  <script src="/ui/data-quality.js"></script>
+</body>
+</html>

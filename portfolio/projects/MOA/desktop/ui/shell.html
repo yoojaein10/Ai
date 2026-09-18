@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 탭 껍데기 — 메뉴를 누르면 페이지를 갈아끼우지 않고 탭으로 띄운다.
+       탭을 바꿀 때 감추고 보여주기만 해서 하던 작업이 살아 있다
+       (2026-08-20 사용자 요청, 아마란스10 과 같은 방식). */
+    /* 껍데기는 창을 넘지 않는다 — 안쪽 화면(iframe)이 자기 스크롤을 갖는다.
+       대신 사이드바도 자기 스크롤을 줘야 한다. 안 그러면 페이지가 못 굴러가서
+       메뉴 아래쪽('카드·반제' 밑)이 통째로 잘린다 (2026-08-21 제보). */
+    body{overflow:hidden;display:flex;flex-direction:column;height:100dvh}
+    /* width:100% 를 빼면 안 된다 — .app-shell 의 margin:0 auto 가 flex 의 가로
+       늘이기를 꺼서 내용 너비(사이드바 184px)로 쪼그라들고 본문이 0px 이 된다. */
+    .app-shell{flex:1;min-height:0;width:100%}
+    .sidebar{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+    .shell-tabs{display:flex;align-items:flex-end;gap:4px;flex:1;min-width:0;
+      margin-left:18px;overflow-x:auto;scrollbar-width:thin}
+    .shell-tab{display:flex;align-items:center;gap:8px;flex:0 0 auto;height:34px;
+      padding:0 8px 0 12px;border:1px solid var(--line);border-bottom:0;
+      border-radius:8px 8px 0 0;background:#f2f6f4;color:var(--muted);
+      font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;
+      transition:background 150ms ease,color 150ms ease}
+    .shell-tab:hover{background:#e8f1ee;color:var(--ink)}
+    .shell-tab.active{background:#fff;color:#244f68;border-color:#b8d8e7;
+      box-shadow:0 -2px 0 #4f91b0 inset}
+    .shell-tab .close{display:grid;place-items:center;width:18px;height:18px;
+      border:0;border-radius:5px;background:none;color:#8a949f;font-size:14px;
+      line-height:1;cursor:pointer}
+    .shell-tab .close:hover{background:#e3c9c9;color:#8a3b3b}
+    .shell-frames{position:relative;flex:1;min-height:0}
+    .shell-frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+    .shell-frames iframe.hidden{display:none}
+    /* 본문은 남은 높이를 채운다. 예전에는 calc(100dvh - 64px) 로 상단바 높이를
+       손으로 뺐는데, 그 숫자가 실제 상단바와 어긋나면 아래가 잘린다. */
+    .shell-main{display:flex;flex-direction:column;min-height:0;height:100%;padding:0}
+    .shell-empty{display:grid;place-items:center;height:100%;color:var(--muted);
+      font-size:13px}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span></div>
+    <div class="shell-tabs" id="shellTabs" role="tablist" aria-label="열린 화면"></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+    <main id="main-content" class="shell-main">
+      <div class="shell-frames" id="shellFrames">
+        <div class="shell-empty" id="shellEmpty">왼쪽에서 메뉴를 고르세요.</div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/shell.js?v=20260820-3"></script>
+</body>
+</html>

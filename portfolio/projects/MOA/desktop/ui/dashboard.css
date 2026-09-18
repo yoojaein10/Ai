@@ -1,0 +1,455 @@
+/* ── 본문 서체 (2026-08-15) ─────────────────────────────────────────────
+   내부망이라 CDN 을 못 쓴다 — 이 저장소의 화면에는 외부 https:// 자원이 하나도
+   없다. 그래서 woff2 를 /ui/ 에 직접 둔다.
+
+   Pretendard 를 고른 건 취향이 아니다. 아래 body 스택에 이미 "Pretendard" 가
+   적혀 있었는데 설치도 호스팅도 안 돼서 조용히 Segoe UI 로 떨어지고 있었다.
+   그 결과 Windows 에서 라틴·숫자는 Segoe UI, 한글은 맑은 고딕으로 **갈라져**
+   렌더됐다. 두 서체는 굵기도 x-height 도 달라, 같은 줄 안에서 글자 크기가
+   들쭉날쭉해 보이던 원인이다. @font-face 를 다는 건 새 결정이 아니라 원래
+   적혀 있던 의도를 실제로 작동시키는 일이다.
+
+   고정 굵기가 아니라 변수형 한 벌인 이유: 이 앱은 굵기를 일곱 갈래로 쓴다
+   (700·600·750·800·500·650·400). 고정판은 100 단위라 650·750 이 사라져
+   다섯 단계가 세 단계로 주저앉는다. 750 을 적은 자리는 700 과 구분되라고
+   일부러 그렇게 적은 곳이다. 변수형은 wght 축이 연속이라 그대로 나온다.
+   파일은 2MB 지만 사내망이고, 캐시되므로 사람당 배포당 한 번만 받는다.
+
+   라이선스는 SIL OFL 1.1 — 사본을 pretendard-ofl.txt 로 함께 둔다(동봉 의무). */
+@font-face {
+  font-family: "Pretendard Variable";
+  src: url("/ui/pretendard-variable.woff2?v=20260815-1") format("woff2");
+  font-weight: 45 930;          /* 실제 fvar wght 축 그대로 */
+  font-style: normal;
+  /* swap 인 이유: auto/block 은 최대 3초 글자를 감춘다(FOIT). 숫자를 들여다보는
+     업무 화면에서 빈 표는 곧 장애 제보가 된다. 먼저 읽히고 나중에 갈아탄다. */
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --ink: #17211d;
+  --muted: #68736e;
+  --subtle: #8b948f;
+  --line: rgba(32, 55, 45, .12);
+  --line-strong: rgba(32, 55, 45, .2);
+  --paper: #edf7fb;
+  --surface: #fff;
+  --white: #fff;
+  --green: #176b4d;
+  --green-deep: #0f5139;
+  --green-soft: #e5f2f8;
+  --red: #a54131;
+  --red-soft: #f7e9e5;
+  --gold: #c6a15c;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 9px;
+  --shadow: 0 18px 50px rgba(25, 50, 39, .09), 0 2px 8px rgba(25, 50, 39, .04);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 7% 0%, rgba(255, 255, 255, .72), transparent 27rem),
+    radial-gradient(circle at 94% 18%, rgba(198, 226, 239, .3), transparent 32rem),
+    var(--paper);
+  color: var(--ink);
+  /* Pretendard 를 맨 앞에. 뒤는 그대로 남긴다 — 폰트를 못 받는 상황에서도
+     화면이 지금과 똑같이 뜨게 하는 안전망이다. */
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", "Malgun Gothic", sans-serif;
+  font-size: 14px;
+  /* 1.5 는 라틴 기준이라 한글에는 빡빡하다. 받침이 있는 글자가 윗줄에 닿는다. */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* 한글은 단어 중간에서 끊기면 읽기가 나빠진다 — 어절 단위로 접는다. */
+  word-break: keep-all;
+}
+
+/* 숫자 자릿수 맞추기. 지금까지는 공짜로 맞아 있었다 — Segoe UI 는 숫자 열 개의
+   폭이 같아서 따로 안 걸어도 자리가 섰다. Pretendard 는 기본이 비례폭이라
+   '1' 이 유독 좁다. 폰트만 갈아끼우면 금액·날짜 칸부터 자릿수가 흔들리므로,
+   표와 숫자 칸에 한 번 걸어 둔다. 본문에는 걸지 않는다 — 문장 속 숫자까지
+   넓어져 글이 성글어진다. */
+table,
+.num, [class*="amount"], [class*="count"], time {
+  font-variant-numeric: tabular-nums;
+}
+
+.skip-link { position: fixed; left: 1rem; top: -4rem; z-index: 30; padding: .7rem 1rem; border-radius: var(--radius-sm); background: var(--white); color: var(--green-deep); box-shadow: var(--shadow); font-weight: 700; }
+.skip-link:focus { top: 1rem; }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-height: 64px;
+  padding: 12px clamp(18px, 3vw, 40px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  color: var(--ink);
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgba(40, 70, 82, .06);
+}
+.brand-block { min-width: 0; }
+.topbar h1 { margin: 0; font-size: clamp(18px, 2vw, 24px); line-height: 1.15; letter-spacing: -.025em; font-weight: 700; text-wrap: balance; }
+
+.app-shell { max-width: 1920px; margin: 0 auto; display: grid; grid-template-columns: 184px minmax(0, 1fr); gap: 0; }
+main { min-width: 0; padding: clamp(18px, 2.4vw, 34px); }
+/* 사이드바는 제 배경을 갖는다. 예전에는 body 의 흰 광채(radial-gradient,
+   transparent 27rem)에 얹혀 있었는데, 그 빛이 위에서 432px 까지만 퍼진다.
+   메뉴를 접어 두던 시절에는 다 그 안에 들어왔지만 묶음을 펼치면 아래쪽
+   항목들이 범위를 벗어나 배경이 뚝 끊겨 보였다 (2026-08-07 제보:
+   '외상매출금 반제처럼 뒤에 배경이 밑에 좀 잘린다' — 그 항목이 y≈655 로
+   딱 경계 바깥이다). 패널이면 패널답게 길이와 무관한 색을 깔아 둔다. */
+.sidebar { padding: 24px 12px 24px 18px; border-right: 1px solid var(--line); background: rgba(255, 255, 255, .58); }
+.sidebar-label { margin: 0 10px 10px; color: var(--subtle); font-size: 10px; font-weight: 750; letter-spacing: .08em; }
+.side-nav { position: sticky; top: 88px; display: grid; gap: 0; }
+.side-nav a { display: flex; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 10px; color: #56625c; text-decoration: none; font-size: 12px; font-weight: 700; transition: color 180ms ease, background 180ms ease, transform 100ms ease; }
+/* 메뉴 묶음 — 16개였던 목록을 네 갈래로 나눈다 (2026-08-07).
+   접지 않는다: 매일 쓰는 도구라 클릭이 한 번 느는 게 손해다. */
+/* 대분류는 **크고 진하게, 줄로 나눈다** (2026-08-10, menu_reference.png).
+   종전에는 10px 연회색 자간 넓힘이라 '있는 줄도 모르겠다' 는 제보를 받았다.
+   참고 시안처럼 갈래마다 한 줄을 차지하고 아래 경계선으로 서로를 가른다 —
+   접혀 있을 때도 목차처럼 읽힌다. */
+.nav-group { display: grid; gap: 2px; margin: 0; border-bottom: 1px solid var(--line); }
+.nav-group:last-of-type { border-bottom: 0; }
+/* 권한으로 메뉴가 숨을 때를 위한 둘 (2026-08-11 권한 체계 병합).
+   ① 감정서 LIST 가 숨은 사용자에게는 첫 묶음 위 실선이 허공에 뜬다.
+   ② 지금 보고 있는 화면이 든 묶음은 머리글도 강조색 — 묶음이 접혀 있어도
+      어디에 있는지 보인다. :has 미지원 브라우저에서는 기본 잉크로 남는다(장식). */
+.side-nav > a.hidden + .nav-group { border-top: 0; }
+.nav-group:has(a.active) > .nav-group-title { color: #244f68; }
+/* 접힌 채로 시작한다 — 대분류만 보이고 누르면 아래로 열린다 (2026-08-07 요청).
+   지금 보고 있는 화면이 든 묶음과, 사람이 열어 둔 묶음만 .open 이 붙는다. */
+.nav-group > a { display: none; }
+.nav-group.open > a { display: flex; }
+.nav-group.open { margin-bottom: 10px; }
+.nav-group-title { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 11px 10px 11px 12px; border: 0; border-radius: 8px; background: none; color: #1f2937; font-family: inherit; font-size: 12.5px; font-weight: 800; letter-spacing: -.1px; text-align: left; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
+.nav-group-title:hover { color: #244f68; background: rgba(226, 242, 250, .55); }
+/* 꺾쇠는 오른쪽 끝에 옅게 — 열림·닫힘만 말하고 눈을 끌지 않는다 */
+.nav-group-title i { margin-left: auto; font-style: normal; font-size: 13px; line-height: 1; color: #9aa3ad; transition: transform 160ms ease; }
+.nav-group.open > .nav-group-title i { transform: rotate(180deg); }
+/* 열린 갈래의 자식은 한 칸 들여 대분류에 딸린 것임을 보인다 */
+.nav-group > a { padding-left: 24px; font-size: 11.5px; font-weight: 650; min-height: 36px; }
+.nav-group.open { padding-bottom: 8px; }
+/* 묶음 밖 항목(감정서 LIST)도 대분류와 같은 무게로 세운다 — 참고 시안에서
+   최상위 줄들이 같은 크기로 목차를 이룬다. `.side-nav a` 뒤에 와야 한다:
+   특정도가 같아 앞에 두면 눌린다(실측 — 12px 로 나왔다). */
+.side-nav > a { padding: 0 12px; font-size: 12.5px; font-weight: 800; color: #1f2937;
+  min-height: 42px; border-bottom: 1px solid var(--line); border-radius: 8px; }
+.side-nav a:hover { color: #315d75; background: rgba(226, 242, 250, .72); }
+.side-nav a:active { transform: scale(.98); }
+.side-nav a.active { color: #244f68; background: #dceff8; box-shadow: inset 0 0 0 1px rgba(83, 145, 176, .18), 0 8px 18px rgba(65, 123, 151, .1); }
+.toolbar, .receivable-toolbar {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(40, 86, 106, .055);
+}
+.toolbar { grid-template-columns: repeat(6, minmax(140px, 1fr)); }
+.toolbar label, .receivable-toolbar label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .01em; }
+input, select { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .9); padding: 0 12px; color: var(--ink); font: inherit; outline: none; transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+select { cursor: pointer; }
+input:hover, select:hover { border-color: var(--line-strong); background: #fff; }
+input:focus, select:focus { border-color: #69a9c6; background: #fff; box-shadow: 0 0 0 4px rgba(105, 169, 198, .14); }
+button { height: 42px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .9); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; transition: transform 100ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease; }
+button:hover:not(:disabled) { border-color: var(--line-strong); background: #fff; box-shadow: 0 4px 12px rgba(25, 50, 39, .07); }
+button:active:not(:disabled) { transform: scale(.97); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(105, 169, 198, .28); outline-offset: 2px; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+.primary-button, #searchButton { border-color: #b8d8e7; color: #244f68; background: #e3f2f9; box-shadow: 0 6px 16px rgba(65, 123, 151, .1); }
+.primary-button:hover:not(:disabled), #searchButton:hover:not(:disabled) { border-color: #8ebdd2; color: #183f56; background: #d5ebf5; }
+
+.workspace { display: grid; grid-template-columns: minmax(680px, 1.65fr) minmax(330px, .72fr); gap: 18px; min-height: calc(100dvh - 190px); align-items: stretch; }
+/* panel-resize.js가 목록·상세 사이에 드래그 핸들을 끼워 넣으면 3열이 된다.
+   --detail-width 미설정 시 기본 비율(.72fr) 유지, 핸들 10px + 좌우 4px = 기존 gap 18px과 동일. */
+.workspace.has-panel-resizer { grid-template-columns: minmax(680px, 1.65fr) 10px var(--detail-width, minmax(330px, .72fr)); gap: 18px 4px; }
+.panel-resizer { align-self: stretch; border-radius: 5px; cursor: col-resize; background: transparent; transition: background .15s; }
+.panel-resizer:hover, .panel-resizer.dragging { background: rgba(49, 93, 117, .22); }
+.list-panel, .detail-panel { border: 1px solid rgba(255, 255, 255, .86); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+.panel-heading { min-height: 72px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+h2 { margin: 0; font-size: 16px; line-height: 1.25; letter-spacing: -.016em; font-weight: 750; }
+.panel-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.legend { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+.linked { background: #69a9c6; }
+.table-wrap { position: relative; overflow: auto; height: calc(100dvh - 304px); min-height: 430px; scrollbar-color: #bac6c0 transparent; scrollbar-width: thin; }
+.list-panel > .table-wrap > table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1480px; }
+th { position: sticky; top: 0; z-index: 2; padding: 11px 10px; border-bottom: 1px solid var(--line); color: #59645f; background: rgba(240, 244, 241, .94); backdrop-filter: blur(10px); font-size: 10px; font-weight: 750; letter-spacing: .025em; text-align: center; white-space: nowrap; }
+th[data-sort] { cursor: pointer; user-select: none; }
+th[data-sort]::after { content: "↕"; display: inline-block; margin-left: 5px; color: #9bb1bc; font-size: 9px; opacity: 0; transition: opacity 150ms ease; }
+th[data-sort]:hover::after, th[data-sort]:focus-visible::after, th[data-sort][aria-sort]::after { opacity: 1; }
+th[data-sort][aria-sort="ascending"]::after { content: "↑"; color: #4f91b0; }
+th[data-sort][aria-sort="descending"]::after { content: "↓"; color: #4f91b0; }
+th[data-sort]:hover { color: #315d75; background: #e8f3f8; }
+th[data-sort]:focus-visible { outline: 2px solid #83b7cf; outline-offset: -3px; }
+td { padding: 12px 10px; border-bottom: 1px solid rgba(32, 55, 45, .075); white-space: nowrap; max-width: 230px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+tbody tr { cursor: pointer; transition: background 150ms ease, box-shadow 150ms ease; }
+tbody tr:hover { background: rgba(229, 242, 248, .55); }
+tbody tr.selected { background: #e5f2f8; box-shadow: inset 3px 0 #69a9c6; }
+td:first-child { color: #20523f; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 700; }
+.list-panel > .table-wrap > table > thead th:first-child { left: 0; z-index: 4; box-shadow: 8px 0 12px -12px rgba(49, 93, 117, .45); }
+.list-panel > .table-wrap > table > tbody td:first-child { position: sticky; left: 0; z-index: 1; background: #fff; box-shadow: 8px 0 12px -12px rgba(49, 93, 117, .35); }
+.list-panel > .table-wrap > table > tbody tr:hover td:first-child { background: #f3f9fc; }
+.list-panel > .table-wrap > table > tbody tr.selected td:first-child { background: #e5f2f8; }
+.number { text-align: right; font-variant-numeric: tabular-nums; }
+th.number { text-align: center; }  /* 머릿말은 가운데, 데이터 셀만 우측 정렬 */
+.status { display: inline-block; padding: 4px 7px; border-radius: 6px; background: #edf1ef; color: #53605b; font-size: 10px; font-weight: 650; }
+.payment-status { display: inline-block; padding: 4px 7px; border-radius: 6px; background: #eef2f4; color: #66737a; font-size: 10px; font-weight: 700; }
+.payment-입금완료 { background: #e5f2f8; color: #315d75; }
+.payment-일부입금 { background: #fff2cf; color: #805d18; }
+.payment-미수 { background: #f7e9e5; color: #934333; }
+.payment-선수금 { background: #edeafa; color: #5d4c8d; }
+.payment-과입금 { background: #fff2cf; color: #805d18; }
+/* 실비 종결 — 입금현황 '실비' 배지와 같은 노란 톤 (2026-09-02) */
+.payment-실비완납 { background: #fff2cf; color: #805d18; }
+.pagination { min-height: 56px; padding: 8px 14px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--line); background: rgba(250, 251, 250, .72); }
+.pagination button { height: 34px; padding: 0 14px; }
+.pagination span { min-width: 52px; color: var(--muted); font-size: 11px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.detail-panel { padding: 20px; overflow: auto; }
+.detail-placeholder { height: 100%; min-height: 390px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--muted); }
+.document-mark { width: 62px; height: 68px; display: grid; place-items: center; margin-bottom: 18px; border: 1px solid var(--line-strong); border-radius: 14px; color: #728079; background: linear-gradient(145deg, #fff, #edf3ef); box-shadow: inset 0 1px 0 #fff, 0 12px 25px rgba(25, 50, 39, .08); font-family: ui-serif, Georgia, serif; font-size: 23px; }
+.detail-placeholder p { max-width: 280px; margin: 9px 0 0; line-height: 1.65; text-wrap: pretty; }
+.detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+.detail-heading p { margin: 0 0 4px; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .05em; }
+.detail-heading h2 { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 18px; cursor: text; }
+.detail-heading h2:hover { background: rgba(0, 0, 0, .04); border-radius: 4px; }
+.doc-copy {
+  margin-left: 6px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); color: var(--muted); font-size: 11px; cursor: pointer;
+  vertical-align: middle;
+}
+.doc-copy:hover { color: var(--ink); }
+.badge { padding: 5px 8px; border-radius: 6px; background: #e5f2f8; color: #315d75; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.empty-card { margin-top: 20px; padding: 22px; border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: rgba(248, 251, 249, .8); }
+.empty-card p { margin: 8px 0 0; color: var(--muted); line-height: 1.55; }
+.voucher { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255, 255, 255, .75); overflow: hidden; }
+.voucher-head { min-height: 48px; padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); background: #f3f6f4; font-size: 10px; }
+.voucher-head div { display: flex; align-items: center; gap: 8px; }
+.voucher-head strong { color: var(--ink); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px; }
+.voucher-head small { padding: 3px 6px; border-radius: 5px; background: var(--green-soft); color: var(--green); font-weight: 700; }
+.voucher-grid-wrap { width: 100%; overflow-x: auto; }
+/* 상세 패널의 긴 표는 그 표 안에서만 굴린다 (2026-08-21 사용자 요청).
+   전표가 223줄인 감정서(01-2604-2-0035)는 패널이 13,025px = 창 13.7장이 되어
+   한눈에 안 들어왔다. 머리글과 합계 줄은 굴러도 제자리에 붙여 둔다. */
+.detail-panel .voucher-grid-wrap { max-height: 320px; overflow-y: auto;
+  overscroll-behavior: contain; }
+.detail-panel .voucher-grid thead th { position: sticky; top: 0; z-index: 2; }
+.detail-panel .voucher-grid tfoot th { position: sticky; bottom: 0; z-index: 2; }
+.voucher-grid { width: 100%; min-width: 560px; border-collapse: collapse; table-layout: fixed; }
+.voucher-grid col.date-col { width: 82px; }.voucher-grid col.amount-col { width: 76px; }.voucher-grid col.vno-col { width: 92px; }.voucher-grid col.badge-col { width: 62px; }
+.voucher-grid td.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voucher-grid th { position: static; background: #fafbfa; padding: 9px; }
+.voucher-grid td { padding: 10px 6px; font-size: 11px; max-width: none; min-width: 0; }
+.voucher-grid td strong { display: block; font-size: 11px; }
+.voucher-grid td strong,.voucher-grid td small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voucher-grid td small { display: block; margin-top: 3px; color: var(--muted); }
+.voucher-grid td small.bundle-note { white-space: normal; line-height: 1.45; }
+.bundle-badge { display: inline-block; margin-right: 4px; padding: 2px 5px; border-radius: 5px; background: #fff0d6; color: #8a5700; font-size: 9px; font-weight: 750; }
+.voucher-grid th.number,.voucher-grid td.number { white-space: nowrap; }
+.voucher-grid .debit { color: var(--green); }
+.voucher-grid .credit { color: #9b4e35; }
+/* 선수금·가수금을 받았다가 전액 반제해 잔액이 0이 된 줄 — 빨간 취소선으로 죽인다. */
+.voucher-grid tr.offset td { color: #b3392b; text-decoration: line-through; text-decoration-color: #d24a3a; }
+.voucher-grid tr.offset td.number.debit,.voucher-grid tr.offset td.number.credit { color: #b3392b; }
+.offset-badge { display: inline-block; margin-right: 4px; padding: 2px 5px; border-radius: 5px; background: #fdeceb; color: #b3392b; font-size: 9px; font-weight: 750; text-decoration: none; }
+.voucher-grid tfoot th { position: static; border-top: 2px solid var(--line-strong); border-bottom: 0; background: #edf3ef; color: var(--ink); font-size: 11px; }
+.voucher-grid tfoot th:first-child { text-align: left; }
+.voucher-grid tfoot th:first-child > span:first-child { margin-right: 5px; }
+.balanced, .unbalanced { display: inline-block; padding: 3px 6px; border-radius: 5px; }
+.balanced { background: var(--green-soft); color: var(--green); }
+.unbalanced { background: var(--red-soft); color: var(--red); }
+.empty { padding: 48px 20px; text-align: center; color: var(--muted); }
+.empty.error { color: var(--red); }
+.empty.error strong { display: block; margin-bottom: 6px; color: var(--ink); }
+.retry-button { height: 34px; margin-top: 14px; padding: 0 14px; border-color: #b8d8e7; color: #244f68; background: #e3f2f9; }
+.skeleton-row { cursor: default; pointer-events: none; }
+.skeleton-row td { height: 45px; }
+.skeleton-row td span { display: block; width: 78%; height: 9px; border-radius: 4px; background: linear-gradient(90deg, #e8f0f3 25%, #f6fafb 50%, #e8f0f3 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.25s ease-in-out infinite; }
+.skeleton-row td:nth-child(3n) span { width: 52%; }
+@keyframes skeleton-shimmer { to { background-position: -200% 0; } }
+.hidden { display: none !important; }
+.context-menu { position: fixed; z-index: 1000; min-width: 150px; padding: 6px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(255,255,255,.97); box-shadow: 0 14px 40px rgba(43,72,87,.18); backdrop-filter: blur(16px); }
+.context-menu button { width: 100%; height: 38px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font-weight: 700; text-align: left; }
+.context-menu button:hover,.context-menu button:focus-visible { background: #e5f2f8; color: #315d75; outline: none; }
+.toast { position: fixed; right: 22px; bottom: 22px; z-index: 1100; max-width: 420px; padding: 13px 16px; border: 1px solid #b8d8e7; border-radius: 10px; background: #f5fbfe; color: #315d75; box-shadow: 0 14px 40px rgba(43,72,87,.18); font-size: 12px; font-weight: 700; }
+.toast.error { border-color: #e2b8af; background: #fff7f5; color: #934333; }
+.partner-dialog { width: min(720px, calc(100vw - 28px)); max-height: calc(100dvh - 36px); padding: 0; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 28px 90px rgba(34,58,70,.28); }
+.partner-dialog::backdrop { background: rgba(37,52,59,.34); backdrop-filter: blur(4px); }
+.partner-dialog-card { display: flex; flex-direction: column; max-height: calc(100dvh - 36px); }
+.partner-dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 16px; border-bottom: 1px solid var(--line); }
+.partner-dialog-head p { margin: 0 0 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.partner-dialog-head h2 { font-size: 20px; }
+.dialog-close { width: 34px; height: 34px; padding: 0; border: 0; background: transparent; font-size: 24px; }
+.partner-loading { padding: 56px 22px; color: var(--muted); text-align: center; }
+#partnerDialogContent { padding: 18px 22px; overflow-y: auto; }
+.apworks-partner-card { padding: 15px; border: 1px solid #cfe3ed; border-radius: 12px; background: #f3f9fc; }
+.apworks-partner-card > span { display: block; margin-bottom: 4px; color: #648293; font-size: 12px; font-weight: 700; }
+.apworks-partner-card > strong { font-size: 17px; }
+.apworks-partner-card dl { display: grid; grid-template-columns: 1.25fr 1fr 1fr 2fr; gap: 10px; margin: 12px 0 0; }
+.apworks-partner-card dl div { min-width: 0; }
+.apworks-partner-card dt { color: var(--muted); font-size: 11px; }
+.apworks-partner-card dd { margin: 3px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.voucher-date-field { display: grid; grid-template-columns: auto 170px; align-items: center; justify-content: end; gap: 10px; margin-top: 12px; }.voucher-date-field span { color: var(--muted); font-size: 12px; font-weight: 700; }.voucher-date-field input { height: 38px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 9px; font-size: 13px; }
+.partner-search-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 16px; }
+.partner-search-row input { height: 42px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 9px; font-size: 13px; }.partner-search-row button { font-size: 13px; }
+.partner-result-head { display: flex; align-items: center; justify-content: space-between; margin: 17px 0 8px; }
+.partner-result-head strong { font-size: 14px; }
+.partner-result-head button { height: 30px; padding: 0 8px; border: 0; color: #315d75; background: transparent; font-size: 12px; }
+.partner-results { display: grid; gap: 7px; max-height: 215px; overflow-y: auto; }
+.partner-option { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.partner-option:has(input:checked) { border-color: #83b7cf; background: #edf7fb; box-shadow: inset 3px 0 #69a9c6; }
+.partner-option strong,.partner-option small { display: block; }
+.partner-option strong { font-size: 14px; }.partner-option small { margin-top: 3px; color: var(--muted); font-size: 12px; }.partner-option code { color: #315d75; font-size: 12px; font-weight: 700; }
+.partner-no-results { padding: 24px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); text-align: center; font-size: 13px; }
+.partner-create-panel { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fafcfd; }
+.partner-create-panel h3 { margin: 0 0 12px; font-size: 12px; }
+.partner-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.partner-form-grid label { display: grid; gap: 5px; }.partner-form-grid span { color: var(--muted); font-size: 9px; font-weight: 700; }.partner-form-grid input { height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; }.partner-form-grid .wide { grid-column: 1 / -1; }
+#registerPartnerButton { width: 100%; height: 38px; margin-top: 12px; border-color: #b8d8e7; color: #315d75; background: #e5f2f8; }
+.dialog-error { margin: 12px 0 0; padding: 10px; border-radius: 8px; color: #934333; background: #fff2ef; font-size: 11px; }
+.partner-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line); }.partner-dialog-actions button { height: 40px; padding: 0 15px; font-size: 13px; }
+
+@media (max-width: 1400px) {
+  .toolbar { grid-template-columns: repeat(4, 1fr); }
+  .toolbar #searchButton { grid-column: span 1; }
+}
+@media (max-width: 1080px) {
+  .workspace, .workspace.has-panel-resizer { grid-template-columns: 1fr; }
+  .panel-resizer { display: none; }
+  .detail-panel { min-height: 430px; }
+  .toolbar { grid-template-columns: repeat(2, 1fr); }
+  .table-wrap { height: 56dvh; }
+}
+@media (max-width: 760px) {
+  .topbar { position: relative; align-items: flex-start; flex-direction: column; gap: 12px; }
+  .topbar-actions { width: 100%; justify-content: space-between; }
+  .app-shell { display: block; }
+  .sidebar { padding: 10px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .sidebar-label { display: none; }
+  .side-nav { position: static; display: flex; min-width: max-content; }
+  /* 좁은 화면에서는 메뉴가 가로 한 줄이라 접을 자리가 없다 — 머리글을 숨기고
+     묶음과 상관없이 전부 편다 (접힌 상태로 두면 아무것도 안 보인다). */
+  .nav-group-title { display: none; }
+  .nav-group, .nav-group.open { display: flex; gap: 5px; margin: 0; }
+  .nav-group > a, .nav-group.open > a { display: flex; }
+  .side-nav a { min-height: 38px; padding: 0 12px; }
+  main { padding: 14px 10px 22px; }
+  .toolbar { grid-template-columns: 1fr; padding: 12px; }
+  .toolbar #searchButton { width: 100%; }
+  .panel-heading { align-items: flex-start; }
+  .list-panel, .detail-panel, .toolbar, .receivable-toolbar { border-radius: 14px; }
+  .table-wrap { height: 58dvh; min-height: 360px; }
+  .detail-panel { min-height: 380px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .topbar, .toolbar, .receivable-toolbar, .list-panel, .detail-panel { backdrop-filter: none; }
+  .topbar { background: #fff; }
+  .toolbar, .receivable-toolbar, .list-panel, .detail-panel { background: #fff; }
+}
+@media (prefers-contrast: more) {
+  :root { --line: rgba(20, 36, 29, .32); --line-strong: rgba(20, 36, 29, .55); }
+}
+.amount-range > div { display: flex; align-items: center; gap: 6px; }
+.amount-range input { min-width: 0; flex: 1; }
+.amount-range em { flex: 0 0 auto; color: var(--subtle, #6b7772); font-style: normal; }
+
+#searchButton { align-self: end; }
+
+/* 컬럼 폭 드래그 조절 (column-resize.js가 적용하는 모든 표 공통) */
+table.resizable { table-layout: fixed; min-width: 0; width: max-content; }
+/* sticky도 절대배치 기준이 되므로 머리말 고정을 유지한 채 핸들을 붙인다.
+   (relative로 덮으면 스크롤 시 머리말이 따라오지 않는다) */
+table.resizable th { position: sticky; top: 0; }
+table.resizable td { max-width: none; }
+.col-resizer {
+  position: absolute; top: 0; right: 0; width: 7px; height: 100%;
+  cursor: col-resize; user-select: none; touch-action: none;
+}
+.col-resizer:hover, .col-resizer.dragging { background: rgba(83, 145, 176, .45); }
+
+/* 청구서상 수수료 내역 (상세 패널 상단) */
+.fee-summary { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fafcfb; }
+.fee-summary h3 { margin: 0 0 10px; font-size: 13px; }
+.fee-summary dl { margin: 0; display: grid; gap: 2px; }
+.fee-summary dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; }
+.fee-summary dt { margin: 0; color: #56625c; font-size: 12px; }
+.fee-summary dd { margin: 0; font-variant-numeric: tabular-nums; font-size: 12px; }
+.fee-summary .sum { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 7px; font-weight: 700; }
+.fee-summary .sum dt, .fee-summary .sum dd { color: inherit; font-size: 13px; }
+.fee-summary .total { border-top: 2px solid #aebbb5; margin-top: 4px; padding-top: 7px; font-weight: 700; }
+.fee-summary .total dt, .fee-summary .total dd { color: #244f68; font-size: 14px; }
+.detail-section-title { margin: 20px 0 0; font-size: 13px; }
+.heading-actions { display: flex; align-items: center; gap: 14px; }
+/* 배분 승인 화면 */
+.allocation-workspace { grid-template-columns: 1fr; }
+/* 상세 패널 없이 목록 하나만 쓰는 화면(상여·권한부여 등)은 전체 폭 사용 */
+.single-workspace { grid-template-columns: 1fr; }
+.allocation-toolbar { grid-template-columns: repeat(4, minmax(160px, 1fr)); }
+.list-panel > .table-wrap > .allocation-table { min-width: 1140px; }
+.allocation-table td { vertical-align: middle; }
+/* 이 표는 rowspan 때문에 행마다 첫 셀이 달라서 첫 열 고정·강조 스타일을 끈다 */
+.allocation-table tbody td:first-child { position: static; box-shadow: none; color: inherit; font-family: inherit; font-weight: inherit; }
+.allocation-table td strong { color: #20523f; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
+.allocation-table .check-cell { width: 44px; text-align: center; }
+.allocation-table input[type="checkbox"], #checkAll { width: 16px; height: 16px; vertical-align: -2px; cursor: pointer; }
+.check-all-label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.allocation-table input.amount-input { width: 120px; height: 32px; padding: 0 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.allocation-table .action-cell { white-space: nowrap; }
+.allocation-table .action-cell button { height: 30px; padding: 0 10px; font-size: 11px; }
+.allocation-table .action-cell .approve-button { margin-right: 6px; border-color: #b8d8e7; color: #244f68; background: #e3f2f9; }
+/* 승인 취소는 원장에서 지운다 — 눌러도 되는 버튼처럼 보이면 안 된다 (2026-08-21) */
+.allocation-table .action-cell .cancel-button { margin-top: 6px; border-color: #e2b8af; color: #934333; background: #fff7f5; }
+.allocation-table .action-cell .cancel-button:hover:not(:disabled) { border-color: #c98f82; background: #ffece7; }
+.export-button { height: 32px; padding: 0 12px; font-size: 12px; border-color: #8fc3a6; color: #fff; background: var(--green); }
+.export-button:hover:not(:disabled) { border-color: #6ea888; color: #fff; background: var(--green-deep); box-shadow: 0 4px 12px rgba(23, 107, 77, .25); }
+
+/* 감정서번호 없는 탁상·가격자문 수기 매출 */
+.manual-sale-dialog { width: min(820px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); padding: 0; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 28px 90px rgba(34,58,70,.28); }
+.manual-sale-dialog::backdrop { background: rgba(37,52,59,.38); backdrop-filter: blur(4px); }
+.manual-sale-card { display: flex; flex-direction: column; max-height: calc(100dvh - 28px); }
+.manual-sale-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 15px; border-bottom: 1px solid var(--line); }
+.manual-sale-head p { margin: 0 0 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.manual-sale-head h2 { margin: 0; font-size: 20px; }
+.manual-sale-guide { margin: 16px 22px 0; padding: 11px 13px; border: 1px solid #ead6a2; border-radius: 10px; background: #fff9ea; color: #73591d; font-size: 12px; line-height: 1.55; }
+.manual-sale-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 18px 22px; overflow-y: auto; }
+.manual-sale-grid label { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.manual-sale-grid label > span { color: var(--muted); font-size: 11px; font-weight: 700; }
+.manual-sale-grid input,.manual-sale-grid select { width: 100%; height: 39px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 9px; background: #fff; color: var(--ink); font-size: 13px; }
+.manual-sale-grid input[readonly] { color: #65737a; background: #f5f8f9; }
+.manual-sale-grid output { display: flex; align-items: center; height: 39px; padding: 0 11px; border-radius: 9px; background: #edf5f1; color: var(--green); font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.manual-sale-grid .wide { grid-column: 1 / -1; }
+.manual-search { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.manual-search button { height: 39px; padding: 0 16px; }
+.manual-partner-results { display: grid; gap: 6px; max-height: 168px; padding: 8px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: #fafcfd; }
+.manual-partner-results button { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; background: #fff; text-align: left; }
+.manual-partner-results button:hover { border-color: #8fc3a6; background: #f0f8f4; }
+.manual-partner-results strong,.manual-partner-results small { display: block; }
+.manual-partner-results small { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.manual-partner-results code { align-self: center; color: #315d75; font-size: 11px; }
+.manual-sale-message { min-height: 18px; margin: 0 22px 12px; color: var(--muted); font-size: 12px; }
+.manual-sale-message.ok { color: var(--green); font-weight: 700; }
+.manual-sale-message.err { color: var(--red); font-weight: 700; }
+.manual-sale-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line); }
+.manual-sale-actions button { height: 40px; padding: 0 16px; }
+.manual-sale-actions #manualTaxButton { border-color: #b8d8e7; color: #315d75; background: #edf7fb; }
+@media (max-width: 760px) {
+  .manual-sale-grid { grid-template-columns: 1fr; }
+  .manual-sale-grid .wide { grid-column: auto; }
+}

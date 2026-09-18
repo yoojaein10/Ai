@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 출장비</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    /* 출장비 (2026-09-10) — APWorks 델파이 출장비프로그램 이식: 입력 · 리스트/결재 · 월별 현황 */
+    .toolbar{display:block}
+    .te-tabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
+    .te-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer;color:#56625c}
+    .te-tabs button.active{background:#244f68;border-color:#244f68;color:#fff}
+    .te-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .te-toolbar .grp{display:flex;gap:6px;align-items:center}
+    .te-toolbar .grp>strong{white-space:nowrap;flex:none;font-size:12px}
+    .te-toolbar input[type=date]{width:auto}
+    .te-toolbar select,.te-toolbar input[type=text]{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:#fff}
+    .te-toolbar label.rad{display:flex;flex-direction:row;gap:4px;align-items:center;font-size:12px;font-weight:650;color:var(--muted);white-space:nowrap}
+    .te-toolbar label.rad input{width:14px;height:14px;margin:0}
+    .te-hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+    .te-note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin:0 0 10px}
+    .te-table{white-space:nowrap;font-size:12px}
+    .te-table thead th{text-align:center;line-height:1.3}
+    .te-table td.number,.te-table th.number{text-align:right;font-variant-numeric:tabular-nums}
+    .te-table td.center{text-align:center}
+    .te-table input[type=checkbox]{width:15px;height:15px;margin:0}
+    .te-table tr.group td{background:#eef3f6;font-weight:800}
+    .te-table tr.subtotal td{background:#f6f8f7;font-weight:700}
+    .te-table tr.grand td{background:#fff3c4;font-weight:800}
+    .te-table tr.pick{cursor:pointer}
+    .te-table tr.pick:hover td{background:#f4faf6}
+    .te-table tr.selected td{background:#e6f2ff}
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#eef4f2;color:#244f68}
+    .badge.s0{background:#f1f3f4;color:#6b7680}.badge.s1,.badge.s2,.badge.s3{background:#fff3e0;color:#b26a00}.badge.s4{background:#e8f5ec;color:#1b7a43}
+    .badge.lock{background:#fdecea;color:#c62828}
+    .te-table tr.wrong td{color:#c62828;font-weight:700}          /* 같은 날 여러 곳 청구 규칙에 어긋난 줄 (2026-09-11) */
+    .te-table.resizable td{overflow:hidden;text-overflow:ellipsis}   /* 열 너비 조절(colgroup) — 좁히면 말줄임 */
+    .te-table tr.wrong td .check-note{font-size:11px;font-weight:600;white-space:normal;max-width:360px}
+    /* 입력 탭 — 왼쪽 목록, 오른쪽 폼 */
+    .te-entry{display:grid;grid-template-columns:minmax(360px,1fr) minmax(520px,1.2fr);gap:14px;align-items:start}
+    .te-form{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}
+    .te-form h3{margin:0 0 8px;font-size:13px;color:#244f68}
+    .te-form .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;margin-bottom:10px}
+    .te-form label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-weight:650}
+    .te-form label.wide{grid-column:span 2}.te-form label.full{grid-column:1/-1}
+    .te-form input,.te-form select,.te-form textarea{height:30px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:13px;background:#fff;font:inherit}
+    .te-form textarea{height:52px;padding:6px 8px;resize:vertical}
+    .te-form input.amt{text-align:right;font-variant-numeric:tabular-nums}
+    .te-form input[readonly]{background:#f6f8f7;color:#56625c}
+    .te-form .ratio{display:flex;gap:12px;align-items:center;font-size:12px;flex-wrap:wrap}
+    .te-form .ratio label{flex-direction:row;align-items:center;gap:4px;font-size:12px;color:#20323c}
+    .te-form .ratio input{width:14px;height:14px;margin:0}
+    .te-form .sum{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin:4px 0 10px}
+    .te-form .sum b{font-variant-numeric:tabular-nums;color:#244f68}
+    .te-form .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .te-form .actions button{height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
+    .te-form .actions button.primary-button{border-color:#244f68;background:#244f68;color:#fff}
+    .te-form .actions button.danger{color:#c62828}
+    .te-form .actions button:disabled{opacity:.5;cursor:default}
+    .te-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .te-actions button{height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
+    .te-actions button.primary-button{border-color:#244f68;background:#244f68;color:#fff}
+    .te-actions button:disabled{opacity:.5;cursor:default}
+    .te-months td.number{text-align:right}
+    .te-months tr.pick{cursor:pointer}
+    .list-panel > .table-wrap{scrollbar-width:auto}
+    @media print{
+      .sidebar,.topbar,.toolbar,.te-tabs,.te-actions,.panel-heading button,.te-note{display:none!important}
+      .app-shell{display:block}
+      .te-table{font-size:10px}
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>출장비</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <!-- 탭 순서·노출 (2026-09-10 사용자): 월별 현황이 맨 앞·기본, 리스트는 월 클릭으로, 출장비 입력은 당분간 숨김 -->
+    <div class="te-tabs" role="tablist">
+      <button data-tab="months" class="active" type="button">월별 현황</button>
+      <button data-tab="list" type="button">리스트 · 결재</button>
+      <button data-tab="entry" type="button" hidden>출장비 입력</button>
+    </div>
+
+    <!-- 입력 -->
+    <section id="tabEntry" hidden>
+      <section class="toolbar" aria-label="감정서 선택">
+        <div class="te-toolbar">
+          <div class="grp"><strong>감정서번호</strong><input id="enDocId" type="text" placeholder="01-2609-3-0001" style="width:150px"><button id="enLoad" class="primary-button" type="button">불러오기</button></div>
+          <div class="grp"><button id="enRefresh" type="button">내 감정서 다시 조회</button></div>
+          <span id="enMe" class="te-hint"></span>
+        </div>
+        <p class="te-hint">왼쪽은 내가 조사자로 들어간 감정서 중 아직 출장비를 안 적었거나 기준액에 못 미친 건입니다. 클릭하면 오른쪽에 입력 폼이 열리고, 기준 출장비는 소재지 지역으로 자동 계산됩니다(서울은 시내, 그 밖은 시외).</p>
+      </section>
+      <section class="workspace single-workspace">
+        <div class="te-entry">
+          <article class="list-panel">
+            <div class="panel-heading"><div><h2>내 감정서</h2><p id="enSummary">조회 중...</p></div></div>
+            <div class="table-wrap">
+              <table id="enDocsTable" class="te-table">
+                <thead><tr><th>감정서번호</th><th>소재지</th><th>진행상태</th><th>담당평가사</th><th>접수일</th><th class="number">입력액</th><th class="number">기준액</th></tr></thead>
+                <tbody id="enDocs"><tr><td colspan="7" class="te-hint">불러오는 중...</td></tr></tbody>
+              </table>
+            </div>
+            <div class="panel-heading" style="margin-top:12px"><div><h2>이번 달 내가 적은 건</h2><p id="enMineSummary"></p></div><div class="te-actions"><button id="enSubmit" type="button" class="primary-button" disabled>선택 제출</button></div></div>
+            <div class="table-wrap">
+              <table id="enMineTable" class="te-table">
+                <thead><tr><th><input id="enMineAll" type="checkbox"></th><th>감정서번호</th><th>출장일</th><th>상태</th><th class="number">출장비</th><th class="number">공부</th><th class="number">합계</th><th>비고</th></tr></thead>
+                <tbody id="enMine"><tr><td colspan="8" class="te-hint">-</td></tr></tbody>
+              </table>
+            </div>
+          </article>
+          <article class="te-form" id="enForm" hidden>
+            <h3>감정서 정보 <span id="fmDocId" class="badge"></span> <span id="fmState" class="badge s0"></span></h3>
+            <div class="grid">
+              <label>담당평가사<input id="fmManager" readonly></label>
+              <label class="wide">소재지<input id="fmAddr" readonly></label>
+              <label>지역<input id="fmRegion" readonly></label>
+              <label>출장일자<input id="fmDate" type="date"></label>
+              <label class="wide">출장비 구분<div class="ratio" id="fmRatio">
+                <label><input type="radio" name="ratio" value="100" checked>100%</label>
+                <label><input type="radio" name="ratio" value="80">80%</label>
+                <label><input type="radio" name="ratio" value="50">50%</label>
+                <label><input type="radio" name="ratio" value="20">20%</label>
+                <span id="fmBase" class="te-hint"></span></div></label>
+            </div>
+            <h3>출장비</h3>
+            <div class="grid">
+              <label>시내<input id="f_cul_in" class="amt"></label>
+              <label>시외<input id="f_cul_out" class="amt"></label>
+            </div>
+            <h3>공부발급비 및 임대차확인비용</h3>
+            <div class="grid">
+              <label>등기부등본<input id="f_regis_copy" class="amt"></label>
+              <label>토지이용계획<input id="f_toji_use" class="amt"></label>
+              <label>토지대장<input id="f_toji_dae" class="amt"></label>
+              <label>건축물대장<input id="f_build_dae" class="amt"></label>
+              <label>지적/교통<input id="f_jijuck" class="amt"></label>
+              <label class="wide">임대차확인·물건조사 내역<input id="f_mul_remark" maxlength="30" placeholder="예: 1개동"></label>
+              <label>비용<input id="f_mul_amt" class="amt"></label>
+            </div>
+            <div class="sum"><span>출장비 소계 <b id="sumCul">0</b></span><span>공부 소계 <b id="sumGong">0</b></span><span>합계 <b id="sumAll">0</b></span></div>
+            <h3>감정서 여비 (청구서)</h3>
+            <div class="grid">
+              <label>여비<input id="f_yebi" class="amt"></label>
+              <label>물건조사비<input id="f_muljosabi" class="amt"></label>
+              <label>토지조사비<input id="f_tojosabi" class="amt"></label>
+              <label>공부발급<input id="f_gongbu" class="amt"></label>
+              <label>기타실비<input id="f_silbi" class="amt"></label>
+              <label>특별용역비<input id="f_yongyeuk" class="amt"></label>
+              <label>합계<input id="sumBill" class="amt" readonly></label>
+            </div>
+            <div class="grid"><label class="full">비고<textarea id="f_bigo" maxlength="200" placeholder="저장 시 감정서번호가 앞에 붙습니다"></textarea></label></div>
+            <div class="actions">
+              <span id="fmMsg" class="te-hint" style="margin-right:auto"></span>
+              <button id="fmDelete" type="button" class="danger" hidden>삭제</button>
+              <button id="fmNew" type="button">새로 입력</button>
+              <button id="fmSave" type="button" class="primary-button">저장</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <!-- 리스트·결재 -->
+    <section id="tabList" hidden>
+      <section class="toolbar" aria-label="조회 조건">
+        <div class="te-toolbar">
+          <div class="grp"><strong>월</strong><select id="lsMonth"></select></div>
+          <div class="grp"><strong>기준</strong>
+            <label class="rad"><input type="radio" name="dateKind" value="" checked>월</label>
+            <label class="rad"><input type="radio" name="dateKind" value="cul">출장일</label>
+            <label class="rad"><input type="radio" name="dateKind" value="receipt">접수일</label>
+            <label class="rad"><input type="radio" name="dateKind" value="send">발송일</label>
+            <input id="lsFrom" type="date"> ~ <input id="lsTo" type="date"></div>
+          <div class="grp" id="lsEmpGrp"><strong>작성자</strong><select id="lsEmp"><option value="">전체</option></select></div>
+          <div class="grp"><strong>결재상태</strong><select id="lsState"><option value="">전체</option><option value="0">미상신</option><option value="1">1차결재</option><option value="2">2차결재</option><option value="3">3차결재</option><option value="4">완료</option></select></div>
+          <div class="grp"><strong>감정서번호</strong><input id="lsDoc" type="text" style="width:140px"></div>
+          <button id="lsSearch" class="primary-button" type="button">조회</button>
+        </div>
+        <p class="te-hint" id="lsHint">작성자는 본인 건만, 결재자는 전체가 보입니다. 감정서번호를 적으면 다른 조건은 무시합니다.</p>
+      </section>
+      <section class="workspace single-workspace">
+        <article class="list-panel">
+          <div class="panel-heading">
+            <div><h2>출장비 리스트</h2><p id="lsSummary">조회 조건을 고르고 조회를 누르세요.</p></div>
+            <div class="te-actions">
+              <button id="lsSubmit" type="button" disabled>선택 제출</button>
+              <button id="lsApprove" type="button" class="primary-button" disabled hidden>선택 결재</button>
+              <button id="lsReject" type="button" disabled hidden>선택 반려</button>
+              <button id="lsExcel" type="button">엑셀</button>
+              <button id="lsPrint" type="button">인쇄</button>
+              <button id="lsPrintSummary" type="button">총괄표</button>
+            </div>
+          </div>
+          <p class="te-note" id="lsNote" hidden></p>
+          <div class="table-wrap">
+            <table id="lsTable" class="te-table">
+              <colgroup><col style="width:34px"><col style="width:70px"><col style="width:64px"><col style="width:84px"><col style="width:84px"><col style="width:118px"><col style="width:70px"><col style="width:70px"><col style="width:200px"><col style="width:84px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:90px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:280px"></colgroup>
+              <thead>
+                <tr><th rowspan="2"><input id="lsAll" type="checkbox"></th><th rowspan="2">결재상태</th><th rowspan="2">작성자</th><th rowspan="2">접수일</th><th rowspan="2">출장일</th><th rowspan="2">감정서번호</th><th rowspan="2">진행상태</th><th rowspan="2">담당평가사</th><th rowspan="2">출장지</th><th rowspan="2">발송일</th>
+                  <th colspan="3">출장비</th><th colspan="8">공부발급비 및 임대차확인비용</th><th rowspan="2">합계</th><th colspan="7" class="th-bill">감정서 여비</th><th rowspan="2">비고</th></tr>
+                <tr><th>시내</th><th>시외</th><th>소계</th><th>등기부</th><th>토지이용</th><th>토지대장</th><th>건축물</th><th>지적/교통</th><th>물건내역</th><th>물건비용</th><th>소계</th>
+                  <th class="th-bill">여비</th><th class="th-bill">물건조사</th><th class="th-bill">토지조사</th><th class="th-bill">공부발급</th><th class="th-bill">기타실비</th><th class="th-bill">특별용역</th><th class="th-bill">합계</th></tr>
+              </thead>
+              <tbody id="lsRows"><tr><td colspan="30" class="te-hint">-</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </section>
+
+    <!-- 월별 현황 -->
+    <section id="tabMonths">
+      <section class="workspace single-workspace">
+        <article class="list-panel">
+          <div class="panel-heading"><div><h2>월별 현황</h2><p id="moSummary">월을 클릭하면 리스트로 갑니다. 그 달 건이 전부 완료되면 잠깁니다.</p></div><div class="te-actions"><button id="moRefresh" type="button">다시 조회</button></div></div>
+          <div class="table-wrap">
+            <table id="moTable" class="te-table te-months">
+              <thead><tr><th>월</th><th class="number">건수</th><th>상태별</th><th>잠금</th><th>잠금일</th></tr></thead>
+              <tbody id="moRows"><tr><td colspan="5" class="te-hint">불러오는 중...</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <script src="/ui/travel-expense.js?v=20260911-2"></script>
+  <script src="/ui/travel-expense-entry.js?v=20260910-1"></script>
+  <script src="/ui/travel-expense-print.js?v=20260910-6"></script>
+</body>
+</html>

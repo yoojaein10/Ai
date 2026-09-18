@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 업무실적 보고</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .toolbar{display:block}
+    .wr-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .wr-toolbar .grp{display:flex;gap:6px;align-items:center}
+    .wr-toolbar .grp>strong{white-space:nowrap}
+    .wr-toolbar select,.wr-toolbar input{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px}
+    .wr-toolbar input.year{width:74px}
+    .wr-extra{display:flex;gap:6px;align-items:center;margin-top:8px}
+    .wr-extra input{flex:1;height:32px;border:1px solid var(--line);border-radius:8px;padding:0 10px}
+    .wr-hint{font-size:12px;color:var(--muted);margin:6px 0}
+    .wr-summary{font-size:13px;margin:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:nowrap}
+    .wr-summary b{font-variant-numeric:tabular-nums}
+    .wr-action-status{flex:0 0 auto;margin-left:auto;padding:5px 9px;border:1px solid #b8d8e7;border-radius:8px;background:#f5fbfe;color:#315d75;box-shadow:0 6px 18px rgba(43,72,87,.12);font-size:11px;font-weight:700;white-space:nowrap}
+    .wr-action-status:empty{display:none}
+    .wr-action-status.error{border-color:#e2b8af;background:#fff7f5;color:#934333}
+    /* 기재사항 열이 붙어 폭 합계가 화면을 넘는다 — 표만 가로 스크롤한다(본문은 그대로). */
+    .wr-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:13px}
+    #tableWrap{overflow-x:auto}
+    .wr-table th,.wr-table td{padding:6px 8px;border-bottom:1px solid #f0f3f1;text-align:left;white-space:nowrap}
+    .wr-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .wr-table th.num{text-align:center}
+    .wr-table tr.excluded td{opacity:.4;text-decoration:line-through}
+    .wr-table td.name{white-space:normal;max-width:320px}
+    /* dashboard.css 전역 input(100%×42px) 무력화 — 체크박스는 작게 */
+    .wr-table input.wr-exclude{width:15px;height:15px;vertical-align:-2px;cursor:pointer}
+    .wr-table th:first-child,.wr-table td:first-child{width:44px;text-align:center}
+    .wr-badge{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:700}
+    .wr-badge.reg{background:#eef2f0;color:#6b7a72}
+    .wr-badge.unreg{background:#fdeee2;color:#c05f10}
+    .wr-badge.nofee{background:#fdecec;color:#c62828}
+    .wr-badge.stale{background:#fff4e0;color:#8a5a00}
+    /* dashboard.css 전역 input(100%×42px) 무력화 — 기재사항 칸 */
+    .wr-table td.note{white-space:nowrap}
+    .wr-table input.wr-note{width:180px;height:26px;font-size:12px;padding:0 6px;
+      border:1px solid var(--line);border-radius:6px;vertical-align:middle}
+    .wr-table input.wr-note:disabled{background:#f5f5f5;cursor:not-allowed}
+    .wr-table .wr-note-reset{margin-left:4px;width:24px;height:26px;line-height:1;
+      border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;
+      font-size:13px;color:var(--muted);vertical-align:middle}
+    .wr-table .wr-note-reset:disabled{opacity:.4;cursor:not-allowed}
+    .wr-find{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px}
+    .wr-find>strong{white-space:nowrap}
+    /* 감정서번호(01-2604-3-1193) 한 건만 넣는 칸이라 딱 그만큼만 준다 */
+    .wr-find input{width:170px;flex:0 0 auto;height:30px;border:1px solid var(--line);
+      border-radius:8px;padding:0 10px;font-size:13px}
+    .wr-find-count{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .wr-find button{margin-left:auto;flex:0 0 auto;height:30px;border:1px solid var(--line);
+      background:#fff;border-radius:8px;padding:0 14px;font-weight:700;cursor:pointer;
+      white-space:nowrap;font-size:13px}
+    .wr-find button:disabled{opacity:.45;cursor:not-allowed}
+    /* 찾기 — 거르지 않고 표시만 한다 */
+    .wr-table tr.found td{background:#fff6d6}
+    .wr-table tr.found-current td{background:#ffe08a;box-shadow:inset 0 0 0 1px #d9a520}
+    .wr-table tr.found.excluded td{opacity:.75}
+    .wr-table tr.dirty td{background:#fffdf2}
+    .wr-table tr.dirty.excluded td{background:#faf7ea}
+    /* 누락분 확인 모달 */
+    .wr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:50}
+    /* display:flex 가 hidden 속성의 기본 display:none(브라우저 스타일)을 이겨서 모달이
+       화면에 들어가자마자 떴다 — 작성자 규칙으로 다시 눌러 준다. */
+    .wr-modal-overlay[hidden]{display:none}
+    .wr-modal{background:#fff;border-radius:12px;width:min(940px,95vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .wr-modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+    .wr-modal-head strong{font-size:15px}
+    .wr-modal-x{border:none;background:none;font-size:18px;cursor:pointer;color:#888}
+    .wr-modal-controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+    .wr-modal-controls input[type=month]{height:30px}
+    .wr-modal-status{color:#555;font-size:13px}
+    .wr-modal-status.error{color:#c62828}
+    .wr-modal-body{overflow:auto;padding:4px 18px;min-height:120px}
+    .wr-modal-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line)}
+    .wr-miss-table{width:100%;border-collapse:collapse;font-size:13px}
+    .wr-miss-table th,.wr-miss-table td{border-bottom:1px solid #eee;padding:6px 8px;text-align:left;white-space:nowrap}
+    .wr-miss-table th{position:sticky;top:0;background:#faf7f2;z-index:1}
+    .wr-miss-table td.name{white-space:normal}
+    .wr-miss-table td.num{text-align:right}
+    .wr-miss-flag{color:#c05f10;font-size:12px;margin-left:6px}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>업무실적 보고</h1></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="업무 메뉴">
+      <p class="sidebar-label">업무 메뉴</p>
+      <nav class="side-nav"></nav>
+    </aside>
+  <main id="main-content">
+    <section class="toolbar" aria-label="업무실적 조회">
+      <div class="wr-toolbar">
+        <div class="grp"><strong>지사</strong><select id="officeCode"></select></div>
+        <div class="grp"><strong>년월</strong><input id="year" class="year" type="number" min="2010" max="2099"> 년
+          <select id="month"></select> 월</div>
+        <div class="grp"><strong>반월</strong>
+          <select id="half"><option value="상반">상반 (1~15일)</option><option value="하반">하반 (16~말일)</option></select></div>
+        <div class="grp"><strong>기준</strong>
+          <select id="basis">
+            <option value="매출">매출(입금)기준</option>
+            <option value="접수">접수기준</option>
+            <option value="전례">전례기준</option>
+          </select></div>
+        <button id="runButton" class="primary-button" type="button">조회</button>
+        <button id="saveListButton" type="button" style="border:1px solid #1c7c3f;background:#1c7c3f;color:#fff;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">작업 저장</button>
+        <button id="freshButton" type="button" title="저장본을 무시하고 원천에서 다시 뽑습니다. 저장된 체크·사유는 감정서번호로 다시 얹힙니다." style="border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">원천에서 새로 조회</button>
+        <button id="selectUnregButton" type="button" style="border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">미등록만 선택</button>
+        <button id="missingButton" type="button" style="border:1px solid #c05f10;background:#fff;color:#c05f10;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">누락분 확인</button>
+        <button id="exportButton" class="rc-export" type="button" style="border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">엑셀 다운로드</button>
+        <button id="submitButton" type="button" style="border:1px solid #c62828;background:#fff;color:#c62828;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer">협회 전송</button>
+      </div>
+      <div class="wr-extra">
+        <strong style="white-space:nowrap;font-size:13px">수기 추가</strong>
+        <input id="extra" placeholder="자동에 없는 감정서번호를 콤마로 (예: 01-2604-3-1193, 01-2509-B-0048)">
+        <button id="addExtraButton" type="button" style="height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-weight:700;white-space:nowrap;cursor:pointer">추가</button>
+        <input id="importExcelFile" type="file" accept=".xls,.xlsx">
+        <button id="importExcelButton" type="button" style="height:32px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-weight:700;white-space:nowrap;cursor:pointer">엑셀 업로드</button>
+      </div>
+      <p class="wr-hint">자동 선택된 목록에서 빼려면 행의 체크를 해제하세요. 제외·추가는 다운로드에 반영됩니다. 협회 프로그램에 이 엑셀을 업로드하세요. 체크 상태와 사유는 <b>기재사항 저장</b>을 눌러야 남습니다(지사·년·월·반월 단위, 기준과 무관하게 공유).</p>
+    </section>
+    <div class="wr-find">
+      <strong>검색</strong>
+      <input id="rowFilter" type="search" placeholder="감정서번호">
+      <span id="filterCount" class="wr-find-count"></span>
+      <button id="saveNotesButton" type="button" disabled>기재사항 저장</button>
+    </div>
+    <div id="summary" class="wr-summary"></div>
+    <div id="tableWrap" style="overflow-x:auto"></div>
+    <div id="empty" class="wr-hint">년월·반월·기준을 고르고 "조회"를 누르세요.</div>
+  </main>
+  </div>
+  <div id="missingOverlay" class="wr-modal-overlay" hidden>
+    <div class="wr-modal" role="dialog" aria-label="여러 달 누락분 확인" aria-modal="true">
+      <div class="wr-modal-head">
+        <strong>여러 달 누락분 확인</strong>
+        <button id="missingClose" type="button" class="wr-modal-x" aria-label="닫기">✕</button>
+      </div>
+      <div class="wr-modal-controls">
+        <span><strong>기준</strong>
+          <select id="missingBasis">
+            <option value="매출">매출(입금)기준</option>
+            <option value="접수">접수기준</option>
+            <option value="전례">전례기준</option>
+          </select></span>
+        <span><strong>기간</strong>
+          <input id="missingFrom" type="month"> ~ <input id="missingTo" type="month"></span>
+        <button id="missingRun" type="button" class="primary-button">누락 조회</button>
+        <span id="missingStatus" class="wr-modal-status"></span>
+      </div>
+      <div id="missingBody" class="wr-modal-body">
+        <p class="wr-hint">기준과 기간(최대 12개월)을 고르고 "누락 조회"를 누르세요.
+          그 달 보고 대상인데 협회에 아직 없는 건을 모아 보여줍니다.</p>
+      </div>
+      <div class="wr-modal-foot">
+        <span id="missingPick" class="wr-modal-status"></span>
+        <button id="missingAdd" type="button" class="primary-button" disabled>선택 건을 현재 회차에 추가</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/column-resize.js"></script>
+  <!-- ?v= 없이 두면 브라우저가 옛 JS를 계속 써서 서버가 맞게 보내도 화면이 안 바뀐다. -->
+  <script src="/ui/work-report.js?v=20260907-3"></script>
+</body>
+</html>

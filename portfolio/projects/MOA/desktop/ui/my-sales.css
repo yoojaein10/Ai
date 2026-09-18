@@ -1,0 +1,540 @@
+/* 개인별 매출실적 — 2026-08-08 전면개편, 2026-08-09 그라디언트 메시 적용.
+   설계 원칙(3안 합성 심사): 히어로 숫자 1개 + 칩, 이야기는 '올해'(파랑)이고
+   전년은 맥락(회색), 정렬·비중은 전부 금액 기준, 도넛 폐지(근접값 비교 금지),
+   공동은 값이 있을 때만 등장. 색은 실체에 고정 — 사람이 바뀌어도 담보는 파랑.
+
+   2026-08-10: **배경 메시는 걷었다.** 이 화면만 파랗게 떠 보여 다른 메뉴와
+   같은 배경으로 되돌렸다(아래 참조). 카드의 반투명 유리(backdrop blur)는 남는다.
+   데이터 색(차트)은 처음부터 손대지 않았다 — 마크는 검증된 팔레트로 말한다. */
+
+/* 배경은 다른 화면과 똑같이 간다 (2026-08-10 요청).
+   여기에 그라디언트 메시(radial 5겹 + linear, attachment:fixed)를 깔았었는데,
+   이 화면만 파랗게 떠 보여 메뉴를 옮겨 다닐 때 눈에 걸렸다. body 를 덮어쓰지
+   않으면 dashboard.css 의 표준 배경(--paper + 흰빛 radial 둘)이 그대로 온다.
+   사이드바도 같은 이유로 덮어쓰지 않는다 — 표준은 rgba(255,255,255,.58) 이다. */
+/* 유리 카드(글래스모피즘) — 반투명 + 큰 블러 + 흰 테두리 + 파랑 기 도는 그림자.
+   지원 안 되는 브라우저는 그냥 반투명 흰 카드로 열화된다. */
+body.ms-mesh .card,body.ms-mesh .hero{
+  background:rgba(255,255,255,.64);
+  -webkit-backdrop-filter:blur(24px) saturate(1.25);
+  backdrop-filter:blur(24px) saturate(1.25);
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 14px 40px rgba(63,84,180,.11);
+}
+body.ms-mesh .ms-toolbar select,body.ms-mesh .ms-toolbar input[type=date]{
+  background:rgba(255,255,255,.82);border-color:rgba(255,255,255,.9);
+  box-shadow:0 2px 8px rgba(63,84,180,.06)}
+body.ms-mesh .ms-toolbar button{
+  background:linear-gradient(120deg,#2563eb,#5b5bd6);
+  box-shadow:0 4px 14px rgba(63,84,180,.28)}
+
+.ms-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;
+  flex-wrap:wrap;margin-bottom:14px}
+.ms-title h1{margin:0;font-size:19px;letter-spacing:-.2px}
+.ms-sub{margin:4px 0 0;font-size:12px;color:#6b7683}
+.ms-toolbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.ms-toolbar label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#6b7683}
+.ms-toolbar label>span{font-weight:600}
+.ms-toolbar select,.ms-toolbar input[type=date]{width:auto;height:28px;padding:0 8px;
+  font-size:12px;border-radius:8px;border:1px solid var(--line,#d8dde3);background:#fff}
+.ms-toolbar #empName{min-width:130px}
+.ms-toolbar label.locked>span::after{content:" 🔒";font-size:10px}
+.ms-toolbar label.locked select{background:#f4f6f8;color:#6b7683;cursor:default}
+.ms-toolbar button{height:28px;padding:0 16px;font-size:12px;border-radius:8px;
+  border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+.ms-toolbar button:disabled{opacity:.55;cursor:default}
+
+/* ── 레이아웃 ─────────────────────────────────────────────────────────── */
+.ms-row{display:grid;gap:12px;margin-bottom:12px}
+.ms-row-trend{grid-template-columns:1fr}
+/* 좌 매출 구성(읽기 순서 ③) · 우 발주처. 발주처는 이름이 길어 넓은 쪽을 준다. */
+.ms-row-mid{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+/* 두 카드는 그리드가 키를 맞춰 늘린다. 짧은 쪽 내부에 빈 벽이 남지 않도록
+   (실측 제보: 발주처 카드 아래 큰 공백) 행 사이 공기를 고르게 늘려 채운다. */
+.ms-row-mid .card-body{flex:1;display:flex;flex-direction:column}
+.ms-row-mid .cl-rows{flex:1;justify-content:space-evenly}
+#mixBody{gap:6px}
+#mixBody .mix-block{flex:1;display:flex;flex-direction:column;margin-bottom:8px}
+#mixBody .mxp-rows{flex:1;justify-content:space-evenly}
+.ms-row-table{grid-template-columns:1fr}
+@media (max-width:1180px){.ms-row-mid{grid-template-columns:1fr}}
+
+.card{background:#fff;border:1px solid var(--line,#e3e7ec);border-radius:16px;
+  display:flex;flex-direction:column;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--line,#eef1f5);flex-wrap:wrap}
+.card-head h2{margin:0;font-size:13px;font-weight:700}
+.card-head h2 small{font-weight:500;color:#8a949f;font-size:11px}
+.card-hint{font-size:11.5px;color:#6b7683;font-weight:600}
+.card-body{padding:14px 16px;min-height:120px}
+/* 재조회 중엔 이전 그림을 흐리게 유지 — 스켈레톤 깜빡임 금지 */
+main.loading .card,main.loading .hero{opacity:.5;transition:opacity .15s}
+
+/* ── 히어로 — 화면당 큰 숫자는 하나. 메시의 악센트가 여기 산다 ─────────── */
+.hero{background:#fff;border:1px solid var(--line,#e3e7ec);border-radius:16px;
+  padding:18px 22px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+/* 카드 안 메시 방울 — 올해 실적이 화면의 주인공임을 배경이 거든다 */
+.hero::before{content:'';position:absolute;top:-70%;right:-8%;width:52%;height:220%;
+  background:radial-gradient(closest-side,rgba(37,99,235,.13),transparent 72%);
+  pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-90%;left:22%;width:44%;height:200%;
+  background:radial-gradient(closest-side,rgba(109,63,212,.08),transparent 72%);
+  pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.hero-label{margin:0;font-size:11px;color:#6b7683;font-weight:600}
+.hero-value{margin:2px 0 0;font-size:38px;font-weight:800;letter-spacing:-1.2px;
+  line-height:1.1;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+/* 그라디언트는 큰 숫자에만 — 부모에 걸면 원 단위·부속 글자까지 물든다(실측) */
+.hero-num{background:linear-gradient(118deg,#1d4fc0,#2a78d6 46%,#5a9ceb 78%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-value .won{font-size:14px;font-weight:600;color:#6b7683}
+.hero-value .hero-eok{font-size:13px;font-weight:600;color:#7b8794;
+  background:#f2f5f9;border-radius:99px;padding:2px 9px;letter-spacing:0}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+/* 스탯 타일 느낌의 칩 — 좌측 그라디언트 아이콘 사각 + 우측 숫자/보조줄 */
+.chip{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.62);
+  border:1px solid rgba(255,255,255,.85);border-radius:13px;padding:8px 13px 8px 9px;
+  font-size:13px;font-weight:700;color:#1f2937;
+  box-shadow:0 4px 14px rgba(63,84,180,.08)}
+.chip-ic{flex:none;width:26px;height:26px;border-radius:8px;display:flex;
+  align-items:center;justify-content:center;color:#fff}
+.chip-ic svg{width:14px;height:14px;display:block}
+.chip-tx{display:flex;flex-direction:column;gap:1px}
+.chip .chip-sub{font-size:11.5px;font-weight:600;color:#6b7683}
+.chip.up{color:#0f7a55;background:#f0fbf6;border-color:#cdeee0}
+.chip.down{color:#c81e4a;background:#fff4f6;border-color:#f7d3da}
+.chip.muted{color:#8a949f}
+.chip-rank{min-width:118px}
+.rank-bar{height:4px;border-radius:99px;background:#eef1f5;margin-top:5px;overflow:hidden}
+.rank-bar i{display:block;height:100%;background:#eda100;border-radius:99px}
+/* 공동 정산 대기 — 값이 있을 때만 이 줄이 존재한다 */
+.hero-joint{margin:10px 0 0;font-size:11px;color:#7b8794;background:#faf7ff;
+  border:1px solid #ece3fb;border-radius:9px;padding:6px 10px}
+.hero-joint b{color:#6d3fd4}
+/* 귀속 커버리지 안내 — 경고가 아니라 설명이다. 잉크 톤, 은은한 배경만. */
+.hero-coverage{margin:10px 0 0;font-size:11px;color:#6b7683;
+  background:rgba(240,245,252,.85);border:1px solid #dde6f2;border-radius:9px;
+  padding:6px 10px}
+.hero-coverage b{color:#1f2937}
+
+/* ── AI 분석 패널 ─────────────────────────────────────────────────────── */
+.ai-panel{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.85);
+  border-radius:16px;padding:10px 14px;margin-bottom:12px;
+  -webkit-backdrop-filter:blur(20px) saturate(1.2);
+  backdrop-filter:blur(20px) saturate(1.2);
+  box-shadow:0 8px 24px rgba(63,84,180,.08)}
+.ai-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#aiButton{height:30px;padding:0 16px;font-size:12px;font-weight:700;border:0;
+  border-radius:9px;color:#fff;cursor:pointer;
+  background:linear-gradient(120deg,#5b5bd6,#2563eb);
+  box-shadow:0 4px 14px rgba(63,84,180,.25)}
+#aiButton:disabled{opacity:.6;cursor:default}
+/* 주 사용자가 연배 있는 평가사들이라 안내·본문 글자를 한 단 키운다. */
+.ai-note{font-size:12.5px;color:#6b7683}
+/* 모델 출력은 텍스트로만 붓는다(textContent) — 줄바꿈은 CSS 가 살린다. */
+/* 모델 글 — 줄마다 '제목 + 내용' 두 칸. 제목이 왼쪽에 줄맞춰 서면 훑기 쉽다.
+   글자는 전부 textContent 로 들어온다(모델 출력은 신뢰하지 않는 데이터다). */
+.ai-result{margin-top:10px;padding:12px 14px 14px;
+  border-top:1px solid rgba(210,220,235,.7);font-size:14px;color:#2f3a46}
+.ai-row{display:flex;gap:10px;align-items:baseline;padding:5px 0;line-height:1.75}
+.ai-row+.ai-row{border-top:1px solid rgba(226,232,240,.75)}
+.ai-key{flex:none;width:62px;text-align:center;font-size:12px;font-weight:800;
+  color:#5b5bd6;background:#f0effc;border-radius:99px;padding:2px 0;
+  letter-spacing:-.2px}
+.ai-txt{flex:1;min-width:0}
+/* 형식을 어겨 제목이 없는 줄은 제목 자리를 비워 두고 줄만 맞춘다 */
+.ai-row>.ai-txt:first-child{margin-left:72px}
+.ai-actions{display:flex;gap:8px;padding:2px 14px 6px}
+.ai-actions button{height:28px;padding:0 14px;font-size:12px;font-weight:600;
+  border:1px solid rgba(191,205,222,.7);border-radius:8px;background:rgba(255,255,255,.75);
+  color:#374151;cursor:pointer}
+.ai-actions button:hover{background:#fff}
+
+/* ── 탭 ──────────────────────────────────────────────────────────────── */
+.tabs{display:flex;gap:4px;background:#f1f4f8;border-radius:8px;padding:2px}
+.tab{border:0;background:transparent;font-size:11px;font-weight:600;color:#6b7683;
+  padding:4px 10px;border-radius:6px;cursor:pointer}
+.tab.active{background:#fff;color:#1f2937;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+
+/* ── 추이 카드: 좌 월별 2/3 · 우 연도별 1/3 (탭 없음) ─────────────────── */
+.trend-body{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px}
+.trend-yearly{border-left:1px solid var(--line,#eef1f5);padding-left:18px}
+.trend-monthly{min-width:0}
+.trend-monthly>div{overflow-x:auto}
+.mini-title{margin:0 0 4px;font-size:11px;font-weight:700;color:#4b5563}
+.mini-title small{font-weight:500;color:#8a949f}
+@media (max-width:1180px){.trend-body{grid-template-columns:1fr}
+  .trend-yearly{border-left:0;padding-left:0;border-top:1px solid var(--line,#eef1f5);
+    padding-top:12px}}
+
+/* ── 차트 공통 ────────────────────────────────────────────────────────── */
+.chart-svg{display:block}
+/* '올해'는 SVG 안 그라디언트를 쓴다 — 참고 시안의 파랑→보라. */
+.b-cur{fill:url(#gCurV)}
+.b-prev{fill:#c9d2dc}
+.b-joint{fill:#86b6ef}
+/* 월별 곡선 (2026-08-09 사용자 요청 — 막대가 얇고 공백이 많았다) */
+.ln-cur{fill:none;stroke:url(#gLine);stroke-width:2.5;stroke-linecap:round;
+  stroke-linejoin:round}
+/* 전년선 — 유리 배경 위에서 #c3cdd9 는 묻혔다(실측 제보). 진한 회청색 + 점.
+   올해(그라디언트+면적)보다는 여전히 한 단 뒤에 선다 — 주인공 위계 유지. */
+.ln-prev{fill:none;stroke:#93a2b7;stroke-width:2.2;stroke-linecap:round;
+  stroke-linejoin:round}
+.dot-prev{fill:#a7b3c4;stroke:#fff;stroke-width:1.6}
+.ln-tag{font-size:12px;fill:#5f6b7c;font-weight:700}
+.ln-joint{fill:none;stroke:#86b6ef;stroke-width:2;stroke-linecap:round;
+  stroke-linejoin:round}
+/* 점은 흰 테두리를 둘러 선·면 위에서도 또렷하다 */
+.dot-cur{fill:#3d74e0;stroke:#fff;stroke-width:2}
+.xhair{stroke:#b9c4d6;stroke-width:1}
+.key-line{width:14px!important;height:3px!important;border-radius:2px}
+.chart-svg text{font-size:12px;fill:#6b7683}
+.chart-svg .val{font-size:12px;font-weight:700;fill:#3f4a56}
+.chart-svg .val-muted{font-size:11.5px;font-weight:600;fill:#6b7683}
+.chart-svg .grid{stroke:#eef1f3;stroke-width:1}
+.chart-svg .axis{stroke:#d5dae0;stroke-width:1}
+.chart-svg .hit{fill:transparent;cursor:default}
+.chart-svg .hit:hover{fill:rgba(42,120,214,.06)}
+.legend{margin:0 0 6px;padding:0;font-size:12px;color:#6b7683;display:flex;
+  gap:6px;align-items:center;flex-wrap:wrap}
+.legend b{font-weight:600;margin-right:10px}
+/* 범례가 곧 스위치다 (2026-08-11 요청) — 이름 옆 체크를 빼면 그 선이 사라진다.
+   글자를 누르면 체크가 되도록 label 로 감쌌다(체크칸이 13px 라 조준이 어렵다). */
+.legend .ser{display:inline-flex;align-items:center;gap:5px;cursor:pointer;
+  font-weight:600;color:#3f4a56;margin-right:12px;user-select:none;
+  padding:2px 2px 2px 0;border-radius:6px}
+.legend .ser:hover{color:#1f2937}
+.legend .ser input{width:13px;height:13px;margin:0;accent-color:#2563eb;cursor:pointer}
+.legend .ser small{font-weight:500;color:#8a949f;margin-left:3px}
+/* 체크는 했는데 아직 안 온 것 — 아무것도 안 그려지면 고장으로 보인다 */
+.legend .ser em{font-style:normal;font-weight:600;color:#a9b2bc;margin-left:4px}
+.legend .ser-wait{opacity:.75}
+/* 체크를 뺀 항목은 눌러 두되 지우지 않는다 — 뭘 껐는지 보여야 다시 켠다 */
+.legend .ser:has(input:not(:checked)){color:#a9b2bc}
+.legend .ser:has(input:not(:checked)) .key{opacity:.3}
+
+.key{width:9px;height:9px;border-radius:2px;display:inline-block}
+.empty{padding:26px 0;text-align:center;color:#9aa3ad;font-size:12px}
+
+/* 툴팁 — 값이 주, 이름이 보조. textContent 로만 채운다. */
+.ms-tip{position:fixed;z-index:40;pointer-events:none;background:#fff;
+  border:1px solid var(--line,#dfe4ea);border-radius:9px;padding:7px 10px;
+  box-shadow:0 4px 14px rgba(15,23,42,.12);font-size:11px;color:#6b7683;
+  max-width:280px;display:none}
+.ms-tip.show{display:block}
+.ms-tip .tip-title{font-weight:700;color:#1f2937;margin-bottom:3px;font-size:11px}
+.ms-tip .tip-row{display:flex;align-items:center;gap:6px;padding:1px 0}
+.ms-tip .tip-key{width:10px;height:3px;border-radius:2px;flex:none}
+.ms-tip .tip-val{font-weight:700;color:#1f2937;margin-left:auto;
+  font-variant-numeric:tabular-nums}
+
+/* ── 발주처 가로 막대 ────────────────────────────────────────────────── */
+/* 범례 조각 — 위 파랑·아래 회색 두 줄, 트랙에 그려지는 모양 그대로. */
+.prev-key{display:inline-block;position:relative;width:16px;height:11px;
+  vertical-align:-1px}
+.prev-key::before,.prev-key::after{content:'';position:absolute;left:0;height:4px;
+  border-radius:2px}
+.prev-key::before{top:0;right:0;background:linear-gradient(90deg,#2a78d6,#6a6ff0)}
+.prev-key::after{bottom:1px;right:5px;background:#5f6b7c}
+.cl-single{margin:6px 0;font-size:13px;color:#374151;line-height:1.6}
+.cl-single b{color:#1f2937}
+.cl-rows{display:flex;flex-direction:column;gap:8px}
+.cl-row{position:relative}
+.cl-name{display:flex;align-items:baseline;gap:6px;font-size:12px;color:#374151;
+  margin-bottom:3px;min-width:0}
+.cl-name .nm{font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:60%}
+.cl-name .cnt{font-size:11.5px;color:#6b7683;flex:none}
+.cl-prev-tx{color:#5f6b7c;font-weight:700}
+.cl-name .amt{margin-left:auto;font-weight:700;color:#1f2937;flex:none;
+  font-size:12px}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;border-radius:99px;
+  padding:1px 6px;vertical-align:1px}
+/* 신규 — 초록은 '증감 +' 가 이미 쓰고 있어 같은 뜻으로 읽힌다 (2026-08-10 요청).
+   호박색으로 갈라 놓는다. 빨강(증감 −)·보라(합계)·파랑(매출)과도 안 겹친다. */
+.badge-new{color:#8a5a00;background:#fdf3dc;border:1px solid #f0dfae}
+/* 올해 0 · 전년만 있는 행. 이 화면이 '식은 관계'에 이미 쓰던 #b45309 계열이다. */
+.badge-gone{color:#b45309;background:#fff4e6;border:1px solid #f5d9b0}
+.badge-joint{color:#6d3fd4;background:#f4edfe;border:1px solid #e2d5f8}
+/* 한 트랙을 두 줄로 — 위 올해, 아래 전년 (2026-08-10 확정).
+   종전에는 전년을 3px 세로 틱 하나로 찍었는데 세 군데서 깨졌다(실측):
+   ① 전년<올해 면 틱이 파란 막대 **안**에 떨어져 흠집으로 보였고,
+   ② 전년이 없으면 틱도 없어 '신규' 와 '자료 없음' 이 같은 그림이었고,
+   ③ 올해 0·전년만 있는 행(업무종류 '기업관련')은 막대 없이 틱만 남았다.
+   두 줄로 가르면 셋 다 사라진다 — 두 값이 **같은 출발선에서 길이로** 서므로
+   전년이 크면 아래 줄이 길고, 올해가 0이면 위 줄이 없다.
+   같은 화면 '매출 구성' 이 이미 통과시킨 '막대 두 개' 언어인데, 위아래로
+   쌓지 않고 트랙 14px 안에 6+2+6 으로 넣어 **행 높이를 안 늘린다**.
+
+   두 줄의 두께는 반드시 **같아야 한다**. 9/5 로 나눠 봤더니 잉크 면적이
+   길이와 어긋나 안진회계법인(올해 1.60억 < 전년 1.72억)인데 올해가 1.86배
+   커 보였다. 전년은 #5f6b7c — 트랙(#f3f6f9) 대비 4.99:1. 옅은 회색
+   (#93a2b7=2.39 · #c3cdd9=1.48)은 비텍스트 최소 3:1 미달이라 못 쓴다. */
+.cl-track{position:relative;height:14px;border-radius:3px;
+  background:linear-gradient(#f3f6f9 0 6px,transparent 6px 8px,#f3f6f9 8px 14px)}
+.cl-bar{position:absolute;left:0;top:0;height:6px;
+  background:linear-gradient(90deg,#2a78d6,#6a6ff0);
+  border-radius:0 3px 3px 0;min-width:2px}
+.cl-bar.other{background:#c3cbd4}
+.cl-prev{position:absolute;left:0;bottom:0;height:6px;background:#5f6b7c;
+  border-radius:0 3px 3px 0;min-width:2px}
+.cl-gone{margin:12px 0 0;padding-top:10px;border-top:1px dashed #e3e7ec;
+  font-size:12px;color:#7b8794;line-height:1.6}
+.cl-gone b{color:#b45309}
+
+/* ── 100% 누적 막대 (업무종류·물건종류) ──────────────────────────────── */
+.mix-block{margin-bottom:14px}
+.mix-block:last-child{margin-bottom:0}
+.mix-title{font-size:12px;font-weight:700;color:#4b5563;margin:0 0 2px}
+.mix-title small{font-weight:500;color:#8a949f}
+.mix-headline{font-size:12px;color:#6b7683;margin:0 0 6px}
+.mix-headline b{color:#1f2937}
+/* 구성 행 v2 — 종류마다 '올해/전년' 글자 붙은 막대 두 개. 틱은 설명 없이는
+   안 읽혔다(사용자 실측). 막대에 연도와 금액을 직접 붙이면 외울 게 없다. */
+.mix-block{margin-bottom:16px}
+.mxp-rows{display:flex;flex-direction:column;gap:11px}
+.mxp-row .cl-name{margin-bottom:4px}
+.mxp-line{display:grid;grid-template-columns:30px minmax(0,1fr) 64px;
+  align-items:center;gap:7px;margin-bottom:3px}
+.mxp-year{font-size:11.5px;font-weight:700;color:#5f6b7c;text-align:right}
+.mxp-track{height:11px;border-radius:4px;background:#f3f6f9;overflow:hidden}
+.mxp-bar{display:block;height:100%;border-radius:0 4px 4px 0;min-width:2px}
+.mxp-bar.cur{background:linear-gradient(90deg,#2a78d6,#6a6ff0)}
+.mxp-bar.prev{background:#c3cdd9}
+.mxp-amt{font-size:12.5px;font-weight:700;color:#1f2937;text-align:right;
+  font-variant-numeric:tabular-nums}
+.mxp-amt.muted{color:#9aa3ad;font-weight:600}
+.mx-delta{font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;flex:none}
+.mx-delta.up{color:#0f7a55;background:#e9f9f1;border:1px solid #cdeee0}
+.mx-delta.down{color:#c81e4a;background:#fff0f3;border:1px solid #f7d3da}
+.mx-delta.muted{color:#8a949f;background:#f1f4f8;border:1px solid #e3e8ee}
+
+/* ── 내역 표 ─────────────────────────────────────────────────────────── */
+.table-body{max-height:430px;overflow:auto;padding:0 16px}
+.hidden{display:none!important}
+.ms-table{width:100%;border-collapse:collapse;font-size:14.5px}
+.ms-table th,.ms-table td{padding:8px 9px;border-bottom:1px solid #eef1f5;
+  text-align:left;white-space:nowrap}
+.ms-table th small{display:block;font-size:10.5px;font-weight:600;color:#8a949f}
+.ms-table th{font-size:13px;color:#2f3a46;font-weight:800;background:#f4f7fa;
+  position:sticky;top:0}
+.ms-table td.number,.ms-table th.number{text-align:right;
+  font-variant-numeric:tabular-nums}
+.ms-table td.addr{max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.ms-table td.number.dim{color:#9aa3ad;font-weight:500}
+.ms-table td.cust{max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.ms-table tr:last-child td{border-bottom:0}
+/* 종이 장부의 괘선 — 8열 가로 행에서 줄 이탈(=옆 행 금액 오독)을 막는다 */
+.ms-table tbody tr:nth-child(even){background:rgba(240,245,251,.65)}
+.ms-table tbody tr:hover{background:rgba(219,232,248,.6)}
+.table-more{display:block;width:100%;border:0;background:rgba(243,247,252,.85);
+  color:#2563eb;font-size:11px;font-weight:600;padding:8px;
+  border-radius:0 0 16px 16px;cursor:pointer}
+.table-more:hover{background:#eef4fd}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;
+  margin-right:5px;vertical-align:-1px}
+
+.up{color:#0f7a55;font-weight:600}
+.down{color:#c81e4a;font-weight:600}
+.muted{color:#9aa3ad}
+
+/* ── 기간 프리셋 — 날짜 달력 두 번 여는 수고를 원클릭으로 ─────────────── */
+.preset-group{display:flex;gap:4px;align-items:flex-end;padding-bottom:1px}
+.preset-group button{height:28px;padding:0 11px;font-size:12px;font-weight:600;
+  border:1px solid rgba(191,205,222,.7);border-radius:8px;color:#374151;
+  background:rgba(255,255,255,.8);cursor:pointer;box-shadow:none}
+body.ms-mesh .ms-toolbar .preset-group button{
+  background:rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(63,84,180,.06)}
+.preset-group button:hover{background:#fff}
+
+/* ── 인쇄 — Ctrl+P 가 곧 한 장 보고서다 (버튼 없음) ────────────────────
+   입금현황·매출입력 화면의 인쇄 관행을 이식. 메시·유리는 잉크 낭비라 걷고,
+   조작 요소는 전부 숨긴다. 곡선의 전년선은 흑백 프린터에서 파랑/회색 구분이
+   사라지므로 점선으로 가른다(화면에서는 점선 금지 — 인쇄 전용 예외). */
+@media print{
+  body.ms-mesh{background:#fff!important}
+  .topbar,.sidebar,.ms-toolbar,.ai-head,.ai-actions,.tabs,.table-more,
+  .gear-link,.skip-link,.ms-tip{display:none!important}
+  .ai-panel:not(:has(.ai-result:not(.hidden))){display:none}
+  .app-shell{display:block}
+  main{padding:0!important}
+  .print-header{display:block!important;font-size:13px;font-weight:700;
+    color:#111;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid #111}
+  .print-header small{font-weight:500;color:#444}
+  body.ms-mesh .card,body.ms-mesh .hero,body.ms-mesh .ai-panel{
+    background:#fff;border:1px solid #bbb;box-shadow:none;
+    -webkit-backdrop-filter:none;backdrop-filter:none}
+  .hero::before,.hero::after{display:none}
+  .hero-num{background:none;-webkit-background-clip:initial;background-clip:initial;
+    color:#111}
+  .card,.hero,.ai-panel{page-break-inside:avoid}
+  .ms-row-table .card{page-break-inside:auto}
+  .ms-row,.ms-row-mid{display:block}
+  .ms-row-mid .card{margin-bottom:10px}
+  .table-body{max-height:none!important;overflow:visible!important}
+  .trend-body{display:block}
+  .trend-yearly{border-left:0;padding-left:0;margin-top:10px}
+  .trend-monthly{overflow:visible}
+  .chart-svg{max-width:100%;height:auto}
+  .ln-prev{stroke:#666;stroke-dasharray:5 3}
+  .ln-cur{stroke:#111}
+  .dot-cur{fill:#111}
+  .mxp-bar.cur{background:#333}
+  .mxp-bar.prev{background:#fff;border:1px solid #666}
+  /* 색이 빠져도 두 줄이 갈리게 — 올해는 검정 채움, 전년은 흰 바탕 + 테두리 */
+  .cl-bar{background:#333}
+  .cl-prev{background:#fff;border:1px solid #666;box-sizing:border-box}
+  .ms-table tbody tr:nth-child(even){background:#f2f2f2}
+}
+.print-header{display:none}
+
+/* ── 구성 탭 (2026-08-10) ────────────────────────────────────────────────
+   매출 구성·발주처 두 카드를 하나로 합치고 탭으로 갈랐다. 매출·미수·거래처는
+   좌측 표 + 우측 그래프, 상여·가변비는 월별 표다. */
+.ms-row-tabs{grid-template-columns:1fr}
+.ms-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.ms-tabs button{height:28px;padding:0 14px;font-size:12.5px;font-weight:700;
+  border:1px solid var(--line,#dde3ea);background:#fff;color:#6b7683;
+  border-radius:9px;cursor:pointer}
+/* 켜진 탭은 AI 분석 버튼과 같은 그라디언트로 (2026-08-11 요청).
+   이 화면에서 '지금 눌린 것' 은 전부 같은 색이어야 눈이 덜 헤맨다. */
+.ms-tabs button.on{background:linear-gradient(120deg,#5b5bd6,#2563eb);
+  border-color:transparent;color:#fff;box-shadow:0 3px 10px rgba(63,84,180,.22)}
+.ms-tabs button:hover:not(.on){background:#f4f7fb;color:#1f2937}
+
+/* 축 고르개 — 매출·미수는 물건종류/업무종류 두 축이 있다 */
+.axis-pick{display:flex;gap:4px;margin-bottom:10px}
+.axis-pick button{height:24px;padding:0 11px;font-size:11.5px;font-weight:600;
+  border:1px solid var(--line,#dde3ea);background:#fff;color:#6b7683;
+  border-radius:99px;cursor:pointer}
+.axis-pick button.on{background:#eef3fd;border-color:#bcd0f2;color:#1d4fc0}
+
+/* 좌 표 · 우 그래프. 표가 숫자를 확정하고 그래프가 크기를 보여 준다 —
+   좁아지면(1180px 아래, EXE 최소 크기 포함) 위아래로 접힌다. */
+/* 좌 표 · 우 그래프. 표에 폭을 더 주고(1.05:0.95) 그래프 막대를 짧게 만든다
+   — 막대가 카드 끝까지 닿아 있으면 '꽉 찬 것' 으로 읽힌다 (2026-08-10 요청).
+   사이에 세로선을 하나 둬 두 그림이 서로 다른 말임을 밝힌다. */
+.tab-split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr);
+  gap:28px}
+@media (max-width:1180px){.tab-split{grid-template-columns:1fr;gap:14px}
+  .tab-right{border-left:0;padding-left:0;border-top:1px solid var(--line,#e6eaef);
+    padding-top:14px}}
+.tab-left,.tab-right{min-width:0}
+.tab-right{border-left:1px solid var(--line,#e6eaef);padding-left:26px;
+  padding-right:10px}
+
+/* 열 위치를 탭마다 못 박는다 — 자동 폭이면 내용 길이에 따라 칸이 밀려서
+   탭을 옮길 때 눈이 매번 열을 다시 찾는다 (2026-08-10 제보 "뭔가 안맞아"). */
+table.tab-table{width:100%;border-collapse:collapse;font-size:13.5px;
+  table-layout:fixed}
+/* 이름 칸이 쓸데없이 넓어 숫자가 오른쪽에 몰려 있었다 (2026-08-10 제보).
+   px 로 못 박으면 카드 폭이 바뀔 때 이름 칸만 늘어난다 — 비율로 잡는다.
+   이름은 26%면 한글 열 자쯤 들어가고, 넘치면 말줄임 + 툴팁이 받는다. */
+table.tab-table col.c-name{width:24%}
+table.tab-table col.c-count{width:12%}
+table.tab-table col.c-amount{width:16%}
+table.tab-table col.c-prev,table.tab-table col.c-sales,
+table.tab-table col.c-gross{width:17%}
+table.tab-table col.c-delta{width:20%}
+table.tab-table col.c-rate{width:18%}
+table.tab-table col.c-pct{width:12%}
+/* 이름이 길면 줄바꿈 대신 말줄임 — 줄이 늘면 옆 그래프와 높이가 어긋난다 */
+table.tab-table td.c-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 머리글은 진하게, 한 단 크게 (2026-08-10 요청) — 옅은 회색이라 열 이름이
+   숫자에 묻혔다. 본문보다 살짝 작되 색으로 무게를 준다. */
+/* 머리글이 표 위에 딱 붙어 숨 쉴 자리가 없었다 (2026-08-10 제보).
+   위아래로 벌리고 밑줄과의 사이도 띄운다. 본문 줄 높이도 같이 올렸다 —
+   머리글만 벌리면 그 아래가 빽빽해 보인다. */
+table.tab-table th{text-align:left;font-weight:800;color:#2f3a46;font-size:12.5px;
+  padding:10px 10px 9px;border-bottom:1.5px solid #d6dee7;white-space:nowrap}
+table.tab-table td{padding:9px 10px}
+/* 표가 카드 머리(탭 줄)·축 고르개와도 한 칸 떨어져야 한다 */
+.tab-left>table.tab-table,#tabBody>table.tab-table,.vc-scroll{margin-top:6px}
+table.tab-table th.num,table.tab-table td.num{text-align:right}
+table.tab-table td.num{font-variant-numeric:tabular-nums}
+table.tab-table td.strong{font-weight:700;color:#1f2937}
+/* 한 발 물린 칸 — 있어야 하지만 주인공은 아니다(미수 탭의 매출총액) */
+table.tab-table td.soft{color:#8a949f}
+table.tab-table col.c-gross{width:19%}
+table.tab-table td.up{color:#0f7a55;font-weight:600}
+table.tab-table td.down{color:#c81e4a;font-weight:600}
+table.tab-table td .dim,table.tab-table td.dim{color:#c8d0d8}
+table.tab-table td:first-child{color:inherit;font-family:inherit;font-weight:500}
+table.tab-table tr:last-child td{border-bottom:0}
+table.tab-table tr.dim td{color:#a6b0bb}
+/* 상여는 칸이 여덟이라 좁으면 가로로 민다 — 숫자를 줄여 쓰지 않는다 */
+
+/* 미수 도넛 (2026-08-10 요청) — 축이 두어 개뿐이라 비중을 원으로 읽힌다.
+   값 비교는 왼쪽 표가 숫자로 확정하므로 원은 크기만 말한다. */
+.donut-wrap{display:flex;align-items:center;gap:26px;flex-wrap:wrap;padding:4px 0}
+.donut{width:168px;height:168px;flex:none}
+.donut .dn-bg{fill:none;stroke:#f1f4f8;stroke-width:19}
+/* 조각 끝을 둥글리지 않는다 — 3px 틈과 겹쳐 조각이 서로 파고든 것처럼 보인다 */
+.donut .dn-seg{fill:none;stroke-width:19;transition:stroke-width .12s}
+.donut .dn-seg:hover{stroke-width:22}
+.donut .dn-mid{font-size:10.5px;fill:#9aa3ad;font-weight:700;text-anchor:middle;
+  letter-spacing:.02em}
+.donut .dn-sum{font-size:17px;fill:#5b5bd6;font-weight:800;text-anchor:middle}
+.donut-legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
+  gap:0;min-width:0;flex:1;max-width:320px}
+.donut-legend li{display:flex;align-items:center;gap:9px;font-size:13px;min-width:0;
+  padding:7px 2px;border-bottom:1px solid #f1f4f7}
+.donut-legend li:last-child{border-bottom:0}
+.donut-legend i{flex:none;width:9px;height:9px;border-radius:99px}
+.donut-legend .dn-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:#374151}
+.donut-legend b{font-variant-numeric:tabular-nums;color:#1f2937;font-weight:700}
+.donut-legend .dn-pct{width:38px;text-align:right;color:#8a949f;font-weight:600}
+
+/* 가변비 — 표 하나에 월(행) × 항목(열). 열이 많아 가로로 민다.
+   숫자를 줄여 쓰지 않는다 — 금액 아래 수량을 작게 병기한다. */
+.vc-scroll{overflow-x:auto;margin:-2px}
+table.vc-matrix{table-layout:auto;white-space:nowrap;font-size:13px}
+table.vc-matrix th,table.vc-matrix td{padding:9px 12px}
+table.vc-matrix td.c-name,table.vc-matrix th:first-child{
+  position:sticky;left:0;background:#fff;z-index:1;font-weight:700}
+table.vc-matrix tr.vc-grouprow th{padding-bottom:2px;font-size:10.5px;
+  color:#8a949f;letter-spacing:.03em;text-align:center;border-bottom:0}
+table.vc-matrix tr.vc-grouprow th:not(:empty){
+  border-bottom:1px solid var(--line,#e6eaef)}
+table.vc-matrix td.num small{display:block;font-size:10.5px;color:#8a949f;
+  font-weight:500}
+table.vc-matrix td.dim{color:#c8d0d8}
+/* 합계는 보라 — AI 분석 버튼과 같은 색 계열이다 (2026-08-10 요청).
+   파랑은 '올해 매출' 이 이미 쓰고 있어서, 합계까지 파랑이면 같은 뜻으로 읽힌다. */
+table.vc-matrix .vc-total{font-weight:800;color:#5b5bd6;
+  border-left:1px solid var(--line,#e6eaef)}
+table.vc-matrix tfoot td{color:#5b5bd6}
+.card-hint .hint-total{color:#5b5bd6;font-weight:800}
+table.vc-matrix tfoot td{border-top:2px solid var(--line,#dde3ea);font-weight:700;
+  background:#fafbfc}
+table.vc-matrix tfoot td.c-name{background:#fafbfc}
+
+/* 가변비 선 — 살짝 불그스름한 파스텔 (2026-08-10 요청). 매출(파랑)과 대비되되
+   경고색으로 읽히지 않게 채도를 낮췄다. 가변비는 이상이 아니라 원가다.
+   자릿수가 매출의 3%라 **오른쪽 제 축**을 쓴다 — 그래서 선을 얇게 두고
+   오른쪽 눈금 글자에 '가변비' 를 붙여 다른 자임을 밝힌다. */
+.chart-svg .ln-vc{fill:none;stroke:#e59aa4;stroke-width:1.8;stroke-linecap:round;
+  stroke-linejoin:round;opacity:.85}
+/* 오른쪽 눈금 — 매출 눈금(왼쪽·회색)과 색으로 갈라 놓아야 자를 헷갈리지 않는다 */
+.chart-svg text.vc-axis{font-size:11px;fill:#cf8d97;font-weight:700;text-anchor:start}
+
+/* 상여 — 숫자 칸이 여덟이라 좁히지 않고 가로로 민다 */
+table.tab-table.wide{table-layout:auto;white-space:nowrap}
+
+/* 표 머리글의 'TOP 5' — 이 표가 전부가 아님을 그 자리에서 밝힌다 (2026-08-10 요청).
+   머리글 글자보다 한 단 작고 옅게: 열 이름이 주고 이건 단서다. */
+.th-top{font-size:10.5px;font-weight:700;color:#5b5bd6;background:#f0effc;
+  border-radius:99px;padding:1px 7px;margin-left:5px;letter-spacing:.02em}
+
+/* 카드 머리의 TOP 안내 — '왜 이리 적지' 를 그 자리에서 막는다 (2026-08-10 요청) */
+.card-hint .hint-top{color:#5b5bd6;font-weight:800;background:#f0effc;
+  border-radius:99px;padding:2px 9px;margin-right:6px}
+.card-hint .hint-of{color:#8a949f;font-weight:600;margin-right:10px}
+/* 그래프의 전년 글자 — 틱만으로는 '전년' 인 줄 모른다 */
+.cl-prev-tx{color:#8a949f;font-weight:600;font-size:11.5px;margin-left:6px}
+
+/* 머리글 풍선말 — 이름만으로는 못 밝히는 칸에 붙인다('가변비(전월)').
+   abbr 기본 스타일은 브라우저마다 갈려서 여기서 못 박는다. 커서를 얹으면
+   설명이 뜬다는 걸 점선 밑줄로 알린다. */
+.tab-table .col-note{text-decoration:none;border-bottom:1px dotted currentColor;cursor:help}

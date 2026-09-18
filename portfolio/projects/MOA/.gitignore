@@ -1,0 +1,39 @@
+.env
+.venv/
+
+# 서버 setup/redeploy가 생성하는 배치 실행 래퍼 — 서버마다 인자·자격증명이 달라
+# 저장소 사본으로 덮어쓰면 안 된다 (2026-07-31 배포에서 10분 주기 래퍼가 구버전으로 덮인 사고)
+scripts/run_*.cmd
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.log
+
+.gstack/
+
+# 배포 산출물 — 소스에서 생성한다 (dist에는 .env 사본까지 들어가므로 절대 커밋 금지)
+dist/
+build/
+
+# 일회성 진단·조사 스크립트 (재현 가능, 저장소 밖 유지)
+scratch/
+
+# 로컬 데이터·작업 산출물
+DB/
+output/
+outputs/
+tmp/
+logs/
+
+# 카드 사용내역 등 원본 엑셀 (카드번호·임직원명 포함 — 커밋 금지)
+*.xls
+*.xlsx
+
+# 개인 도구 설정
+.claude/
+.agents/
+.playwright-cli/

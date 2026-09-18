@@ -1,0 +1,10 @@
+[run]
+mode = live
+banks = 신한,국민,기업,농협,수협,하나,우리,새마을
+interval_seconds = 600
+since_days = 0
+attach_pdf = true
+max_per_round = 20
+statuses = 대기
+only_doc = 
+

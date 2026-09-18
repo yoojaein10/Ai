@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOA · 지사 메일 주소</title>
+  <link rel="icon" type="image/svg+xml" href="/ui/moa-icon.svg">
+  <link rel="stylesheet" href="/ui/dashboard.css?v=20260821-2">
+  <link rel="stylesheet" href="/ui/desktop.css?v=20260820-1">
+  <style>
+    .lr-back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #d9e7ee;border-radius:999px;background:#fff;color:#356573;font-size:13px;font-weight:750;text-decoration:none;white-space:nowrap}
+    .lr-back:hover{background:#f4fafc;border-color:#bcd7e3}
+    .lr-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:64px;z-index:5;background:var(--bg,#fff);padding:12px 0}
+    .lr-summary{font-size:13px;color:var(--muted)}
+    .lr-summary b{color:var(--ink);font-weight:800}
+    .lr-summary .none{color:#b4232a}
+    .lr-note{color:#8a6d1a;background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:12px;margin:0 0 12px}
+    .lr-acct{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:#fff}
+    .lr-acct.dirty{border-color:var(--brand,#1b7a43);box-shadow:0 0 0 2px rgba(27,122,67,.08)}
+    .lr-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .lr-head h3{margin:0;font-size:13px}
+    .lr-head .code{color:var(--subtle);font-variant-numeric:tabular-nums;font-weight:600}
+    .lr-head .state{font-size:11px;color:var(--muted)}
+    .lr-head .state.none{color:#b4232a;font-weight:700}
+    .lr-head .add{margin-left:auto;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;cursor:pointer}
+    .lr-head .add:hover{background:#f2f7f4}
+    .lr-rows{width:100%;border-collapse:collapse;font-size:12px}
+    .lr-rows th{background:#f7f9f8;color:var(--muted);font-size:11px;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+    .lr-rows td{padding:4px 8px;border-bottom:1px solid var(--line)}
+    .lr-rows input,.lr-rows select{width:100%;height:30px;border:1px solid var(--line);border-radius:7px;padding:0 8px;background:#fff;font-size:12px}
+    .lr-rows .del{width:32px;height:30px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer}
+    .lr-empty{color:var(--muted);font-size:12px;padding:6px 2px}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <header class="topbar">
+    <a class="lr-back" href="/desktop/account-ledger" title="계정별원장으로 돌아가기"><span aria-hidden="true">←</span> 계정별원장</a>
+    <div class="brand-block"><span class="brand-logo"><img src="/ui/moa-icon.svg" alt="">MOA</span><h1>지사 메일 주소</h1></div>
+    <div></div>
+  </header>
+  <main id="main-content">
+    <p class="lr-note">여기 적힌 주소로 계정별원장이 나갑니다. <b>받는사람(TO)이 하나도 없는 지사는 발송되지 않습니다</b> — 빈 주소로 보내지 않습니다. 참조(CC)는 함께 받는 사람입니다.</p>
+    <div class="lr-bar">
+      <button id="saveAll" class="primary-button" type="button">변경 저장</button>
+      <p id="summary" class="lr-summary">불러오는 중...</p>
+    </div>
+    <div id="accountList"></div>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/ui/context.js?v=20260911-1"></script>
+  <script src="/ui/ledger-recipients.js?v=20260824-1"></script>
+</body>
+</html>
